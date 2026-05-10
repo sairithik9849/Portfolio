@@ -6,6 +6,7 @@ export default function AIOrb({ onClick }) {
       className="ai-orb"
       onClick={onClick}
       aria-label="Open AI agent"
+      data-cursor="hover"
       animate={{ y: [0, -8, 0] }}
       transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
       whileHover={{ scale: 1.05 }}

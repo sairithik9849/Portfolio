@@ -44,6 +44,7 @@ export default function Projects() {
                   style={{ flex: isActive ? '1 1 auto' : '0 0 64px' }}
                   onClick={() => setActive(i)}
                   transition={SPRING}
+                  data-cursor="hover"
                   whileHover={!isActive ? { backgroundColor: 'rgba(201,245,88,0.025)' } : undefined}
                 >
                   <AnimatePresence initial={false} mode="popLayout">

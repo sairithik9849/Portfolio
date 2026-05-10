@@ -3,6 +3,7 @@ import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import { HERO_PARENT, HERO_CHILD, HERO_CHILD_FADE } from '../animations/variants'
 import Terminal from './Terminal'
 import AIOrb from './AIOrb'
+import HeroLetter from './HeroLetter'
 
 // Three.js is ~600 KB — lazy-load it so it doesn't block the initial paint
 const HeroFluid = lazy(() => import('./HeroFluid'))
@@ -63,8 +64,13 @@ export default function Hero({ onOpenAI }) {
       */}
       <motion.div style={{ position: 'relative', zIndex: 1 }} {...HERO_CHILD}>
         <motion.h1 style={{ x: hX, y: hY }}>
-          SAIRITHIK<br />
-          KOMURA<span className="u">VELLY</span><span className="it">.</span>
+          {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
+          <br />
+          {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} />)}
+          <span className="u">
+            {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} />)}
+          </span>
+          <span className="it">.</span>
         </motion.h1>
       </motion.div>
 

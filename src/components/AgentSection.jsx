@@ -34,6 +34,7 @@ export default function AgentSection({ onOpenAI }) {
             <button
               className="agent-open-btn"
               onClick={onOpenAI}
+              data-cursor="hover"
             >
               <span style={{ fontFamily: 'var(--mono)', color: 'var(--accent)', fontSize: 13 }}>›</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg)', letterSpacing: '.08em', textTransform: 'uppercase' }}>

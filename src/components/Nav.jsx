@@ -9,7 +9,7 @@ export default function Nav() {
       </div>
       <div className="nav-links">
         {NAV.map((n) => (
-          <a key={n.id} href={`#${n.id}`}>
+          <a key={n.id} href={`#${n.id}`} data-cursor="hover">
             <span className="num">{n.n}</span>
             {n.label}
           </a>

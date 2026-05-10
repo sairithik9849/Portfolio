@@ -8,6 +8,7 @@ import Education    from './components/Education'
 import Projects     from './components/Projects'
 import Footer       from './components/Footer'
 import AIDrawer     from './components/AIDrawer'
+import Cursor       from './components/Cursor'
 import { useHotkey } from './hooks/useHotkey'
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
       <Footer       onOpenAI={() => setAiOpen(true)} />
 
       <AIDrawer open={aiOpen} onClose={closeAI} />
+      <Cursor />
     </>
   )
 }

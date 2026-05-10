@@ -10,16 +10,16 @@ export default function Footer({ onOpenAI }) {
         something <em>load-<br />bearing.</em>
       </div>
       <div className="links">
-        <a href="mailto:skomurav@stevens.edu">
+        <a href="mailto:skomurav@stevens.edu" data-cursor="hover">
           <span style={{ color: 'var(--accent)' }}>↗</span> skomurav@stevens.edu
         </a>
-        <a href="https://github.com/sairithik9849" target="_blank" rel="noreferrer">
+        <a href="https://github.com/sairithik9849" target="_blank" rel="noreferrer" data-cursor="hover">
           <span style={{ color: 'var(--accent)' }}>↗</span> github / sairithik9849
         </a>
-        <a href="https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/" target="_blank" rel="noreferrer">
+        <a href="https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/" target="_blank" rel="noreferrer" data-cursor="hover">
           <span style={{ color: 'var(--accent)' }}>↗</span> linkedin / komuravelly
         </a>
-        <a href="#" onClick={(e) => { e.preventDefault(); onOpenAI() }}>
+        <a href="#" onClick={(e) => { e.preventDefault(); onOpenAI() }} data-cursor="hover">
           <span style={{ color: 'var(--accent)' }}>↗</span> ask the agent
         </a>
       </div>

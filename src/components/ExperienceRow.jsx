@@ -7,7 +7,7 @@ export default function ExperienceRow({ e }) {
 
   return (
     <motion.div className={`exec-row ${open ? 'open' : ''}`} {...STAGGER_CHILD}>
-      <button className="exec-summary" onClick={() => setOpen((o) => !o)}>
+      <button className="exec-summary" onClick={() => setOpen((o) => !o)} data-cursor="hover">
         <span className="exec-idx">{e.idx}</span>
         <span className="exec-co">
           <span className="exec-co-name">{e.company}</span>
