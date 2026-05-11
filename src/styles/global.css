@@ -93,17 +93,27 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   .cursor-root { display: none !important; }
 }
 
-/* ---- global grid lines ---- */
-.grid-bg {
-  position: fixed;
+/* ---- hero infinite grid (animated) ---- */
+.infinite-grid {
+  position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
-  z-index: 1;
-  background-image:
-    linear-gradient(to right, var(--line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-  background-size: calc(100vw / 12) 96px;
-  mask-image: radial-gradient(circle at 50% 30%, black 30%, transparent 90%);
+  overflow: hidden;
+  color: var(--line-2);
+}
+
+.infinite-grid__base,
+.infinite-grid__masked {
+  position: absolute;
+  inset: 0;
+}
+
+.infinite-grid__base   { opacity: 0.06; }
+.infinite-grid__masked { opacity: 0.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .infinite-grid__masked { opacity: 0.25; }
 }
 
 .noise {

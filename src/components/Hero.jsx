@@ -5,6 +5,7 @@ import Terminal from './Terminal'
 import AIOrb from './AIOrb'
 import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
+import InfiniteGrid from './InfiniteGrid'
 
 export default function Hero({ onOpenAI }) {
   const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' · ')
@@ -52,6 +53,8 @@ export default function Hero({ onOpenAI }) {
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
+      <InfiniteGrid mouseX={mouseX} mouseY={mouseY} />
+
       {/* Full-cover 3D layer — absolutely fills the hero, below text z-index */}
       <div className="hero-spline" ref={splineRef}>
         <SplineScene

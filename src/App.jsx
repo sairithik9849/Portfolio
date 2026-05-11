@@ -32,11 +32,10 @@ export default function App() {
 
   return (
     <>
-      {/* Fixed background layers — painted in z-order: fluid (0) < grid (1) < noise (2) */}
+      {/* Fixed background layers — painted in z-order: fluid (0) < noise (2) */}
       <Suspense fallback={null}>
         <HeroFluid mouseRef={globalMouseRef} />
       </Suspense>
-      <div className="grid-bg" />
       <div className="noise" />
 
       {/* Page content — onPointerMove feeds globalMouseRef for the shader attractor */}

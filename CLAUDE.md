@@ -47,7 +47,8 @@ Portfolio/
 │   └── chat.js                    # Serverless function → Gemini API
 ├── public/
 │   ├── favicon.svg
-│   └── icons.svg
+│   ├── icons.svg
+│   └── pronounce.mp3              # Name pronunciation audio — played from Hero terminal
 ├── src/
 │   ├── animations/
 │   │   └── variants.js            # Shared Framer Motion animation presets
@@ -77,7 +78,7 @@ Portfolio/
 │   │   ├── ProjectVisual.jsx      # Dispatches correct Viz* component
 │   │   ├── SectionHead.jsx        # Reusable section header
 │   │   ├── SplineScene.jsx        # Lazy Spline 3D wrapper — swap scene via `scene=` prop
-│   │   └── Terminal.jsx           # Terminal-style identity display
+│   │   └── Terminal.jsx           # Hero identity terminal — merged bio + pronunciation play button + typed boot line
 │   ├── data/                      # All content as plain JS — never hardcode in components
 │   │   ├── agent.js               # AI suggestion chips + canned demo responses
 │   │   ├── education.js           # Education entries
@@ -116,6 +117,8 @@ Portfolio/
 - **Hero h1:** Each character of the name is wrapped in `HeroLetter.jsx` — a `motion.span` with a spring bounce and accent-color highlight on hover. The `h1` itself applies mouse-parallax via `useSpring` + `useTransform` MotionValues tracked in `Hero.jsx`.
 
 - **Hero 3D Scene:** `SplineScene.jsx` wraps `@splinetool/react-spline` behind `React.lazy` + Suspense. In `Hero.jsx` it lives inside `div.hero-spline` — an absolutely-positioned overlay covering the right 55% of the hero (`left: 45%; right: 0; top: 0; bottom: 0` in `global.css`), at `z-index: 1` so text layers above it at `z-index: 2`. To swap the 3D scene, change the `scene=` prop URL on the `<SplineScene>` in `Hero.jsx`. **Pointer-event forwarding:** the Spline canvas only receives events when the mouse is directly over it. To keep the robot tracking while the cursor is over the H1 name, `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove` + `mousemove` events directly to the canvas whenever `e.target` is not already inside `.hero-spline`. `bubbles: false` on the synthetic events prevents a feedback loop. Never remove this forwarding logic without also disabling letter `whileHover` — both depend on the same pointer-events split.
+
+- **Hero Terminal:** `Terminal.jsx` is the sole content block below the H1 (the previous left-side paragraph and right-side terminal were merged into this one). It renders identity lines (name, pronunciation, alias, role, focus, mission) followed by a typed `$ ./agent --boot` line driven by the local `TypedBoot` component (~1.8s post-mount delay, then character-by-character). Line 03 contains a `<button className="play">` that plays `/public/pronounce.mp3` via `new Audio(...).play()`; the call is wrapped in try/catch + `.catch(() => {})` so a missing file or autoplay block is silent. The terminal sits inside `.hero .sub` (now a single-column block, not a grid) and inherits the `HERO_CHILD` spring entrance. Polish styles in `global.css`: `max-width: 560px`, scanline `::after`, accent-tinted hover glow keyed to `--accent` (#c9f558), and a `.terminal .play` button styled to feel native to the terminal.
 
 - **Security:** API keys (like `GEMINI_API_KEY`) must ONLY be accessed inside the `/api` directory via `process.env`. Never expose them in `/src`.
 
