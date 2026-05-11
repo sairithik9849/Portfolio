@@ -259,13 +259,35 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   background: var(--accent);
 }
 
+.hero-spline {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 45%;
+  z-index: 1;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.hero-spline .spline-canvas,
+.hero-spline canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  background: transparent !important;
+}
+
 .hero .sub {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 48px;
-  align-items: end;
+  gap: 36px;
+  align-items: start;
   margin-top: 36px;
+  pointer-events: none;
 }
+
+.hero .sub .terminal { pointer-events: auto; }
 
 .hero .sub p {
   max-width: 520px;
@@ -273,12 +295,37 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   font-size: 16px;
   line-height: 1.55;
   margin: 0;
+  padding-top: 6px;
 }
 
 .hero .sub p span.tag {
   font-family: var(--mono);
   color: var(--accent);
   font-size: 13px;
+}
+
+.spline-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.spline-loader {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.spline-loader-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* terminal widget */
@@ -1205,7 +1252,8 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   .project .pj-visual { grid-column: 1 / -1; }
   .section-head { grid-template-columns: 60px 1fr; gap: 16px; }
   .section-head .right { display: none; }
-  .hero .sub { grid-template-columns: 1fr; }
+  .hero .sub { grid-template-columns: 1fr; gap: 24px; }
+  .hero-spline { opacity: 0.45; }
   .terminal { width: 100%; }
   .exec-log-head { display: none; }
   .exec-summary { grid-template-columns: 1fr 30px; gap: 8px; }
