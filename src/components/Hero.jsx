@@ -87,14 +87,6 @@ export default function Hero({ onOpenAI }) {
       </motion.div>
 
       <motion.div className="sub" style={{ position: 'relative', zIndex: 2 }} {...HERO_CHILD}>
-        <p>
-          <span className="tag">{'{ Software Engineer & System Administrator }'}</span>
-          <br /><br />
-          I build at the seam between low-level systems and modern interface — query
-          compilers, real-time data planes, full-stack platforms with the AI
-          surface to make them legible. Currently engineering scaled API
-          infrastructure handling 10M+ daily transactions.
-        </p>
         <Terminal />
       </motion.div>
 

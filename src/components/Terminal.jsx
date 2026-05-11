@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
 const BODY_VARIANTS = {
@@ -10,16 +11,86 @@ const LINE_VARIANTS = {
   show: { opacity: 1, x: 0, transition: { duration: 0.22, ease: 'easeOut' } },
 }
 
+const BOOT_TEXT = './agent --boot'
+const BOOT_DELAY_MS = 1800
+const BOOT_STEP_MS = 55
+
+function TypedBoot() {
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    const start = setTimeout(() => {
+      const id = setInterval(() => {
+        setN((prev) => {
+          if (prev >= BOOT_TEXT.length) {
+            clearInterval(id)
+            return prev
+          }
+          return prev + 1
+        })
+      }, BOOT_STEP_MS)
+    }, BOOT_DELAY_MS)
+    return () => clearTimeout(start)
+  }, [])
+  return (
+    <>
+      <span style={{ color: 'var(--muted)' }}>$ </span>
+      {BOOT_TEXT.slice(0, n)}
+      <span className="cur" />
+    </>
+  )
+}
+
 export default function Terminal() {
+  const audioRef = useRef(null)
+
+  const pronounce = () => {
+    try {
+      if (!audioRef.current) audioRef.current = new Audio('/pronounce.mp3')
+      audioRef.current.currentTime = 0
+      const p = audioRef.current.play()
+      if (p && typeof p.catch === 'function') p.catch(() => {})
+    } catch {
+      /* silent — audio file may not exist yet */
+    }
+  }
+
   const lines = [
     { n: 1, content: <><span style={{ color: 'var(--muted)' }}>// </span>identity --resolve</>, k: true },
-    { n: 2, content: <>name      = <b style={{ color: 'var(--fg)' }}>"Sairithik Komuravelly"</b></> },
-    { n: 3, content: <>pron      = "Sigh-RIH-thick / Koh-moo-ruh-VEL-lee"</> },
-    { n: 4, content: <>roles     = [<span style={{ color: 'var(--accent)' }}>"systems"</span>, <span style={{ color: 'var(--accent)' }}>"backend"</span>, <span style={{ color: 'var(--accent)' }}>"ai"</span>]</> },
-    { n: 5, content: <>uptime    = 99.97%</> },
-    { n: 6, content: <>latency   = <span style={{ color: 'var(--accent)' }}>↓60%</span> on hot-path</> },
+    { n: 2, content: <>name    = <b style={{ color: 'var(--fg)' }}>"Sairithik Komuravelly"</b></> },
+    {
+      n: 3,
+      content: (
+        <>
+          pron    = "Sigh-RIH-thick / Koh-moo-ruh-VEL-lee"
+          <button
+            type="button"
+            className="play"
+            onClick={pronounce}
+            data-cursor="hover"
+            aria-label="Play name pronunciation"
+            title="Play pronunciation"
+          >
+            ▶
+          </button>
+        </>
+      ),
+    },
+    {
+      n: 4,
+      content: (
+        <>
+          alias   = <span style={{ color: 'var(--accent)' }}>"Sai"</span>
+          <span style={{ color: 'var(--muted)' }}>   // can't pronounce it? just call me Sai</span>
+        </>
+      ),
+    },
+    { n: 5, content: <>role    = "Software Engineer & System Administrator"</> },
+    { n: 6, content: <>focus   = [<span style={{ color: 'var(--accent)' }}>"systems"</span>, <span style={{ color: 'var(--accent)' }}>"backend"</span>, <span style={{ color: 'var(--accent)' }}>"ai"</span>]</> },
     { n: 7, content: ' ' },
-    { n: 8, content: <><span style={{ color: 'var(--muted)' }}>$ </span>./agent --boot<span className="cur" /></>, k: true },
+    { n: 8, content: <><span style={{ color: 'var(--muted)' }}>// mission</span> — build at the seam between low-level systems</> },
+    { n: 9, content: <>and modern interface. scaled API infra · <span style={{ color: 'var(--accent)' }}>10M+</span> daily tx · <span style={{ color: 'var(--accent)' }}>↓60%</span> latency.</> },
+    { n: 10, content: ' ' },
+    { n: 11, content: <TypedBoot />, k: true },
   ]
 
   return (
