@@ -53,7 +53,7 @@ export default function Hero({ onOpenAI }) {
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
-      <InfiniteGrid mouseX={mouseX} mouseY={mouseY} />
+      <InfiniteGrid />
 
       {/* Full-cover 3D layer — absolutely fills the hero, below text z-index */}
       <div className="hero-spline" ref={splineRef}>

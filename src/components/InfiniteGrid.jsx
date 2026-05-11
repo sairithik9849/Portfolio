@@ -1,8 +1,7 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   motion,
   useMotionValue,
-  useTransform,
   useMotionTemplate,
   useAnimationFrame,
 } from 'framer-motion'
@@ -11,22 +10,23 @@ const CELL = 40
 const SPEED = 0.5
 const SPOT_R = 300
 
-export default function InfiniteGrid({ mouseX, mouseY }) {
+export default function InfiniteGrid() {
   const containerRef = useRef(null)
-  const sizeRef = useRef({ w: 0, h: 0 })
 
-  useLayoutEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const update = () => {
+  const maskX = useMotionValue(-9999)
+  const maskY = useMotionValue(-9999)
+
+  useEffect(() => {
+    const onMove = (e) => {
+      const el = containerRef.current
+      if (!el) return
       const r = el.getBoundingClientRect()
-      sizeRef.current = { w: r.width, h: r.height }
+      maskX.set(e.clientX - r.left)
+      maskY.set(e.clientY - r.top)
     }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
+    window.addEventListener('pointermove', onMove)
+    return () => window.removeEventListener('pointermove', onMove)
+  }, [maskX, maskY])
 
   const gridOffsetX = useMotionValue(0)
   const gridOffsetY = useMotionValue(0)
@@ -36,8 +36,6 @@ export default function InfiniteGrid({ mouseX, mouseY }) {
     gridOffsetY.set((gridOffsetY.get() + SPEED) % CELL)
   })
 
-  const maskX = useTransform(mouseX, (v) => v * sizeRef.current.w)
-  const maskY = useTransform(mouseY, (v) => v * sizeRef.current.h)
   const maskImage = useMotionTemplate`radial-gradient(${SPOT_R}px circle at ${maskX}px ${maskY}px, black, transparent)`
 
   return (
