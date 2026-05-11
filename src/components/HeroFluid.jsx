@@ -1,10 +1,10 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 /* ---- GLSL --------------------------------------------------------- */
 
-const vert = /* glsl */ `
+const vert = /* glsl */`
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -12,92 +12,98 @@ const vert = /* glsl */ `
   }
 `
 
-const frag = /* glsl */ `
+const frag = /* glsl */`
   precision highp float;
 
   uniform float uTime;
-  uniform vec2  uMouse;      // normalised [0,1], y=0 at top
-  uniform vec2  uResolution; // canvas px
+  uniform vec2  uMouse;       // [0,1], y=0 at bottom (shader convention)
+  uniform vec2  uResolution;
+  uniform vec3  uColor;       // lime accent — sourced from CSS --accent
+  uniform vec3  uBg;          // deep dark  — sourced from CSS --bg
 
   varying vec2 vUv;
 
-  /* ---- gradient noise ---- */
-  vec2 hash2(vec2 p) {
-    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-    return -1.0 + 2.0 * fract(sin(p) * 43758.5453);
+  /* Classic sin-based hash — reliable at our noise frequencies */
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
-  float gnoise(vec2 p) {
+
+  /* Smooth value noise — bicubic interpolation between random corner values */
+  float vnoise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     vec2 u = f * f * (3.0 - 2.0 * f);
     return mix(
-      mix(dot(hash2(i),             f            ),
-          dot(hash2(i+vec2(1,0)),   f-vec2(1,0)  ), u.x),
-      mix(dot(hash2(i+vec2(0,1)),   f-vec2(0,1)  ),
-          dot(hash2(i+vec2(1,1)),   f-vec2(1,1)  ), u.x),
+      mix(hash(i),                   hash(i + vec2(1.0, 0.0)), u.x),
+      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
       u.y
     );
   }
 
-  /* ---- 6-octave fractal Brownian motion ---- */
+  /* 5-octave fBm — per-octave rotation breaks axis-aligned grid artefacts */
   float fbm(vec2 p) {
-    float v = 0.0, a = 0.5;
-    for (int i = 0; i < 6; i++) {
-      v += a * gnoise(p);
-      p  = p * 2.1 + vec2(1.7, 9.2);
+    float v = 0.0;
+    float a = 0.5;
+    mat2  m = mat2(1.6, 1.2, -1.2, 1.6);
+    for (int i = 0; i < 5; i++) {
+      v += a * vnoise(p);
+      p  = m * p;
       a *= 0.5;
     }
     return v;
   }
 
+  /* Temporal grain hash — different seed to avoid correlation with vnoise */
+  float grain(vec2 p) {
+    return fract(sin(dot(p, vec2(89.42, 441.32))) * 71634.2);
+  }
+
   void main() {
     float asp  = uResolution.x / uResolution.y;
-    vec2  uv   = vUv;                          // [0,1]x[0,1]
-    vec2  st   = vec2(uv.x * asp, uv.y);       // aspect-correct
+    vec2  uv   = vUv;                                 // [0,1] x [0,1]
 
-    /* Mouse soft-repulsion: cursor pushes the noise field outward */
-    vec2  mouse = vec2(uMouse.x * asp, uMouse.y);
-    vec2  toM   = st - mouse;
+    /* Centre the noise domain around the origin so coverage is symmetric —
+       previously the domain ran [0, asp] x [0, 1], which happened to sample
+       low-value noise at the left/right edges, producing black bars. */
+    vec2  st   = (uv - 0.5) * vec2(asp, 1.0);
+
+    float t = uTime * 0.05;
+
+    /* ---- Mouse attractor: bend domain toward cursor ---- */
+    vec2  mouse = (uMouse - 0.5) * vec2(asp, 1.0);   // same centred space
+    vec2  toM   = mouse - st;
     float md    = length(toM);
-    /* manual normalize with epsilon avoids NaN when md≈0 */
-    vec2  warp  = st - (toM / (md + 0.001)) * 0.07 * exp(-md * 2.6);
+    vec2  p     = st - toM * exp(-md * 3.5) * 0.18;
 
-    /* Domain-warped fbm — two layers of warping for extra organic depth */
-    float t  = uTime * 0.09;
-    vec2  q  = vec2(
-      fbm(warp * 1.1 + vec2(t,       t * 0.6 )),
-      fbm(warp * 1.1 + vec2(t * 0.8, t * 1.2 ))
+    /* Shift into a visually rich region of the infinite noise field */
+    p += vec2(4.3, 2.7);
+
+    /* ---- Double-domain-warping for n1-style organic smoke flow ---- */
+    vec2 q = vec2(
+      fbm(p + vec2(t,       t * 0.6 )),
+      fbm(p + vec2(t * 0.8, t * 1.2 ))
     );
-    float n  = fbm(warp * 1.3 + q * 0.65 + vec2(-t * 0.4, t * 0.3));
+    float n = fbm(p + q * 0.65 + vec2(-t * 0.4, t * 0.3));
 
-    /* Organic blob — anchored right-of-centre, slightly high */
-    vec2  blobC = vec2(asp * 0.60, 0.44);
-    float bDist = length(st - blobC);
-    float blob  = smoothstep(0.90, 0.0, bDist - n * 0.32);
+    /* ---- Color composition ---- */
+    vec3 col = mix(uBg, uBg + uColor * 0.08, n);
 
-    /* Thin topology contour lines (fract creates band pattern) */
-    float bands = fract(n * 10.0);
-    float topo  = pow(1.0 - abs(bands * 2.0 - 1.0), 10.0) * blob;
+    /* Blooms: lower threshold so crests appear across the full screen */
+    float bloom = smoothstep(0.42, 0.80, n);
+    col += uColor * bloom * 0.45;
 
-    /* Rim: narrow corona at the blob's organic silhouette */
-    float inner = smoothstep(0.55, 0.0, bDist - n * 0.28);
-    float rim   = clamp(blob - inner, 0.0, 1.0) * 2.0;
+    /* Mouse glow: soft lime aura that intensifies beneath the cursor */
+    float glow = exp(-md * 5.0) * 0.45;
+    col += uColor * glow;
 
-    /* Colours — design system palette */
-    vec3 charcoal = vec3(0.04, 0.04, 0.04);
-    vec3 midtone  = vec3(0.08, 0.10, 0.05);        /* lime-tinted dark */
-    vec3 lime     = vec3(0.788, 0.961, 0.345);      /* #c9f558          */
+    /* Lighter vignette — previous 0.8 factor was crushing the side brightness */
+    float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.55;
+    col *= clamp(vig, 0.0, 1.0);
 
-    vec3 col = mix(charcoal, midtone, blob);
-    col += lime * smoothstep(0.3, 0.8, n) * blob * 0.10;  /* inner glow   */
-    col += lime * topo * 0.55;                              /* topo lines   */
-    col += lime * rim  * 0.07;                              /* edge corona  */
+    /* Temporal grain: breaks gradient banding in near-black regions */
+    col += (grain(gl_FragCoord.xy * 0.01 + uTime * 0.1) - 0.5) * 0.012;
 
-    /* Alpha: blob fills mostly opaque, topo lines add a slight halo */
-    float alpha = blob * 0.80 + topo * 0.45;
-    alpha = clamp(alpha, 0.0, 0.90);
-
-    gl_FragColor = vec4(col, alpha);
+    gl_FragColor = vec4(col, 1.0);
   }
 `
 
@@ -105,32 +111,53 @@ const frag = /* glsl */ `
 
 function FluidMesh({ mouseRef }) {
   const { viewport, size } = useThree()
+  const meshRef = useRef()
+  const matRef  = useRef()
   const targetMouse = useRef(new THREE.Vector2(0.5, 0.5))
 
   const uniforms = useRef({
     uTime:       { value: 0.0 },
     uMouse:      { value: new THREE.Vector2(0.5, 0.5) },
     uResolution: { value: new THREE.Vector2(size.width, size.height) },
+    /* Fallback values match the CSS design system — overwritten below after mount */
+    uColor:      { value: new THREE.Color('#c9f558') },
+    uBg:         { value: new THREE.Color('#070707') },
   })
+
+  /* Read CSS custom properties after mount — guarantees styles have painted */
+  useEffect(() => {
+    const css    = getComputedStyle(document.documentElement)
+    const accent = css.getPropertyValue('--accent').trim()
+    const bg     = css.getPropertyValue('--bg').trim()
+    if (accent) uniforms.current.uColor.value.set(accent)
+    if (bg)     uniforms.current.uBg.value.set(bg)
+  }, [])
+
+  /* Explicit GPU resource cleanup on unmount */
+  useEffect(() => {
+    return () => {
+      matRef.current?.dispose()
+      meshRef.current?.geometry?.dispose()
+    }
+  }, [])
 
   useFrame(({ clock, size: s }) => {
     uniforms.current.uTime.value = clock.getElapsedTime()
-    /* flip y: DOM y=0 is top, shader/UV y=0 is bottom */
+    /* y-flip: DOM y=0 is top, GLSL UV y=0 is bottom */
     targetMouse.current.set(mouseRef.current.x, 1.0 - mouseRef.current.y)
-    /* lerp for smooth, lag-free tracking at 60 fps */
+    /* lerp for smooth, lag-free tracking at 60fps */
     uniforms.current.uMouse.value.lerp(targetMouse.current, 0.055)
     uniforms.current.uResolution.value.set(s.width, s.height)
   })
 
   return (
-    /* Scale a unit plane to fill the full viewport */
-    <mesh scale={[viewport.width, viewport.height, 1]}>
+    <mesh ref={meshRef} scale={[viewport.width, viewport.height, 1]}>
       <planeGeometry args={[1, 1]} />
       <shaderMaterial
+        ref={matRef}
         uniforms={uniforms.current}
         vertexShader={vert}
         fragmentShader={frag}
-        transparent={true}
         depthWrite={false}
       />
     </mesh>
@@ -143,8 +170,9 @@ export default function HeroFluid({ mouseRef }) {
   return (
     <div
       style={{
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
+        /* z-index 0: sits beneath .grid-bg (1) and .noise (2) */
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
@@ -152,7 +180,7 @@ export default function HeroFluid({ mouseRef }) {
     >
       <Canvas
         dpr={[1, 1.5]}
-        gl={{ antialias: false, alpha: true }}
+        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
         style={{ width: '100%', height: '100%' }}
       >
         <FluidMesh mouseRef={mouseRef} />
