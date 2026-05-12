@@ -1,12 +1,29 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { NAV } from '../data/nav'
 
 export default function Nav() {
   const [position, setPosition] = useState({ left: 0, width: 0, opacity: 0 })
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const hero = document.getElementById('top')
+    if (!hero) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(!entry.isIntersecting),
+      { threshold: 0 },
+    )
+    observer.observe(hero)
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <nav className="nav">
+    <motion.nav
+      className="nav"
+      animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -16 }}
+      transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+      style={{ pointerEvents: visible ? 'auto' : 'none' }}
+    >
       <ul
         className="nav-tabs"
         onMouseLeave={() => setPosition((p) => ({ ...p, opacity: 0 }))}
@@ -19,7 +36,7 @@ export default function Nav() {
         ))}
         <Cursor position={position} />
       </ul>
-    </nav>
+    </motion.nav>
   )
 }
 

@@ -31,6 +31,14 @@ npm run dev
 vercel dev
 ```
 
+### Build & Lint
+
+```bash
+npm run build       # production build (output: dist/)
+npm run preview     # preview the production build locally
+npm run lint        # ESLint (flat config, React + Hooks + Refresh plugins)
+```
+
 ### Vercel
 
 ```bash
@@ -122,6 +130,8 @@ Portfolio/
 - **Hero 3D Scene:** `SplineScene.jsx` wraps `@splinetool/react-spline` behind `React.lazy` + Suspense. In `Hero.jsx` it lives inside `div.hero-spline` — an absolutely-positioned overlay with `left: 48%; right: 0; transform: translateX(8%)` in `global.css`. The `left: 48%` gives the canvas a wider DOM box (52% of hero width) so the robot's arms have room; `translateX(8%)` then shifts it ~60px rightward visually. `z-index: 1` keeps it below the text at `z-index: 2`. `body { overflow-x: hidden }` prevents any horizontal scrollbar from the rightward shift. To swap the 3D scene, change the `scene=` prop URL on the `<SplineScene>` in `Hero.jsx`. **Pointer-event forwarding:** the Spline canvas only receives events when the mouse is directly over it. To keep the robot tracking while the cursor is over the H1 name, `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove` + `mousemove` events directly to the canvas whenever `e.target` is not already inside `.hero-spline`. `bubbles: false` on the synthetic events prevents a feedback loop. Never remove this forwarding logic without also disabling letter `whileHover` — both depend on the same pointer-events split.
 
 - **Hero Terminal:** `Terminal.jsx` is the sole content block below the H1 (the previous left-side paragraph and right-side terminal were merged into this one). It renders identity lines (name, pronunciation, alias, role, focus, mission) followed by a typed `$ ./agent --boot` line driven by the local `TypedBoot` component (~1.8s post-mount delay, then character-by-character). Line 03 contains a `<button className="play">` that plays `/public/pronounce.mp3` via `new Audio(...).play()`; the call is wrapped in try/catch + `.catch(() => {})` so a missing file or autoplay block is silent. The terminal sits inside `.hero .sub` (now a single-column block, not a grid) and inherits the `HERO_CHILD` spring entrance. Polish styles in `global.css`: `max-width: 560px`, scanline `::after`, accent-tinted hover glow keyed to `--accent` (#c9f558), and a `.terminal .play` button styled to feel native to the terminal.
+
+- **Nav:** Auto-hides until the user scrolls past the hero. An `IntersectionObserver` watches the hero's root div (`id="top"`) and toggles a `visible` state that drives Framer Motion `opacity`/`y` on the `<motion.nav>` (pointer-events are also toggled so hidden nav isn't accidentally clickable). A spring-animated `motion.li.nav-tab-cursor` slides under the hovered tab — its `left`/`width` are updated via `onMouseEnter` on each `<Tab>` and reset to `opacity: 0` on `onMouseLeave` of the list.
 
 - **Layout & Padding:** `.shell` is the global content-width class (`max-width: 1440px; margin: 0 auto; padding: 0 24px`). All sections use it. The Hero overrides it with `.hero.shell { padding-left: 0; padding-right: 0; overflow: visible }` so text is flush to the hero's left edge and InfiniteGrid's full-bleed isn't clipped. Nav has its own horizontal padding (`18px 24px`) that matches the shell gutter. `body { overflow-x: hidden }` prevents horizontal scrollbars from elements that intentionally extend slightly past the viewport (e.g., the Spline canvas shift).
 
