@@ -274,7 +274,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0.08em;
+  bottom: 0.05em;
   height: 6px;
   background: var(--accent);
 }
@@ -337,7 +337,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   background: linear-gradient(180deg, rgba(15, 15, 15, 0.85), rgba(7, 7, 7, 0.92));
   font-family: var(--mono);
   font-size: 12px;
-  max-width: 560px;
+  max-width: 640px;
   width: 100%;
   position: relative;
   overflow: hidden;
@@ -378,7 +378,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   font-size: 9px;
   line-height: 1;
   cursor: pointer;
-  vertical-align: -3px;
+  vertical-align: middle;
   transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
 }
 .terminal .play:hover {

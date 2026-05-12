@@ -56,7 +56,7 @@ export default function Terminal() {
 
   const lines = [
     { n: 1, content: <><span style={{ color: 'var(--muted)' }}>// </span>identity --resolve</>, k: true },
-    { n: 2, content: <>name    = <b style={{ color: 'var(--fg)' }}>"Sairithik Komuravelly"</b></> },
+    { n: 2, content: <>name    = <b style={{ color: 'var(--fg)' }}>"Sairithik Komuravelly"</b> <span style={{ color: 'var(--muted)' }}>   // can't pronounce it? just call me Sai</span> </> },
     {
       n: 3,
       content: (
@@ -80,7 +80,6 @@ export default function Terminal() {
       content: (
         <>
           alias   = <span style={{ color: 'var(--accent)' }}>"Sai"</span>
-          <span style={{ color: 'var(--muted)' }}>   // can't pronounce it? just call me Sai</span>
         </>
       ),
     },
