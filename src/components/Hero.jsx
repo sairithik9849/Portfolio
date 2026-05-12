@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import { HERO_PARENT, HERO_CHILD, HERO_CHILD_FADE } from '../animations/variants'
 import Terminal from './Terminal'
@@ -6,11 +6,34 @@ import AIOrb from './AIOrb'
 import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
 import InfiniteGrid from './InfiniteGrid'
+import MatrixText from './MatrixText'
+import Typewriter from './Typewriter'
+
+const ROLES = [
+  '[ FULL-STACK DEVELOPER ]',
+  '[ M.S. COMPUTER SCIENCE ]',
+  '[ SYSTEMS ADMINISTRATOR ]',
+  '[ DATABASE INTERNALS ]',
+  '[ SOFTWARE ENGINEER ]',
+  '[ HIGH-THROUGHPUT SYSTEMS ]',
+]
+
+const LAYOUT_TWEEN = { type: 'tween', duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+
+const EMAIL = 'sairithik8639@gmail.com'
 
 export default function Hero({ onOpenAI }) {
-  const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' · ')
-
   const splineRef = useRef(null)
+  const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef(null)
+
+  const handleEmailClick = useCallback((e) => {
+    e.preventDefault()
+    navigator.clipboard.writeText(EMAIL).catch(() => {})
+    setCopied(true)
+    clearTimeout(copyTimerRef.current)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
+  }, [])
 
   /* Framer MotionValues for h1 spring parallax — element-relative coords */
   const mouseX   = useMotionValue(0.5)
@@ -68,9 +91,26 @@ export default function Hero({ onOpenAI }) {
         style={{ position: 'relative', zIndex: 2, pointerEvents: 'none' }}
         {...HERO_CHILD_FADE}
       >
-        <span>[ N — 40°44′34″N · 074°01′41″W / HOBOKEN, NJ ]</span>
-        <span>SYS.LOG · {timestamp}</span>
-        <span>v.2026.05 / build 0049</span>
+        <motion.span layout transition={LAYOUT_TWEEN}>
+          <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={300} />
+        </motion.span>
+        <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog">
+          <a
+            href={`mailto:${EMAIL}`}
+            className={`meta-email-link${copied ? ' meta-email-copied' : ''}`}
+            data-cursor="hover"
+            style={{ pointerEvents: 'auto' }}
+            onClick={handleEmailClick}
+            aria-label="Copy email address"
+          >
+            {copied
+              ? <span className="meta-copied-label">COPIED ✓</span>
+              : <Typewriter text={EMAIL} speed={35} delay={900} caret />}
+          </a>
+        </motion.span>
+        <motion.span layout transition={LAYOUT_TWEEN}>
+          <Typewriter text="v.2026.05 / build 0069" speed={28} delay={1500} />
+        </motion.span>
       </motion.div>
 
       {/*

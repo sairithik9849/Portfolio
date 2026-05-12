@@ -250,11 +250,60 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 0;
-  color: var(--muted);
+  color: var(--fg-2);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 12px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  gap: 16px;
+  text-shadow: 0 0 1px rgba(7,7,7,0.9), 0 1px 2px rgba(7,7,7,0.6);
+}
+
+.hero .meta-row > span {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  background: rgba(7, 7, 7, 0.35);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .hero .meta-row .meta-syslog { display: none; }
+}
+
+.meta-email-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 220ms ease-out, text-shadow 220ms ease-out;
+}
+
+.meta-email-link:hover,
+.meta-email-link:focus-visible {
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--accent-dim);
+}
+
+.meta-email-link:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.meta-email-link.meta-email-copied {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-dim);
+  pointer-events: none;
+}
+
+.meta-copied-label {
+  letter-spacing: 0.08em;
+  font-size: 0.85em;
+  animation: copied-flash 0.18s ease-out;
+}
+
+@keyframes copied-flash {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .hero h1 {
@@ -1164,6 +1213,50 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 }
 
 .agent-open-btn:hover { background: rgba(201, 245, 88, 0.08); }
+
+/* ---- Typewriter component ---- */
+.tw-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.tw-ghost {
+  visibility: hidden;
+  white-space: pre;
+}
+
+.tw-visible {
+  position: absolute;
+  inset: 0;
+  white-space: pre;
+}
+
+.tw-caret {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent);
+  animation: tw-blink 1s steps(2) infinite;
+}
+
+@keyframes tw-blink {
+  50% { opacity: 0; }
+}
+
+/* ---- MatrixText component ---- */
+.matrix-wrap {
+  display: inline;
+}
+
+.matrix-char {
+  display: inline-block;
+  white-space: pre;
+  transition: color 380ms ease-out, text-shadow 380ms ease-out;
+}
+
+.matrix-char.just-locked {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent-dim);
+}
 
 .agent-matrix table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
 .agent-matrix tr { border-bottom: 1px dashed var(--line); }
