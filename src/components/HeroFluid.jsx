@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -115,47 +115,56 @@ function FluidMesh({ mouseRef }) {
   const matRef  = useRef()
   const targetMouse = useRef(new THREE.Vector2(0.5, 0.5))
 
-  const uniforms = useRef({
+  const initialUniforms = useMemo(() => ({
     uTime:       { value: 0.0 },
     uMouse:      { value: new THREE.Vector2(0.5, 0.5) },
     uResolution: { value: new THREE.Vector2(size.width, size.height) },
     /* Fallback values match the CSS design system — overwritten below after mount */
     uColor:      { value: new THREE.Color('#c9f558') },
     uBg:         { value: new THREE.Color('#070707') },
-  })
+  }), [size.height, size.width])
 
   /* Read CSS custom properties after mount — guarantees styles have painted */
   useEffect(() => {
     const css    = getComputedStyle(document.documentElement)
     const accent = css.getPropertyValue('--accent').trim()
     const bg     = css.getPropertyValue('--bg').trim()
-    if (accent) uniforms.current.uColor.value.set(accent)
-    if (bg)     uniforms.current.uBg.value.set(bg)
+    const materialUniforms = matRef.current?.uniforms
+    if (accent) materialUniforms?.uColor.value.set(accent)
+    if (bg)     materialUniforms?.uBg.value.set(bg)
   }, [])
 
   /* Explicit GPU resource cleanup on unmount */
   useEffect(() => {
+    const material = matRef.current
+    const geometry = meshRef.current?.geometry
     return () => {
-      matRef.current?.dispose()
-      meshRef.current?.geometry?.dispose()
+      material?.dispose()
+      geometry?.dispose()
     }
   }, [])
 
+  /* R3F shader uniforms are Three-owned mutable objects updated outside React render. */
+  /* eslint-disable react-hooks/immutability */
   useFrame(({ clock, size: s }) => {
-    uniforms.current.uTime.value = clock.getElapsedTime()
+    const materialUniforms = matRef.current?.uniforms
+    if (!materialUniforms) return
+
+    materialUniforms.uTime.value = clock.getElapsedTime()
     /* y-flip: DOM y=0 is top, GLSL UV y=0 is bottom */
     targetMouse.current.set(mouseRef.current.x, 1.0 - mouseRef.current.y)
     /* lerp for smooth, lag-free tracking at 60fps */
-    uniforms.current.uMouse.value.lerp(targetMouse.current, 0.055)
-    uniforms.current.uResolution.value.set(s.width, s.height)
+    materialUniforms.uMouse.value.lerp(targetMouse.current, 0.055)
+    materialUniforms.uResolution.value.set(s.width, s.height)
   })
+  /* eslint-enable react-hooks/immutability */
 
   return (
     <mesh ref={meshRef} scale={[viewport.width, viewport.height, 1]}>
       <planeGeometry args={[1, 1]} />
       <shaderMaterial
         ref={matRef}
-        uniforms={uniforms.current}
+        uniforms={initialUniforms}
         vertexShader={vert}
         fragmentShader={frag}
         depthWrite={false}
