@@ -240,8 +240,10 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 }
 
 .hero.shell {
-  padding-left: 0;
-  padding-right: 0;
+  max-width: none;
+  width: 100%;
+  padding-left: max(0px, calc((100vw - 1440px) / 2));
+  padding-right: max(0px, calc((100vw - 1440px) / 2));
   overflow: visible;
 }
 
