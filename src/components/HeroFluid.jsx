@@ -90,7 +90,7 @@ const frag = /* glsl */`
 
     /* Blooms: lower threshold so crests appear across the full screen */
     float bloom = smoothstep(0.42, 0.80, n);
-    col += uColor * bloom * 0.45;
+    col += uColor * bloom * 0.2925;
 
     /* Mouse glow: soft lime aura that intensifies beneath the cursor */
     float glow = exp(-md * 5.0) * 0.45;
