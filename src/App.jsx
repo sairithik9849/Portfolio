@@ -21,11 +21,12 @@ export default function App() {
 
   /* Viewport-normalized mouse coords for the shader attractor.
      Plain ref — mutated in place so useFrame reads it at 60 fps with no re-renders. */
-  const globalMouseRef = useRef({ x: 0.5, y: 0.5 })
+  const globalMouseRef = useRef({ x: 0.5, y: 0.5, lastMove: 0 })
   const handleGlobalPointerMove = useCallback((e) => {
     if (e.pointerType && e.pointerType !== 'mouse') return
     globalMouseRef.current.x = e.clientX / window.innerWidth
     globalMouseRef.current.y = e.clientY / window.innerHeight
+    globalMouseRef.current.lastMove = performance.now()
   }, [])
 
   useHotkey('cmd+k', toggleAI)

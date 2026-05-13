@@ -18,6 +18,7 @@ const frag = /* glsl */`
   uniform float uTime;
   uniform vec2  uMouse;       // [0,1], y=0 at bottom (shader convention)
   uniform vec2  uResolution;
+  uniform float uCursorActive;
   uniform vec3  uColor;       // lime accent — sourced from CSS --accent
   uniform vec3  uBg;          // deep dark  — sourced from CSS --bg
 
@@ -86,15 +87,16 @@ const frag = /* glsl */`
     float n = fbm(p + q * 0.65 + vec2(-t * 0.4, t * 0.3));
 
     /* ---- Color composition ---- */
-    vec3 col = mix(uBg, uBg + uColor * 0.08, n);
+    float balanced = clamp(mix(n, 0.5, 0.22), 0.26, 0.76);
+    vec3 col = mix(uBg + uColor * 0.012, uBg + uColor * 0.07, balanced);
 
-    /* Blooms: lower threshold so crests appear across the full screen */
-    float bloom = smoothstep(0.42, 0.80, n);
-    col += uColor * bloom * 0.2925;
+    /* Blooms: bounded so long idle runs do not drift too green or too black */
+    float bloom = smoothstep(0.52, 0.74, balanced);
+    col += uColor * bloom * 0.24;
 
     /* Mouse glow: soft lime aura that intensifies beneath the cursor */
     float glow = exp(-md * 5.0) * 0.45;
-    col += uColor * glow;
+    col += uColor * glow * uCursorActive;
 
     /* Lighter vignette — previous 0.8 factor was crushing the side brightness */
     float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.55;
@@ -119,6 +121,7 @@ function FluidMesh({ mouseRef }) {
     uTime:       { value: 0.0 },
     uMouse:      { value: new THREE.Vector2(0.5, 0.5) },
     uResolution: { value: new THREE.Vector2(size.width, size.height) },
+    uCursorActive: { value: 0.0 },
     /* Fallback values match the CSS design system — overwritten below after mount */
     uColor:      { value: new THREE.Color('#c9f558') },
     uBg:         { value: new THREE.Color('#070707') },
@@ -151,6 +154,9 @@ function FluidMesh({ mouseRef }) {
     if (!materialUniforms) return
 
     materialUniforms.uTime.value = clock.getElapsedTime()
+    const idleMs = performance.now() - mouseRef.current.lastMove
+    const cursorTarget = idleMs < 250 ? 1 : Math.max(0, 1 - ((idleMs - 250) / 1500))
+    materialUniforms.uCursorActive.value += (cursorTarget - materialUniforms.uCursorActive.value) * 0.08
     /* y-flip: DOM y=0 is top, GLSL UV y=0 is bottom */
     targetMouse.current.set(mouseRef.current.x, 1.0 - mouseRef.current.y)
     /* lerp for smooth, lag-free tracking at 60fps */
