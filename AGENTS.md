@@ -1,31 +1,50 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Project
 
-This is a React 19 portfolio app built with Vite. The main app entry points are `src/main.jsx` and `src/App.jsx`. Reusable UI lives in `src/components/`, with project-specific visual components grouped under `src/components/visuals/`. Static content is separated into `src/data/` modules, shared animation variants live in `src/animations/`, hooks in `src/hooks/`, utilities in `src/utils/`, and global styling in `src/styles/global.css`. Public assets such as `favicon.svg` and `icons.svg` belong in `public/`. Serverless/API code is currently under `api/`. `dist/`, `node_modules/`, local logs, and Playwright MCP output are generated and should not be edited directly.
+Personal portfolio for **Sairithik Komuravelly (Sai)** . Goal: best-in-class developer portfolio — highly animated, deeply interactive, polished. Showcases low-level systems engineering + high-end frontend execution.
 
-## Build, Test, and Development Commands
+## Commands
 
-- `npm install`: install dependencies from `package.json`.
-- `npm run dev`: start the Vite development server with HMR.
-- `npm run build`: create a production build in `dist/`.
-- `npm run preview`: serve the production build locally for verification.
-- `npm run lint`: run ESLint across the repo.
+```bash
+npm install         # install
+npm run dev         # frontend only
+vercel dev          # frontend + serverless API (required when touching /api)
+npm run build       # production build → dist/
+npm run preview     # preview production build
+npm run lint        # ESLint flat config (React + Hooks + Refresh)
+vercel              # preview deploy
+vercel --prod       # production deploy
+```
 
-Run `npm run lint` and `npm run build` before opening a pull request or handing off substantial UI changes.
+## Dev & Design Guidelines
 
-## Coding Style & Naming Conventions
+- **Language:** JavaScript only. No TypeScript, no type annotations. ES6+ (arrow fns, destructuring, async/await, optional chaining). `const` default, `let` for reassignment, never `var`. ES modules throughout.
+- **Frontend:** React + Vite (SPA).
+- **Backend:** Vercel Serverless Functions in `/api`. AI chat → Google Gemini (`gemini-1.5-flash-latest`). No Express.
+- **Animation:** Framer Motion. Shared variants (`REVEAL`, `STAGGER_PARENT`, `STAGGER_CHILD`, `HERO_PARENT`, `HERO_CHILD`, `HERO_CHILD_FADE`) live in `src/animations/variants.js` — import, never redefine inline.
+- Animations must be silky smooth (60fps+). Avoid janky layout shifts. Favor hardware-accelerated CSS properties (transform, opacity).
+- **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both `React.lazy` — never eager-load (~600 KB).
+- **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
+- **Typography (loaded in `index.html`):** Headlines → **Instrument Serif**. Code/terminal → **JetBrains Mono**. Body/UI → **Space Grotesk**.
+- **Content:** All copy lives in `src/data/*.js`. Never hardcode content inside components.
+- **Env vars:** `GEMINI_API_KEY` is set in Vercel project settings; `vercel dev` injects it locally — no `.env` file. Read only inside `/api` via `process.env`. Never import from `/src`.
 
-Use ES modules, React function components, and JSX. Match the existing style: two-space indentation, single quotes, no semicolons, and concise component files. Name React components in PascalCase, for example `HeroFluid.jsx` or `ProjectVisual.jsx`; hooks should use the `useThing.js` pattern; data modules should use lowercase descriptive names such as `projects.js`. Prefer editing data in `src/data/` instead of hardcoding repeated content in components. Keep comments limited to non-obvious animation, shader, or interaction logic.
+## Architecture Rules
 
-## Testing Guidelines
+- **Section render order in `App.jsx`:** `Nav → Hero → Metrics → AgentSection → Experience → Education → Projects → Footer`. `AIOrb` + `AIDrawer` are fixed overlays at the end of the tree.
+- **Page background z-order:** `HeroFluid` (lazy WebGL) at `z:0`, `.noise` CSS texture at `z:2`. Both persistent across the page. The old static `.grid-bg` is gone — do not reintroduce.
+- **Hero internal z-order:** `InfiniteGrid` `z:0` → `SplineScene` `z:1` → text/H1 `z:2`.
+- **Cursor MotionValue singleton:** `CURSOR_X` / `CURSOR_Y` exported from `src/utils/cursor.js`. Any component needing pointer position imports them — never prop-drill, never duplicate `pointermove` listeners. Mark interactive elements with `data-cursor="hover"` for the hover state.
+- **Shader attractor singleton:** `App.jsx` owns `globalMouseRef` (viewport-normalized 0–1 + `lastMove` timestamp) passed to `HeroFluid`. If the fluid stops tracking the cursor, check this ref's `pointermove` listener in `App.jsx`.
+- **Layout shell:** `.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: hidden }` is load-bearing — Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
+- **Spline pointer forwarding (load-bearing):** `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is outside `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
+- **Lazy boundaries:** `HeroFluid` and `SplineScene` are both `React.lazy` + Suspense. Never convert to static imports.
+- **Nav visibility:** Driven by an `IntersectionObserver` on `#top` (Hero root). Toggles `opacity`/`y`/`pointer-events` so a hidden nav is never accidentally clickable.
 
-No automated test runner is currently configured. Treat `npm run lint` and `npm run build` as required baseline checks. For UI changes, also run `npm run dev` or `npm run preview` and manually verify desktop and mobile behavior, especially animated sections, navigation anchors, drawer interactions, and Three.js/Spline rendering. If tests are added later, colocate them near the relevant component or use a dedicated `src/__tests__/` directory.
+## Workflow
 
-## Commit & Pull Request Guidelines
+- Plan-first for multi-file or UI changes. Enumerate existing interactions before integrating into an area with hover/animation/pointer behavior — state how each is preserved or intentionally changed.
+- Never silently revert styles, classes, or behavior. Call out intentional regressions.
+- Treat this file as living: update it as part of any major architectural change (new component, third-party integration, significant refactor).
 
-Recent history uses Conventional Commit-style prefixes such as `feat:`, `refactor:`, and `chore:`. Keep subjects imperative and scoped, for example `feat: add project visual hover state`. Pull requests should describe the user-facing change, list validation performed, link related issues when applicable, and include screenshots or short recordings for visual changes.
-
-## Security & Configuration Tips
-
-Keep secrets in `.env.local`; do not commit local environment files. Review `api/chat.js` changes carefully because API routes may expose environment variables or external service behavior.
