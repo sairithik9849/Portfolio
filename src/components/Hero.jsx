@@ -21,6 +21,20 @@ const LAYOUT_TWEEN = { type: 'tween', duration: 0.35, ease: [0.22, 1, 0.36, 1] }
 
 const EMAIL = 'sairithik8639@gmail.com'
 
+const BOTTOM_ROW_PARENT = {
+  variants: {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.14 } },
+  },
+}
+
+const MANIFESTO_PARENT = {
+  variants: {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.12, delayChildren: 0.05 } },
+  },
+}
+
 export default function Hero({ onOpenAI }) {
   const splineRef = useRef(null)
   const [copied, setCopied] = useState(false)
@@ -66,6 +80,10 @@ export default function Hero({ onOpenAI }) {
     },
     [mouseX, mouseY],
   )
+
+  const handleDiscoverClick = useCallback(() => {
+    document.getElementById('metrics')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
 
   const handleRobotPointerMove = useCallback((e) => {
     if (e.pointerType !== 'mouse') return
@@ -138,8 +156,68 @@ export default function Hero({ onOpenAI }) {
         </motion.h1>
       </motion.div>
 
-      <motion.div className="sub" style={{ position: 'relative', zIndex: 2 }} {...HERO_CHILD}>
-        <Terminal />
+      <motion.div className="hero-bottom-row" variants={BOTTOM_ROW_PARENT.variants}>
+        <motion.div className="hero-manifesto" variants={MANIFESTO_PARENT.variants}>
+          <motion.p className="manifesto-quote" {...HERO_CHILD_FADE}>
+            <span className="serif">AI</span> is a dependency, not a developer.
+            The flex isn&apos;t generating the boilerplate—it&apos;s knowing how to{' '}
+            <span className="serif">build the system</span>.
+          </motion.p>
+
+          <motion.ul className="manifesto-metrics" {...HERO_CHILD}>
+            <li className="mf-metric">
+              <span className="mf-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <rect x="2" y="3" width="20" height="5" rx="1" />
+                  <rect x="2" y="10" width="20" height="5" rx="1" />
+                  <circle cx="18" cy="5.5" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="18" cy="12.5" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <span className="mf-num">10M+</span>
+              <span className="mf-label">Daily API Requests Scaled</span>
+            </li>
+            <li className="mf-metric">
+              <span className="mf-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <polyline points="4 9 9 12 4 15" />
+                  <line x1="12" y1="15" x2="20" y2="15" />
+                </svg>
+              </span>
+              <span className="mf-num">50+</span>
+              <span className="mf-label">Physical Systems Automated</span>
+            </li>
+            <li className="mf-metric">
+              <span className="mf-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <polygon points="12 3 22 9 12 15 2 9" />
+                  <path d="M6 11v5c0 2 3 3 6 3s6-1 6-3v-5" />
+                </svg>
+              </span>
+              <span className="mf-num">4.0</span>
+              <span className="mf-label">MS in Computer Science GPA</span>
+            </li>
+          </motion.ul>
+
+          <motion.div className="manifesto-cta" {...HERO_CHILD_FADE}>
+            <p className="manifesto-quote-sm">
+              Anyone can prompt.<span className="serif"> Very few can architect.</span>
+            </p>
+            <button
+              type="button"
+              className="manifesto-cta-btn"
+              onClick={handleDiscoverClick}
+              data-cursor="hover"
+            >
+              <span>Discover Me</span>
+              <span className="mf-arrow" aria-hidden="true">↓</span>
+            </button>
+          </motion.div>
+        </motion.div>
+
+        <motion.div className="sub" {...HERO_CHILD}>
+          <Terminal />
+        </motion.div>
       </motion.div>
 
       <motion.button
