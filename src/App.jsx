@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, lazy, Suspense } from 'react'
+import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react'
 import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import Metrics      from './components/Metrics'
@@ -8,6 +8,7 @@ import Education    from './components/Education'
 import Projects     from './components/Projects'
 import Footer       from './components/Footer'
 import AIDrawer     from './components/AIDrawer'
+import AIOrb        from './components/AIOrb'
 import Cursor       from './components/Cursor'
 import { useHotkey } from './hooks/useHotkey'
 
@@ -16,6 +17,7 @@ const HeroFluid = lazy(() => import('./components/HeroFluid'))
 
 export default function App() {
   const [aiOpen, setAiOpen] = useState(false)
+  const [heroVisible, setHeroVisible] = useState(true)
   const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
 
@@ -30,6 +32,22 @@ export default function App() {
   }, [])
 
   useHotkey('cmd+k', toggleAI)
+
+  useEffect(() => {
+    const hero = document.getElementById('top')
+
+    if (!hero || !('IntersectionObserver' in window)) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 },
+    )
+
+    observer.observe(hero)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <>
@@ -51,6 +69,7 @@ export default function App() {
         <Footer       onOpenAI={() => setAiOpen(true)} />
       </div>
 
+      <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible} />
       <AIDrawer open={aiOpen} onClose={closeAI} />
       <Cursor />
     </>

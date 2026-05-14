@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import { HERO_PARENT, HERO_CHILD, HERO_CHILD_FADE } from '../animations/variants'
 import Terminal from './Terminal'
-import AIOrb from './AIOrb'
 import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
 import InfiniteGrid from './InfiniteGrid'
@@ -68,6 +67,16 @@ export default function Hero({ onOpenAI }) {
     [mouseX, mouseY],
   )
 
+  const handleRobotPointerMove = useCallback((e) => {
+    if (e.pointerType !== 'mouse') return
+
+    const x = Math.min(e.clientX + 18, window.innerWidth - 230)
+    const y = Math.min(Math.max(e.clientY - 14, 18), window.innerHeight - 48)
+
+    e.currentTarget.style.setProperty('--agent-cta-x', `${Math.max(18, x)}px`)
+    e.currentTarget.style.setProperty('--agent-cta-y', `${y}px`)
+  }, [])
+
   return (
     <motion.section
       className="hero shell"
@@ -131,7 +140,17 @@ export default function Hero({ onOpenAI }) {
         <Terminal />
       </motion.div>
 
-      <AIOrb onClick={onOpenAI} />
+      <motion.button
+        type="button"
+        className="robot-agent-hotspot"
+        onClick={onOpenAI}
+        onPointerMove={handleRobotPointerMove}
+        aria-label="Open AI agent"
+        data-cursor="hover"
+        {...HERO_CHILD_FADE}
+      >
+        <span className="robot-agent-cta">Click Mouse 1 to Chat</span>
+      </motion.button>
     </motion.section>
   )
 }
