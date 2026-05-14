@@ -1342,13 +1342,32 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .matrix-char {
   display: inline-block;
   white-space: pre;
-  transition: color 380ms ease-out, text-shadow 380ms ease-out;
+  transition: color 380ms ease-out, text-shadow 380ms ease-out, opacity 220ms ease-out;
 }
 
-.matrix-char.just-locked {
+.matrix-char--settled {
+  color: inherit;
+}
+
+.matrix-char--green {
   color: var(--accent);
   text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent-dim);
 }
+
+.matrix-char--hidden {
+  opacity: 0;
+}
+
+.role-bracket {
+  display: inline-block;
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent-dim);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.role-bracket--left  { margin-right: 8px; }
+.role-bracket--right { margin-left:  8px; }
 
 .agent-matrix table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
 .agent-matrix tr { border-bottom: 1px dashed var(--line); }

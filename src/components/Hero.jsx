@@ -9,12 +9,12 @@ import MatrixText from './MatrixText'
 import Typewriter from './Typewriter'
 
 const ROLES = [
-  '[ FULL-STACK DEVELOPER ]',
-  '[ M.S. COMPUTER SCIENCE ]',
-  '[ SYSTEMS ADMINISTRATOR ]',
-  '[ DATABASE INTERNALS ]',
-  '[ SOFTWARE ENGINEER ]',
-  '[ HIGH-THROUGHPUT SYSTEMS ]',
+  'FULL-STACK DEVELOPER',
+  'M.S. COMPUTER SCIENCE',
+  'SYSTEMS ADMINISTRATOR',
+  'DATABASE INTERNALS',
+  'SOFTWARE ENGINEER',
+  'HIGH-THROUGHPUT SYSTEMS',
 ]
 
 const LAYOUT_TWEEN = { type: 'tween', duration: 0.35, ease: [0.22, 1, 0.36, 1] }
@@ -101,7 +101,9 @@ export default function Hero({ onOpenAI }) {
         {...HERO_CHILD_FADE}
       >
         <motion.span layout transition={LAYOUT_TWEEN}>
+          <span className="role-bracket role-bracket--left" aria-hidden="true">[</span>
           <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={300} />
+          <span className="role-bracket role-bracket--right" aria-hidden="true">]</span>
         </motion.span>
         <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog">
           <a
