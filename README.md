@@ -1,16 +1,27 @@
-# React + Vite
+# Sairithik Komuravelly Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+High-performance, animation-heavy developer portfolio built with React and Vite.
 
-Currently, two official plugins are available:
+This site is designed to showcase systems engineering work with a premium frontend experience, including:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Framer Motion interaction design
+- WebGL background fluid simulation (Three.js via React Three Fiber)
+- Spline 3D hero scene
+- AI assistant drawer powered by a Vercel serverless function and Google Gemini
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- Vite 8
+- Framer Motion
+- Three.js, @react-three/fiber, @react-three/drei
+- @splinetool/react-spline, @splinetool/runtime
+- Vercel Serverless Functions (`/api/chat.js`)
+- ESLint 10 (flat config)
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Performance Notes
+
+- Heavy 3D components are lazy-loaded to reduce initial bundle cost.
+- Motion favors `transform` and `opacity` for smooth 60fps interactions.
+- Content is centralized in `src/data` to keep components focused on rendering.
