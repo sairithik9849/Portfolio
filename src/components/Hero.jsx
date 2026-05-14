@@ -122,10 +122,8 @@ export default function Hero({ onOpenAI }) {
           {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
           <br />
           {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} />)}
-          <span className="u">
-            {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} />)}
-          </span>
-          <span className="it">.</span>
+          {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} />)}
+          <span className="hero-dot">.</span>
         </motion.h1>
       </motion.div>
 
