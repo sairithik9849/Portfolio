@@ -17,6 +17,7 @@ const BOOT_STEP_MS = 55
 
 function TypedBoot() {
   const [n, setN] = useState(0)
+
   useEffect(() => {
     const start = setTimeout(() => {
       const id = setInterval(() => {
@@ -29,8 +30,10 @@ function TypedBoot() {
         })
       }, BOOT_STEP_MS)
     }, BOOT_DELAY_MS)
+
     return () => clearTimeout(start)
   }, [])
+
   return (
     <>
       <span style={{ color: 'var(--muted)' }}>$ </span>
@@ -56,12 +59,11 @@ export default function Terminal() {
 
   const lines = [
     { n: 1, content: <><span style={{ color: 'var(--muted)' }}>// </span>identity --resolve</>, k: true },
-    { n: 2, content: <>name    = <b style={{ color: 'var(--fg)' }}>"Sairithik Komuravelly"</b> <span style={{ color: 'var(--muted)' }}>   // can't pronounce it? just call me Sai</span> </> },
     {
-      n: 3,
+      n: 2,
       content: (
         <>
-          pron    = "Sigh-RIH-thick / Koh-moo-ruh-VEL-lee"
+          name_pron    = "Sigh-RIH-thick / Koh-moo-ruh-VEL-lee"
           <button
             type="button"
             className="play"
@@ -75,21 +77,10 @@ export default function Terminal() {
         </>
       ),
     },
-    {
-      n: 4,
-      content: (
-        <>
-          alias   = <span style={{ color: 'var(--accent)' }}>"Sai"</span>
-        </>
-      ),
-    },
-    { n: 5, content: <>role    = "Software Engineer & System Administrator"</> },
-    { n: 6, content: <>focus   = [<span style={{ color: 'var(--accent)' }}>"systems"</span>, <span style={{ color: 'var(--accent)' }}>"backend"</span>, <span style={{ color: 'var(--accent)' }}>"ai"</span>]</> },
-    { n: 7, content: ' ' },
-    { n: 8, content: <><span style={{ color: 'var(--muted)' }}>// mission</span> — build at the seam between low-level systems</> },
-    { n: 9, content: <>and modern interface. scaled API infra · <span style={{ color: 'var(--accent)' }}>10M+</span> daily tx · <span style={{ color: 'var(--accent)' }}>↓60%</span> latency.</> },
-    { n: 10, content: ' ' },
-    { n: 11, content: <TypedBoot />, k: true },
+    { n: 3, content: <>friends_call_me = <b style={{ color: 'var(--fg)' }}>"Sai"</b></> },
+    { n: 4, content: <>roles    = [<span style={{ color: 'var(--accent)' }}>"Software Engineer"</span>, <span style={{ color: 'var(--accent)' }}>"System Administrator"</span>]</> },
+    { n: 5, content: ' ' },
+    { n: 6, content: <TypedBoot />, k: true },
   ]
 
   return (
@@ -98,8 +89,8 @@ export default function Terminal() {
         <div className="lights">
           <span /><span /><span />
         </div>
-        <span>~/sairithik · zsh</span>
-        <span>0049</span>
+        <span className="bar-title">~/sairithik · zsh</span>
+        <span className="bar-id">0049</span>
       </div>
       <motion.div className="body" initial="hidden" animate="show" variants={BODY_VARIANTS}>
         {lines.map((l) => (
