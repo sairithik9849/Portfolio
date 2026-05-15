@@ -28,9 +28,15 @@ vercel --prod       # production deploy
 - Animations must be silky smooth (60fps+). Avoid janky layout shifts. Favor hardware-accelerated CSS properties (transform, opacity).
 - **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both `React.lazy` — never eager-load (~600 KB).
 - **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
+- **Color system (three tokens, each with a semantic role):**
+  - `--accent: #c9f558` (lime) — primary actions, brand highlights, hover-revealed states, interactive indicators, data highlights
+  - `--accent-2: #e8c47a` (gold) — non-interactive metadata labels: role strings, index prefixes, identifier badges (e.g. `bar-id`, `.exec-co-role`, `.pj-info .role`, `.acc-role`, `.exec-bullet-n`, version meta-string)
+  - `--fg: #ededdf` (cream) — body content, headings
+  - When adding a colored element, assign it to one of these three roles. Never introduce a fourth color without updating this section.
 - **Typography (loaded in `index.html`):** Headlines → **Instrument Serif**. Code/terminal → **JetBrains Mono**. Body/UI → **Space Grotesk**.
-- **Content:** All copy lives in `src/data/*.js`. Never hardcode content inside components.
+- **Content:** All copy lives in `src/data/` — `nav.js`, `metrics.js`, `projects.js`, `experience.js`, `education.js`, `agent.js`. Never hardcode content inside components.
 - **Env vars:** `GEMINI_API_KEY` is set in Vercel project settings; `vercel dev` injects it locally — no `.env` file. Read only inside `/api` via `process.env`. Never import from `/src`.
+- **AI chat API (`api/chat.js`):** Single serverless function. No conversation history — every request sends the full system prompt + user message in one `contents` turn. The persona/facts live entirely in `SYSTEM_PROMPT` at the top of that file. `maxOutputTokens: 200` is intentional (keeps responses under 90 words).
 
 ## Architecture Rules
 

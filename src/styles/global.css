@@ -972,7 +972,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 
 .project .pj-info { padding-right: 32px; }
 .project .pj-info h3 { font-family: var(--serif); font-size: 48px; letter-spacing: -0.02em; line-height: 1; margin: 0 0 6px; }
-.project .pj-info .role { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 18px; }
+.project .pj-info .role { font-family: var(--mono); font-size: 11px; color: var(--accent-2); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 18px; }
 .project .pj-info p { color: var(--fg-2); font-size: 14px; line-height: 1.6; margin: 0 0 18px; max-width: 48ch; }
 
 .project .pj-info .stack { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
@@ -1370,7 +1370,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 
 .exec-co { display: flex; flex-direction: column; gap: 4px; }
 .exec-co-name { font-family: var(--serif); font-size: 32px; letter-spacing: -0.01em; line-height: 1; color: var(--fg); }
-.exec-co-role { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; }
+.exec-co-role { font-family: var(--mono); font-size: 11px; color: var(--accent-2); letter-spacing: 0.12em; text-transform: uppercase; }
 
 .exec-status {
   font-family: var(--mono);
@@ -1412,7 +1412,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   color: var(--fg-2);
 }
 
-.exec-bullet-n { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 0.1em; padding-top: 4px; }
+.exec-bullet-n { font-family: var(--mono); font-size: 10px; color: var(--accent-2); letter-spacing: 0.1em; padding-top: 4px; }
 .exec-side .exec-stack { display: flex; flex-wrap: wrap; gap: 6px; }
 .exec-side .exec-stack span {
   font-family: var(--mono);
@@ -1671,7 +1671,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .acc-role {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--accent);
+  color: var(--accent-2);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-top: 10px;
