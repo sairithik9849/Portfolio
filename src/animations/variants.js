@@ -53,3 +53,28 @@ export const HERO_CHILD_FADE = {
     },
   },
 }
+
+export const HERO_LETTER = {
+  variants: {
+    hidden: { opacity: 0, y: 24 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { type: 'spring', stiffness: 260, damping: 22, mass: 0.6 },
+    },
+  },
+}
+
+export const HERO_LINE_PARENT = {
+  variants: {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.025, delayChildren: 0.05 } },
+  },
+}
+
+export const HERO_INNER_STAGGER = {
+  variants: {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.12 } },
+  },
+}

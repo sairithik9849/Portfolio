@@ -1,6 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
-import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
-import { HERO_PARENT, HERO_CHILD, HERO_CHILD_FADE } from '../animations/variants'
+import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'framer-motion'
+import {
+  HERO_PARENT,
+  HERO_CHILD,
+  HERO_CHILD_FADE,
+  HERO_LETTER,
+  HERO_LINE_PARENT,
+} from '../animations/variants'
 import Terminal from './Terminal'
 import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
@@ -35,10 +41,32 @@ const MANIFESTO_PARENT = {
   },
 }
 
+const META_ROW_VARIANTS = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+}
+
+const METRICS_UL_VARIANTS = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
+}
+
+const MANIFESTO_CTA_VARIANTS = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.18, delayChildren: 0.1 } },
+}
+
+const INSTANT_PARENT = {
+  initial: 'hidden',
+  animate: 'show',
+  variants: { hidden: {}, show: {} },
+}
+
 export default function Hero({ onOpenAI }) {
   const splineRef = useRef(null)
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef(null)
+  const prefersReducedMotion = useReducedMotion()
 
   const handleEmailClick = useCallback((e) => {
     e.preventDefault()
@@ -48,7 +76,6 @@ export default function Hero({ onOpenAI }) {
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
   }, [])
 
-  /* Framer MotionValues for h1 spring parallax — element-relative coords */
   const mouseX   = useMotionValue(0.5)
   const mouseY   = useMotionValue(0.5)
   const hX = useSpring(useTransform(mouseX, [0, 1], [-10, 10]), { stiffness: 60, damping: 18 })
@@ -95,11 +122,13 @@ export default function Hero({ onOpenAI }) {
     e.currentTarget.style.setProperty('--agent-cta-y', `${y}px`)
   }, [])
 
+  const rootProps = prefersReducedMotion ? INSTANT_PARENT : HERO_PARENT
+
   return (
     <motion.section
       className="hero shell"
       id="top"
-      {...HERO_PARENT}
+      {...rootProps}
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
@@ -116,14 +145,14 @@ export default function Hero({ onOpenAI }) {
       <motion.div
         className="meta-row"
         style={{ position: 'relative', zIndex: 2, pointerEvents: 'none' }}
-        {...HERO_CHILD_FADE}
+        variants={META_ROW_VARIANTS}
       >
-        <motion.span layout transition={LAYOUT_TWEEN}>
+        <motion.span layout transition={LAYOUT_TWEEN} variants={HERO_CHILD_FADE.variants}>
           <span className="role-bracket role-bracket--left" aria-hidden="true">[</span>
-          <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={300} />
+          <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={0} />
           <span className="role-bracket role-bracket--right" aria-hidden="true">]</span>
         </motion.span>
-        <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog">
+        <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog" variants={HERO_CHILD_FADE.variants}>
           <a
             href={`mailto:${EMAIL}`}
             className={`meta-email-link${copied ? ' meta-email-copied' : ''}`}
@@ -134,25 +163,30 @@ export default function Hero({ onOpenAI }) {
           >
             {copied
               ? <span className="meta-copied-label">COPIED ✓</span>
-              : <Typewriter text={EMAIL} speed={35} delay={900} caret />}
+              : <Typewriter text={EMAIL} speed={35} delay={0} caret />}
           </a>
         </motion.span>
-        <motion.span layout transition={LAYOUT_TWEEN} className="meta-version">
-          <Typewriter text="v.2026.05 / build 0069" speed={28} delay={1500} />
+        <motion.span layout transition={LAYOUT_TWEEN} className="meta-version" variants={HERO_CHILD_FADE.variants}>
+          <Typewriter text="v.2026.05 / build 0069" speed={28} delay={0} />
         </motion.span>
       </motion.div>
 
       {/*
-        Entrance wrapper (HERO_CHILD spring) → inner motion.h1 carries
-        MotionValue x/y for parallax. Separated so springs don't conflict.
+        Entrance wrapper is a transparent cascade slot — visible entrance is
+        driven by per-letter HERO_LETTER variants on each HeroLetter.
+        inner motion.h1 carries MotionValue x/y for parallax; separated so
+        springs don't conflict with letter entrance variants.
       */}
-      <motion.div style={{ position: 'relative', zIndex: 2, paddingTop: '20px' }} {...HERO_CHILD}>
-        <motion.h1 style={{ x: hX, y: hY }}>
+      <motion.div
+        style={{ position: 'relative', zIndex: 2, paddingTop: '20px' }}
+        variants={{ hidden: {}, show: {} }}
+      >
+        <motion.h1 style={{ x: hX, y: hY }} variants={HERO_LINE_PARENT.variants}>
           {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
           <br />
           {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} />)}
           {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} />)}
-          <span className="hero-dot">.</span>
+          <motion.span className="hero-dot" variants={HERO_LETTER.variants}>.</motion.span>
         </motion.h1>
       </motion.div>
 
@@ -162,8 +196,8 @@ export default function Hero({ onOpenAI }) {
             <span className="serif">Bridging</span> theoretical computer science with production-scale architecture. <span className="serif">Driven</span> by a passion for AI, <span className="serif">constantly</span> learning new stacks, and building out-of-the-box projects for fun.
           </motion.p>
 
-          <motion.ul className="manifesto-metrics" {...HERO_CHILD}>
-            <li className="mf-metric">
+          <motion.ul className="manifesto-metrics" variants={METRICS_UL_VARIANTS}>
+            <motion.li className="mf-metric" variants={HERO_CHILD_FADE.variants}>
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                   <rect x="2" y="3" width="20" height="5" rx="1" />
@@ -174,8 +208,8 @@ export default function Hero({ onOpenAI }) {
               </span>
               <span className="mf-num">10M+</span>
               <span className="mf-label">Daily API Requests Scaled</span>
-            </li>
-            <li className="mf-metric">
+            </motion.li>
+            <motion.li className="mf-metric" variants={HERO_CHILD_FADE.variants}>
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                   <polyline points="4 9 9 12 4 15" />
@@ -184,8 +218,8 @@ export default function Hero({ onOpenAI }) {
               </span>
               <span className="mf-num">50+</span>
               <span className="mf-label">Physical Systems Automated</span>
-            </li>
-            <li className="mf-metric">
+            </motion.li>
+            <motion.li className="mf-metric" variants={HERO_CHILD_FADE.variants}>
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                   <polygon points="12 3 22 9 12 15 2 9" />
@@ -194,22 +228,23 @@ export default function Hero({ onOpenAI }) {
               </span>
               <span className="mf-num">4.0<span className="mf-num-unit">GPA</span></span>
               <span className="mf-label">MS in Computer Science</span>
-            </li>
+            </motion.li>
           </motion.ul>
 
-          <motion.div className="manifesto-cta" {...HERO_CHILD_FADE}>
-            <p className="manifesto-quote-sm">
+          <motion.div className="manifesto-cta" variants={MANIFESTO_CTA_VARIANTS}>
+            <motion.p className="manifesto-quote-sm" variants={HERO_CHILD_FADE.variants}>
               Prompting is syntax. Architecting is execution.
-            </p>
-            <button
+            </motion.p>
+            <motion.button
               type="button"
               className="manifesto-cta-btn"
               onClick={handleDiscoverClick}
               data-cursor="hover"
+              variants={HERO_CHILD_FADE.variants}
             >
               <span>Discover Me</span>
               <span className="mf-arrow" aria-hidden="true">↓</span>
-            </button>
+            </motion.button>
           </motion.div>
         </motion.div>
 

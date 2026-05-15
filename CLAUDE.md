@@ -24,7 +24,11 @@ vercel --prod       # production deploy
 - **Language:** JavaScript only. No TypeScript, no type annotations. ES6+ (arrow fns, destructuring, async/await, optional chaining). `const` default, `let` for reassignment, never `var`. ES modules throughout.
 - **Frontend:** React + Vite (SPA).
 - **Backend:** Vercel Serverless Functions in `/api`. AI chat → Google Gemini (`gemini-1.5-flash-latest`). No Express.
-- **Animation:** Framer Motion. Shared variants (`REVEAL`, `STAGGER_PARENT`, `STAGGER_CHILD`, `HERO_PARENT`, `HERO_CHILD`, `HERO_CHILD_FADE`) live in `src/animations/variants.js` — import, never redefine inline.
+- **Animation:** Framer Motion. Shared variants live in `src/animations/variants.js` — import, never redefine inline.
+  - Scroll-reveal (whileInView): `REVEAL`, `STAGGER_PARENT`, `STAGGER_CHILD`
+  - Hero mount cascade (animate prop): `HERO_PARENT` (root stagger), `HERO_CHILD` (spring slide-up), `HERO_CHILD_FADE` (tween fade-up)
+  - Hero per-letter cascade: `HERO_LETTER` (spring per char), `HERO_LINE_PARENT` (25ms letter stagger), `HERO_INNER_STAGGER` (120ms inner stagger)
+  - `useReducedMotion()` (framer-motion) is used in `Hero.jsx` to swap to an instant-show variant set. Apply the same guard to any new Hero-level animation.
 - Animations must be silky smooth (60fps+). Avoid janky layout shifts. Favor hardware-accelerated CSS properties (transform, opacity).
 - **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both `React.lazy` — never eager-load (~600 KB).
 - **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
@@ -40,7 +44,9 @@ vercel --prod       # production deploy
 
 ## Architecture Rules
 
-- **Section render order in `App.jsx`:** `Nav → Hero → Metrics → AgentSection → Experience → Education → Projects → Footer`. `AIOrb` + `AIDrawer` are fixed overlays at the end of the tree.
+- **Section render order in `App.jsx`:** `Nav → Hero → Metrics → AgentSection → Experience → Education → Projects → Footer`. `AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
+- **AIOrb visibility:** Hidden while the Hero (`#top`) is intersecting the viewport — toggled via `heroVisible` state driven by `IntersectionObserver` in `App.jsx`. `AIOrb` receives `hidden={heroVisible}` and suppresses itself so it doesn't overlap the robot hotspot.
+- **Global hotkey:** `useHotkey('cmd+k', toggleAI)` in `App.jsx` (from `src/hooks/useHotkey.js`) opens the AI drawer. The hook also supports `'escape'`. Any new global shortcut belongs in `App.jsx` using this hook.
 - **Page background z-order:** `HeroFluid` (lazy WebGL) at `z:0`, `.noise` CSS texture at `z:2`. Both persistent across the page. The old static `.grid-bg` is gone — do not reintroduce.
 - **Hero internal z-order:** `InfiniteGrid` `z:0` → `SplineScene` `z:1` → text/H1 `z:2`.
 - **Cursor MotionValue singleton:** `CURSOR_X` / `CURSOR_Y` exported from `src/utils/cursor.js`. Any component needing pointer position imports them — never prop-drill, never duplicate `pointermove` listeners. Mark interactive elements with `data-cursor="hover"` for the hover state.
@@ -48,7 +54,9 @@ vercel --prod       # production deploy
 - **Layout shell:** `.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: hidden }` is load-bearing — Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
 - **Spline pointer forwarding (load-bearing):** `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is outside `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
 - **Lazy boundaries:** `HeroFluid` and `SplineScene` are both `React.lazy` + Suspense. Never convert to static imports.
+- **SplineScene load fade:** `SplineScene` starts at `opacity:0` and crossfades to `1` (0.9s) when Spline fires `onLoad`. A 4s `setTimeout` fallback in `SplineScene.jsx` triggers the fade if `onLoad` never fires (slow/offline). Do not remove either path.
 - **Nav visibility:** Driven by an `IntersectionObserver` on `#top` (Hero root). Toggles `opacity`/`y`/`pointer-events` so a hidden nav is never accidentally clickable.
+- **Project card visuals:** Each project in `src/data/projects.js` maps to a purely CSS/SVG visualization component in `src/components/visuals/` (e.g. `VizAero.jsx`, `VizMF.jsx`). `ProjectVisual.jsx` is the switch that selects the right viz by `project.id`. Adding a new project requires a new `Viz*.jsx` and a case in `ProjectVisual.jsx` — no canvas or third-party deps in these components.
 
 ## Workflow
 
