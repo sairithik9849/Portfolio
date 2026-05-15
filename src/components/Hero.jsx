@@ -159,9 +159,7 @@ export default function Hero({ onOpenAI }) {
       <motion.div className="hero-bottom-row" variants={BOTTOM_ROW_PARENT.variants}>
         <motion.div className="hero-manifesto" variants={MANIFESTO_PARENT.variants}>
           <motion.p className="manifesto-quote" {...HERO_CHILD_FADE}>
-            <span className="serif">AI</span> is a dependency, not a developer.
-            The flex isn&apos;t generating the boilerplate—it&apos;s knowing how to{' '}
-            <span className="serif">build</span>.
+            Bridging theoretical computer science with production-scale architecture. Driven by a passion for AI, constantly learning new stacks, and building out-of-the-box projects for fun.
           </motion.p>
 
           <motion.ul className="manifesto-metrics" {...HERO_CHILD}>
@@ -201,7 +199,7 @@ export default function Hero({ onOpenAI }) {
 
           <motion.div className="manifesto-cta" {...HERO_CHILD_FADE}>
             <p className="manifesto-quote-sm">
-              Anyone can prompt.<span className="serif"> Very few can architect.</span>
+              Prompting is syntax.<span className="serif"> Architecting is execution.</span>
             </p>
             <button
               type="button"
