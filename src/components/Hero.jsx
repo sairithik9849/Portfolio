@@ -159,7 +159,7 @@ export default function Hero({ onOpenAI }) {
       <motion.div className="hero-bottom-row" variants={BOTTOM_ROW_PARENT.variants}>
         <motion.div className="hero-manifesto" variants={MANIFESTO_PARENT.variants}>
           <motion.p className="manifesto-quote" {...HERO_CHILD_FADE}>
-            Bridging theoretical computer science with production-scale architecture. Driven by a passion for AI, constantly learning new stacks, and building out-of-the-box projects for fun.
+            <span className="serif">Bridging</span> theoretical computer science with production-scale architecture. <span className="serif">Driven</span> by a passion for AI, <span className="serif">constantly</span> learning new stacks, and building out-of-the-box projects for fun.
           </motion.p>
 
           <motion.ul className="manifesto-metrics" {...HERO_CHILD}>

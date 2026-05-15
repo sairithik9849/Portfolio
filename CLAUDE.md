@@ -30,7 +30,7 @@ vercel --prod       # production deploy
 - **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
 - **Color system (three tokens, each with a semantic role):**
   - `--accent: #c9f558` (lime) — primary actions, brand highlights, hover-revealed states, interactive indicators, data highlights
-  - `--accent-2: #e8c47a` (gold) — non-interactive metadata labels: role strings, index prefixes, identifier badges (e.g. `bar-id`, `.exec-co-role`, `.pj-info .role`, `.acc-role`, `.exec-bullet-n`, version meta-string)
+  - `--accent-2: #e8c47a` (gold) — non-interactive metadata labels and manifesto emphasis: role strings, index prefixes, identifier badges (e.g. `bar-id`, `.exec-co-role`, `.pj-info .role`, `.acc-role`, `.exec-bullet-n`, version meta-string), italicized manifesto verbs (`.manifesto-quote .serif`)
   - `--fg: #ededdf` (cream) — body content, headings
   - When adding a colored element, assign it to one of these three roles. Never introduce a fourth color without updating this section.
 - **Typography (loaded in `index.html`):** Headlines → **Instrument Serif**. Code/terminal → **JetBrains Mono**. Body/UI → **Space Grotesk**.

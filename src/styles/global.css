@@ -476,13 +476,15 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   color: var(--fg-2);
   max-width: 70ch;
   margin: 0;
+  padding-left: clamp(16px, 1.4vw, 22px);
+  border-left: 1px solid var(--accent-dim);
 }
 
 .manifesto-quote .serif {
   font-family: var(--serif);
   font-style: italic;
   font-size: 1.12em;
-  color: var(--fg);
+  color: var(--accent-2);
   letter-spacing: 0;
 }
 
