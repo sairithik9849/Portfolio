@@ -10,6 +10,8 @@
   --line-2: rgba(237, 237, 223, 0.16);
   --accent: #c9f558;
   --accent-dim: rgba(201, 245, 88, 0.18);
+  --accent-2: #e8c47a;
+  --accent-2-dim: rgba(232, 196, 122, 0.18);
   --serif: "Instrument Serif", "Times New Roman", serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "Space Grotesk", "Helvetica Neue", sans-serif;
@@ -274,6 +276,11 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   .hero .meta-row .meta-syslog { display: none; }
 }
 
+.meta-version {
+  color: var(--accent-2);
+  text-shadow: 0 0 8px var(--accent-2-dim);
+}
+
 .meta-email-link {
   color: inherit;
   text-decoration: none;
@@ -433,7 +440,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: clamp(32px, 4vw, 64px);
+  gap: clamp(64px, 9vw, 160px);
   width: 100%;
   position: relative;
   z-index: 3;
@@ -444,6 +451,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   flex: 0 1 460px;
   max-width: 460px;
   margin-top: 0;
+  transform: translateX(max(0px, calc((100vw - 1440px) / 2)));
 }
 
 .hero-bottom-row .sub .terminal {
@@ -454,7 +462,6 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 /* ---- hero manifesto (left column) ---- */
 .hero-manifesto {
   flex: 1 1 0;
-  max-width: 560px;
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -467,7 +474,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   line-height: 1.65;
   letter-spacing: -0.005em;
   color: var(--fg-2);
-  max-width: 42ch;
+  max-width: 70ch;
   margin: 0;
 }
 
@@ -482,7 +489,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .manifesto-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 28px;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -500,15 +507,12 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   transition:
     border-color 260ms ease,
     background 260ms ease,
-    transform 260ms ease,
     box-shadow 260ms ease;
-  will-change: transform;
 }
 
 .mf-metric:hover {
   border-color: var(--accent);
   background: rgba(8, 9, 12, 0.86);
-  transform: translateY(-3px);
   box-shadow:
     0 18px 38px -16px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(201, 245, 88, 0.22),
@@ -516,7 +520,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 }
 
 .mf-icon {
-  color: var(--muted);
+  color: var(--accent-2);
   display: inline-flex;
   transition: color 220ms ease;
 }
@@ -749,8 +753,8 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   text-transform: uppercase;
 }
 .terminal .bar-id {
-  color: var(--accent);
-  text-shadow: 0 0 10px rgba(201, 245, 88, 0.22);
+  color: var(--accent-2);
+  text-shadow: 0 0 10px rgba(232, 196, 122, 0.22);
 }
 .terminal .body { padding: 14px 14px 16px; }
 

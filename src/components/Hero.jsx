@@ -137,7 +137,7 @@ export default function Hero({ onOpenAI }) {
               : <Typewriter text={EMAIL} speed={35} delay={900} caret />}
           </a>
         </motion.span>
-        <motion.span layout transition={LAYOUT_TWEEN}>
+        <motion.span layout transition={LAYOUT_TWEEN} className="meta-version">
           <Typewriter text="v.2026.05 / build 0069" speed={28} delay={1500} />
         </motion.span>
       </motion.div>
@@ -199,7 +199,7 @@ export default function Hero({ onOpenAI }) {
 
           <motion.div className="manifesto-cta" {...HERO_CHILD_FADE}>
             <p className="manifesto-quote-sm">
-              Prompting is syntax.<span className="serif"> Architecting is execution.</span>
+              Prompting is syntax. Architecting is execution.
             </p>
             <button
               type="button"
