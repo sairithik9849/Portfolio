@@ -146,7 +146,7 @@ export default function Hero({ onOpenAI }) {
         Entrance wrapper (HERO_CHILD spring) → inner motion.h1 carries
         MotionValue x/y for parallax. Separated so springs don't conflict.
       */}
-      <motion.div style={{ position: 'relative', zIndex: 2 }} {...HERO_CHILD}>
+      <motion.div style={{ position: 'relative', zIndex: 2, paddingTop: '20px' }} {...HERO_CHILD}>
         <motion.h1 style={{ x: hX, y: hY }}>
           {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
           <br />
@@ -161,7 +161,7 @@ export default function Hero({ onOpenAI }) {
           <motion.p className="manifesto-quote" {...HERO_CHILD_FADE}>
             <span className="serif">AI</span> is a dependency, not a developer.
             The flex isn&apos;t generating the boilerplate—it&apos;s knowing how to{' '}
-            <span className="serif">build the system</span>.
+            <span className="serif">build</span>.
           </motion.p>
 
           <motion.ul className="manifesto-metrics" {...HERO_CHILD}>
@@ -194,8 +194,8 @@ export default function Hero({ onOpenAI }) {
                   <path d="M6 11v5c0 2 3 3 6 3s6-1 6-3v-5" />
                 </svg>
               </span>
-              <span className="mf-num">4.0</span>
-              <span className="mf-label">MS in Computer Science GPA</span>
+              <span className="mf-num">4.0<span className="mf-num-unit">GPA</span></span>
+              <span className="mf-label">MS in Computer Science</span>
             </li>
           </motion.ul>
 
