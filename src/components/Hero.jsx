@@ -2,10 +2,10 @@ import { useCallback, useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'framer-motion'
 import {
   HERO_PARENT,
-  HERO_CHILD,
-  HERO_CHILD_FADE,
   HERO_LETTER,
-  HERO_LINE_PARENT,
+  HERO_SEQUENCE,
+  HERO_SEQUENCE_INSTANT,
+  fadeUp,
 } from '../animations/variants'
 import Terminal from './Terminal'
 import HeroLetter from './HeroLetter'
@@ -27,40 +27,7 @@ const LAYOUT_TWEEN = { type: 'tween', duration: 0.35, ease: [0.22, 1, 0.36, 1] }
 
 const EMAIL = 'sairithik8639@gmail.com'
 
-const BOTTOM_ROW_PARENT = {
-  variants: {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.14 } },
-  },
-}
-
-const MANIFESTO_PARENT = {
-  variants: {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.12, delayChildren: 0.05 } },
-  },
-}
-
-const META_ROW_VARIANTS = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.12 } },
-}
-
-const METRICS_UL_VARIANTS = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
-}
-
-const MANIFESTO_CTA_VARIANTS = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.18, delayChildren: 0.1 } },
-}
-
-const INSTANT_PARENT = {
-  initial: 'hidden',
-  animate: 'show',
-  variants: { hidden: {}, show: {} },
-}
+const PASSTHROUGH = { hidden: {}, show: {} }
 
 export default function Hero({ onOpenAI }) {
   const splineRef = useRef(null)
@@ -122,17 +89,35 @@ export default function Hero({ onOpenAI }) {
     e.currentTarget.style.setProperty('--agent-cta-y', `${y}px`)
   }, [])
 
-  const rootProps = prefersReducedMotion ? INSTANT_PARENT : HERO_PARENT
+  // Active timing table — all zeros when user prefers reduced motion.
+  const T = prefersReducedMotion ? HERO_SEQUENCE_INSTANT : HERO_SEQUENCE
+  const dur = prefersReducedMotion ? 0 : undefined
+
+  // Builds a fadeUp variant with the correct delay and optional duration override.
+  const fade = (key, duration) => fadeUp(T[key], dur ?? duration ?? 0.9)
+
+  // Letter cascade parent — delay comes from T.name so it starts in its phase.
+  const nameLineParent = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.025, delayChildren: T.name } },
+  }
 
   return (
     <motion.section
       className="hero shell"
       id="top"
-      {...rootProps}
+      {...HERO_PARENT}
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
-      <InfiniteGrid />
+      {/* Phase 1 — InfiniteGrid fades in */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: T.grid, duration: dur ?? 0.7, ease: 'easeOut' }}
+      >
+        <InfiniteGrid />
+      </motion.div>
 
       {/* Full-cover 3D layer — absolutely fills the hero, below text z-index */}
       <div className="hero-spline" ref={splineRef}>
@@ -142,17 +127,18 @@ export default function Hero({ onOpenAI }) {
         />
       </div>
 
+      {/* Phase 2a — meta-row fades alongside the name cascade */}
       <motion.div
         className="meta-row"
         style={{ position: 'relative', zIndex: 2, pointerEvents: 'none' }}
-        variants={META_ROW_VARIANTS}
+        variants={fade('meta')}
       >
-        <motion.span layout transition={LAYOUT_TWEEN} variants={HERO_CHILD_FADE.variants}>
+        <motion.span layout transition={LAYOUT_TWEEN}>
           <span className="role-bracket role-bracket--left" aria-hidden="true">[</span>
           <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={0} />
           <span className="role-bracket role-bracket--right" aria-hidden="true">]</span>
         </motion.span>
-        <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog" variants={HERO_CHILD_FADE.variants}>
+        <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog">
           <a
             href={`mailto:${EMAIL}`}
             className={`meta-email-link${copied ? ' meta-email-copied' : ''}`}
@@ -166,22 +152,23 @@ export default function Hero({ onOpenAI }) {
               : <Typewriter text={EMAIL} speed={35} delay={0} caret />}
           </a>
         </motion.span>
-        <motion.span layout transition={LAYOUT_TWEEN} className="meta-version" variants={HERO_CHILD_FADE.variants}>
+        <motion.span layout transition={LAYOUT_TWEEN} className="meta-version">
           <Typewriter text="v.2026.05 / build 0069" speed={28} delay={0} />
         </motion.span>
       </motion.div>
 
       {/*
+        Phase 2b — name letter cascade.
         Entrance wrapper is a transparent cascade slot — visible entrance is
         driven by per-letter HERO_LETTER variants on each HeroLetter.
-        inner motion.h1 carries MotionValue x/y for parallax; separated so
+        Inner motion.h1 carries MotionValue x/y for parallax; separated so
         springs don't conflict with letter entrance variants.
       */}
       <motion.div
         style={{ position: 'relative', zIndex: 2, paddingTop: '20px' }}
-        variants={{ hidden: {}, show: {} }}
+        variants={PASSTHROUGH}
       >
-        <motion.h1 style={{ x: hX, y: hY }} variants={HERO_LINE_PARENT.variants}>
+        <motion.h1 style={{ x: hX, y: hY }} variants={nameLineParent}>
           {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
           <br />
           {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} />)}
@@ -190,14 +177,16 @@ export default function Hero({ onOpenAI }) {
         </motion.h1>
       </motion.div>
 
-      <motion.div className="hero-bottom-row" variants={BOTTOM_ROW_PARENT.variants}>
-        <motion.div className="hero-manifesto" variants={MANIFESTO_PARENT.variants}>
-          <motion.p className="manifesto-quote" {...HERO_CHILD_FADE}>
+      <motion.div className="hero-bottom-row" variants={PASSTHROUGH}>
+        <motion.div className="hero-manifesto" variants={PASSTHROUGH}>
+          {/* Phase 3 — manifesto quote */}
+          <motion.p className="manifesto-quote" variants={fade('manifesto')}>
             <span className="serif">Bridging</span> theoretical computer science with production-scale architecture. <span className="serif">Driven</span> by a passion for AI, <span className="serif">constantly</span> learning new stacks, and building out-of-the-box projects for fun.
           </motion.p>
 
-          <motion.ul className="manifesto-metrics" variants={METRICS_UL_VARIANTS}>
-            <motion.li className="mf-metric" variants={HERO_CHILD_FADE.variants}>
+          {/* Phase 4 — three metric cards together (no per-li stagger) */}
+          <motion.ul className="manifesto-metrics" variants={fade('metrics')}>
+            <li className="mf-metric">
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                   <rect x="2" y="3" width="20" height="5" rx="1" />
@@ -208,8 +197,8 @@ export default function Hero({ onOpenAI }) {
               </span>
               <span className="mf-num">10M+</span>
               <span className="mf-label">Daily API Requests Scaled</span>
-            </motion.li>
-            <motion.li className="mf-metric" variants={HERO_CHILD_FADE.variants}>
+            </li>
+            <li className="mf-metric">
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                   <polyline points="4 9 9 12 4 15" />
@@ -218,8 +207,8 @@ export default function Hero({ onOpenAI }) {
               </span>
               <span className="mf-num">50+</span>
               <span className="mf-label">Physical Systems Automated</span>
-            </motion.li>
-            <motion.li className="mf-metric" variants={HERO_CHILD_FADE.variants}>
+            </li>
+            <li className="mf-metric">
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                   <polygon points="12 3 22 9 12 15 2 9" />
@@ -228,31 +217,33 @@ export default function Hero({ onOpenAI }) {
               </span>
               <span className="mf-num">4.0<span className="mf-num-unit">GPA</span></span>
               <span className="mf-label">MS in Computer Science</span>
-            </motion.li>
+            </li>
           </motion.ul>
 
-          <motion.div className="manifesto-cta" variants={MANIFESTO_CTA_VARIANTS}>
-            <motion.p className="manifesto-quote-sm" variants={HERO_CHILD_FADE.variants}>
+          {/* Phase 5 — CTA block */}
+          <motion.div className="manifesto-cta" variants={fade('cta')}>
+            <p className="manifesto-quote-sm">
               Prompting is syntax. Architecting is execution.
-            </motion.p>
-            <motion.button
+            </p>
+            <button
               type="button"
               className="manifesto-cta-btn"
               onClick={handleDiscoverClick}
               data-cursor="hover"
-              variants={HERO_CHILD_FADE.variants}
             >
               <span>Discover Me</span>
               <span className="mf-arrow" aria-hidden="true">↓</span>
-            </motion.button>
+            </button>
           </motion.div>
         </motion.div>
 
-        <motion.div className="sub" {...HERO_CHILD}>
+        {/* Phase 6 — terminal frame fades in; content types inside */}
+        <motion.div className="sub" variants={fade('terminal', 0.45)}>
           <Terminal />
         </motion.div>
       </motion.div>
 
+      {/* Phase 8 — robot hotspot (last) */}
       <motion.button
         type="button"
         className="robot-agent-hotspot"
@@ -260,7 +251,7 @@ export default function Hero({ onOpenAI }) {
         onPointerMove={handleRobotPointerMove}
         aria-label="Open AI agent"
         data-cursor="hover"
-        {...HERO_CHILD_FADE}
+        variants={fade('robot')}
       >
         <span className="robot-agent-cta">Click Mouse 1 to Chat</span>
       </motion.button>

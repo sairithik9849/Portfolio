@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 
 const BODY_VARIANTS = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.7 } },
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
 }
 
 const LINE_VARIANTS = {
@@ -12,7 +12,7 @@ const LINE_VARIANTS = {
 }
 
 const BOOT_TEXT = './agent --boot'
-const BOOT_DELAY_MS = 1800
+const BOOT_DELAY_MS = 900
 const BOOT_STEP_MS = 55
 
 function TypedBoot() {

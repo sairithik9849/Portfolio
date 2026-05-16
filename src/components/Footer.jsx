@@ -1,9 +1,15 @@
 import { motion } from 'framer-motion'
-import { REVEAL } from '../animations/variants'
+import { HERO_SEQUENCE } from '../animations/variants'
 
 export default function Footer({ onOpenAI }) {
   return (
-    <motion.footer className="footer shell" id="contact" {...REVEAL}>
+    <motion.footer
+      className="footer shell"
+      id="contact"
+      initial={{ opacity: 0, y: 36 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: HERO_SEQUENCE.footer, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="kicker" style={{ marginBottom: 32 }}>07 — END OF FILE</div>
       <div className="big">
         Let's build<br />

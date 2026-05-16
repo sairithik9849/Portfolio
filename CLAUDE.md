@@ -24,11 +24,15 @@ vercel --prod       # production deploy
 - **Language:** JavaScript only. No TypeScript, no type annotations. ES6+ (arrow fns, destructuring, async/await, optional chaining). `const` default, `let` for reassignment, never `var`. ES modules throughout.
 - **Frontend:** React + Vite (SPA).
 - **Backend:** Vercel Serverless Functions in `/api`. AI chat → Google Gemini (`gemini-1.5-flash-latest`). No Express.
-- **Animation:** Framer Motion. Shared variants live in `src/animations/variants.js` — import, never redefine inline.
+- **Animation:** Framer Motion is the only animation library — no CSS keyframes for component-level motion, no GSAP, no react-spring. Apply scroll-triggered fades (`whileInView`), staggered reveals on grouped content, and smooth hover transitions on every interactive element (`whileHover` or variant-driven). Shared variants live in `src/animations/variants.js` — import, never redefine inline.
   - Scroll-reveal (whileInView): `REVEAL`, `STAGGER_PARENT`, `STAGGER_CHILD`
-  - Hero mount cascade (animate prop): `HERO_PARENT` (root stagger), `HERO_CHILD` (spring slide-up), `HERO_CHILD_FADE` (tween fade-up)
-  - Hero per-letter cascade: `HERO_LETTER` (spring per char), `HERO_LINE_PARENT` (25ms letter stagger), `HERO_INNER_STAGGER` (120ms inner stagger)
-  - `useReducedMotion()` (framer-motion) is used in `Hero.jsx` to swap to an instant-show variant set. Apply the same guard to any new Hero-level animation.
+  - Hero mount sequence: `HERO_PARENT` is now a bare cascade root (no `staggerChildren` — it just sets `initial:'hidden' / animate:'show'`). Each hero child controls its own timing via `fadeUp(delay, duration)` and `HERO_SEQUENCE` constants. The sequence is serialized: InfiniteGrid → meta-row+name letters → manifesto quote → metric cards (simultaneous) → CTA → terminal → footer → robot hotspot. Never reintroduce a global `staggerChildren` on `HERO_PARENT` — it breaks the per-phase ordering.
+  - `HERO_SEQUENCE` (in `variants.js`) — timing table `{ grid, meta, name, manifesto, metrics, cta, terminal, footer, robot }` in seconds. Edit this to shift phase start times.
+  - `HERO_SEQUENCE_INSTANT` — paired table with all values 0; used when `useReducedMotion()` is true.
+  - `fadeUp(delay, duration?)` — factory that returns a `{ hidden, show }` variant dict for a single delayed fade-up. Use this for every new hero element; pass `T[key]` as the delay where `T` is `HERO_SEQUENCE` or `HERO_SEQUENCE_INSTANT`.
+  - `HERO_CHILD`, `HERO_CHILD_FADE` — still exported for legacy use elsewhere; no longer used in `Hero.jsx` directly.
+  - Hero per-letter cascade: `HERO_LETTER` (spring per char), `HERO_LINE_PARENT` (still exported but inlined as `nameLineParent` in `Hero.jsx` to accept runtime `T.name` delay), `HERO_INNER_STAGGER` (120ms inner stagger, unused in Hero)
+  - `useReducedMotion()` (framer-motion) in `Hero.jsx` sets `T = HERO_SEQUENCE_INSTANT` (all delays 0) and `dur = 0` (all durations 0) — entire sequence collapses to instant show. Apply the same `T`/`dur` pattern to any new Hero-level animation.
 - Animations must be silky smooth (60fps+). Avoid janky layout shifts. Favor hardware-accelerated CSS properties (transform, opacity).
 - **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both `React.lazy` — never eager-load (~600 KB).
 - **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
@@ -56,6 +60,7 @@ vercel --prod       # production deploy
 - **Lazy boundaries:** `HeroFluid` and `SplineScene` are both `React.lazy` + Suspense. Never convert to static imports.
 - **SplineScene load fade:** `SplineScene` starts at `opacity:0` and crossfades to `1` (0.9s) when Spline fires `onLoad`. A 4s `setTimeout` fallback in `SplineScene.jsx` triggers the fade if `onLoad` never fires (slow/offline). Do not remove either path.
 - **Nav visibility:** Driven by an `IntersectionObserver` on `#top` (Hero root). Toggles `opacity`/`y`/`pointer-events` so a hidden nav is never accidentally clickable.
+- **Footer mount animation:** `Footer.jsx` uses a delayed `initial/animate` fade (delay = `HERO_SEQUENCE.footer`, 5.3s) rather than `whileInView`. It participates in the hero reload sequence even though it is off-screen at page load. Do not revert it to `REVEAL` / `whileInView`.
 - **Project card visuals:** Each project in `src/data/projects.js` maps to a purely CSS/SVG visualization component in `src/components/visuals/` (e.g. `VizAero.jsx`, `VizMF.jsx`). `ProjectVisual.jsx` is the switch that selects the right viz by `project.id`. Adding a new project requires a new `Viz*.jsx` and a case in `ProjectVisual.jsx` — no canvas or third-party deps in these components.
 
 ## Workflow

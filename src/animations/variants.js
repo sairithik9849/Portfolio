@@ -22,12 +22,40 @@ export const STAGGER_CHILD = {
   },
 }
 
+// Phase timing table for the serialized hero reload sequence.
+// Each key maps to the delay (in seconds) at which that phase starts.
+export const HERO_SEQUENCE = {
+  grid:      0.20,
+  meta:      0.95,
+  name:      1.00,
+  manifesto: 2.20,
+  metrics:   2.90,
+  cta:       3.55,
+  terminal:  3.95,
+  footer:    5.30,
+  robot:     5.60,
+}
+
+export const HERO_SEQUENCE_INSTANT = Object.fromEntries(
+  Object.keys(HERO_SEQUENCE).map((k) => [k, 0]),
+)
+
+// Returns a variant dict ({ hidden, show }) for a single-shot delayed fade-up.
+export const fadeUp = (delay, duration = 0.9) => ({
+  hidden: { opacity: 0, y: 24 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { delay, duration, ease: [0.22, 1, 0.36, 1] },
+  },
+})
+
 export const HERO_PARENT = {
   initial: 'hidden',
   animate: 'show',
   variants: {
     hidden: {},
-    show: { transition: { staggerChildren: 0.14, delayChildren: 0.1 } },
+    show: {},
   },
 }
 
