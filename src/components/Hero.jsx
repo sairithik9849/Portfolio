@@ -12,6 +12,7 @@ import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
 import InfiniteGrid from './InfiniteGrid'
 import MatrixText from './MatrixText'
+import TextScramble from './TextScramble'
 import Typewriter from './Typewriter'
 
 const ROLES = [
@@ -76,7 +77,7 @@ export default function Hero({ onOpenAI }) {
   )
 
   const handleDiscoverClick = useCallback(() => {
-    document.getElementById('metrics')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   const handleRobotPointerMove = useCallback((e) => {
@@ -171,8 +172,8 @@ export default function Hero({ onOpenAI }) {
         <motion.h1 style={{ x: hX, y: hY }} variants={nameLineParent}>
           {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
           <br />
-          {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} />)}
-          {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} />)}
+          {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} className="char--last" />)}
+          {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} className="char--last" />)}
           <motion.span className="hero-dot" variants={HERO_LETTER.variants}>.</motion.span>
         </motion.h1>
       </motion.div>
@@ -181,7 +182,7 @@ export default function Hero({ onOpenAI }) {
         <motion.div className="hero-manifesto" variants={PASSTHROUGH}>
           {/* Phase 3 — manifesto quote */}
           <motion.p className="manifesto-quote" variants={fade('manifesto')}>
-            <span className="serif">Bridging</span> theoretical computer science with production-scale architecture. <span className="serif">Driven</span> by a passion for AI, <span className="serif">constantly</span> learning new stacks, and building out-of-the-box projects for fun.
+            Sysadmin &amp; Developer with a Master's in Computer Science, building high-throughput microservices, optimizing low-level query performance, and developing real-time intelligence platforms.
           </motion.p>
 
           {/* Phase 4 — three metric cards together (no per-li stagger) */}
@@ -223,7 +224,7 @@ export default function Hero({ onOpenAI }) {
           {/* Phase 5 — CTA block */}
           <motion.div className="manifesto-cta" variants={fade('cta')}>
             <p className="manifesto-quote-sm">
-              Prompting is syntax. Architecting is execution.
+              Prompting is <span className="serif">syntax</span>. Architecting is <span className="serif">execution</span>.
             </p>
             <button
               type="button"
@@ -231,8 +232,7 @@ export default function Hero({ onOpenAI }) {
               onClick={handleDiscoverClick}
               data-cursor="hover"
             >
-              <span>Discover Me</span>
-              <span className="mf-arrow" aria-hidden="true">↓</span>
+              <TextScramble text="Discover Me" />
             </button>
           </motion.div>
         </motion.div>

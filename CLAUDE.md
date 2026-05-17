@@ -38,17 +38,17 @@ vercel --prod       # production deploy
 - **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
 - **Color system (three tokens, each with a semantic role):**
   - `--accent: #c9f558` (lime) — primary actions, brand highlights, hover-revealed states, interactive indicators, data highlights
-  - `--accent-2: #e8c47a` (gold) — non-interactive metadata labels and manifesto emphasis: role strings, index prefixes, identifier badges (e.g. `bar-id`, `.exec-co-role`, `.pj-info .role`, `.acc-role`, `.exec-bullet-n`, version meta-string), italicized manifesto verbs (`.manifesto-quote .serif`)
+  - `--accent-2: #e8c47a` (gold) — non-interactive metadata labels and manifesto emphasis: role strings, index prefixes, identifier badges (e.g. `bar-id`, `.exec-co-role`, `.pj-info .role`, `.acc-role`, `.exec-bullet-n`, version meta-string), italicized manifesto verbs (`.manifesto-quote .serif`), hero surname letters (`.char--last`)
   - `--fg: #ededdf` (cream) — body content, headings
   - When adding a colored element, assign it to one of these three roles. Never introduce a fourth color without updating this section.
-- **Typography (loaded in `index.html`):** Headlines → **Instrument Serif**. Code/terminal → **JetBrains Mono**. Body/UI → **Space Grotesk**.
+- **Typography (loaded in `index.html`):** Headlines/display → **IBM Plex Sans Condensed** (technical condensed sans, used for `.hero h1`, `.mf-num`, project/edu/exec headings via `--serif` token; loaded with italic axis for editorial accents in `.hero h1 .it` and `.manifesto-quote-sm .serif`). Code/terminal/metadata → **JetBrains Mono** (`--mono`). Body/UI → **Geist** (`--sans`). The `--serif` token name is retained for stability despite IBM Plex Sans Condensed being a sans-serif typeface.
 - **Content:** All copy lives in `src/data/` — `nav.js`, `metrics.js`, `projects.js`, `experience.js`, `education.js`, `agent.js`. Never hardcode content inside components.
 - **Env vars:** `GEMINI_API_KEY` is set in Vercel project settings; `vercel dev` injects it locally — no `.env` file. Read only inside `/api` via `process.env`. Never import from `/src`.
 - **AI chat API (`api/chat.js`):** Single serverless function. No conversation history — every request sends the full system prompt + user message in one `contents` turn. The persona/facts live entirely in `SYSTEM_PROMPT` at the top of that file. `maxOutputTokens: 200` is intentional (keeps responses under 90 words).
 
 ## Architecture Rules
 
-- **Section render order in `App.jsx`:** `Nav → Hero → Metrics → AgentSection → Experience → Education → Projects → Footer`. `AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
+- **Section render order in `App.jsx`:** `Nav → Hero → About → Experience → Education → Projects → Footer`. `AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
 - **AIOrb visibility:** Hidden while the Hero (`#top`) is intersecting the viewport — toggled via `heroVisible` state driven by `IntersectionObserver` in `App.jsx`. `AIOrb` receives `hidden={heroVisible}` and suppresses itself so it doesn't overlap the robot hotspot.
 - **Global hotkey:** `useHotkey('cmd+k', toggleAI)` in `App.jsx` (from `src/hooks/useHotkey.js`) opens the AI drawer. The hook also supports `'escape'`. Any new global shortcut belongs in `App.jsx` using this hook.
 - **Page background z-order:** `HeroFluid` (lazy WebGL) at `z:0`, `.noise` CSS texture at `z:2`. Both persistent across the page. The old static `.grid-bg` is gone — do not reintroduce.

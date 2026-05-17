@@ -8,7 +8,7 @@ export default function Experience() {
   return (
     <section id="experience">
       <SectionHead
-        idx="04"
+        idx="03"
         title="Execution"
         em="log."
         right="A reverse-chronological systems trail. Each entry is a process — uptime, throughput, and what shipped."

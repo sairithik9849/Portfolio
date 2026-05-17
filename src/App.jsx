@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react'
 import Nav          from './components/Nav'
 import Hero         from './components/Hero'
-import Metrics      from './components/Metrics'
-import AgentSection from './components/AgentSection'
+import About      from './components/About'
 import Experience   from './components/Experience'
 import Education    from './components/Education'
 import Projects     from './components/Projects'
@@ -26,6 +25,9 @@ export default function App() {
   const globalMouseRef = useRef({ x: 0.5, y: 0.5, lastMove: 0 })
   const handleGlobalPointerMove = useCallback((e) => {
     if (e.pointerType && e.pointerType !== 'mouse') return
+    // Confine WebGL fluid glow to Hero (#top) and Footer (#contact).
+    // Idle decay (~1.75s) in HeroFluid.jsx fades it out when this stops firing.
+    if (!e.target.closest('#top, #contact')) return
     globalMouseRef.current.x = e.clientX / window.innerWidth
     globalMouseRef.current.y = e.clientY / window.innerHeight
     globalMouseRef.current.lastMove = performance.now()
@@ -61,8 +63,7 @@ export default function App() {
       <div onPointerMove={handleGlobalPointerMove}>
         <Nav />
         <Hero         onOpenAI={() => setAiOpen(true)} />
-        <Metrics />
-        <AgentSection onOpenAI={() => setAiOpen(true)} />
+        <About />
         <Experience />
         <Education />
         <Projects />
