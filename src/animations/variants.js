@@ -31,7 +31,7 @@ export const HERO_SEQUENCE = {
   manifesto: 2.20,
   metrics:   2.90,
   cta:       3.55,
-  terminal:  3.95,
+  terminal:  4.50,
   footer:    5.30,
   robot:     5.60,
 }

@@ -256,11 +256,11 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   margin-bottom: 0;
   color: var(--fg-2);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   gap: 16px;
-  text-shadow: 0 0 1px rgba(7,7,7,0.9), 0 1px 2px rgba(7,7,7,0.6);
+  text-shadow: 0 0 1px rgba(7,7,7,0.95), 0 1px 3px rgba(7,7,7,0.75);
 }
 
 .hero .meta-row > span {
@@ -346,6 +346,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   pointer-events: auto;
   overflow: hidden;
   transform: translateX(8%);
+  opacity: 0.92;
 }
 
 .hero-spline .spline-canvas,
@@ -472,7 +473,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .manifesto-quote {
   font-family: var(--sans);
   font-size: clamp(18px, 1.55vw, 24px);
-  line-height: 1.65;
+  line-height: 1.75;
   letter-spacing: -0.005em;
   color: var(--fg-2);
   max-width: 70ch;
@@ -557,7 +558,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .mf-label {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
   line-height: 1.35;
@@ -596,47 +597,32 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   position: relative;
   display: inline-block;
   margin: 0;
-  padding: 10px 18px;
+  padding: 12px 28px;
   font-family: var(--serif);
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--fg);
-  background: var(--accent-dim);
-  border: none;
+  color: var(--accent);
+  background: rgba(201, 245, 88, 0.08);
+  border: 1px solid var(--accent);
   border-radius: 6px;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none;
-  transition: background 220ms ease;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: 0 0 20px rgba(201, 245, 88, 0.10);
+  transform: skewX(-6deg);
+  transition:
+    background 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 250ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.manifesto-cta-btn:hover { background: rgba(201, 245, 88, 0.28); }
-
-.manifesto-cta-btn::before,
-.manifesto-cta-btn::after {
-  content: "";
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 6px;
-  height: 1.5px;
-  pointer-events: none;
+.manifesto-cta-btn:hover {
+  background: rgba(201, 245, 88, 0.14);
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(201, 245, 88, 0.30);
 }
-
-.manifesto-cta-btn::before { background: var(--muted-2); }
-
-.manifesto-cta-btn::after {
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 950ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
-}
-
-.manifesto-cta-btn:hover::after { transform: scaleX(1); }
 
 .manifesto-cta-btn:focus-visible {
   outline: 1px solid var(--accent);
@@ -1862,7 +1848,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   }
 
   .hero .meta-row {
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.1em;
   }
 
@@ -1924,7 +1910,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   }
 
   .hero .meta-row {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .hero .meta-row > span {
