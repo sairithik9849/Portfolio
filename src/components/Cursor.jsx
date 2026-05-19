@@ -2,19 +2,15 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, useSpring } from 'framer-motion'
 import { CURSOR_X, CURSOR_Y } from '../utils/cursor'
 
-const LENS_VARIANTS = {
-  default: { scale: 1,   borderWidth: '1.5px', borderRadius: '50%', opacity: 1 },
-  hover:   { scale: 1.8, borderWidth: '2px',   borderRadius: '40%', opacity: 1 },
-  text:    { scale: 0.6, borderWidth: '1.5px', borderRadius: '50%', opacity: 0 },
-}
-
-const DOT_VARIANTS = {
-  default: { opacity: 1, scale: 1 },
-  hover:   { opacity: 0, scale: 0 },
-  text:    { opacity: 0, scale: 0 },
+const MAIN_VARIANTS = {
+  default: { x: '-50%', y: '-50%', scale: 1,   width: 16, height: 16, borderRadius: 0, boxShadow: '0 0 0px rgba(201,245,88,0)' },
+  hover:   { x: '-50%', y: '-50%', scale: 1.4, width: 16, height: 16, borderRadius: 0, boxShadow: '0 0 6px rgba(201,245,88,0.55)' },
+  text:    { x: '-50%', y: '-50%', scale: 1,   width: 2,  height: 20, borderRadius: 1, boxShadow: '0 0 0px rgba(201,245,88,0)' },
 }
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 28, mass: 0.6 }
+
+const STATE_CLASSES = ['state-default', 'state-hover', 'state-text']
 
 function useMQ(query) {
   const [matches, setMatches] = useState(() =>
@@ -87,6 +83,13 @@ export default function Cursor() {
     }
   }, [isPointerFine, reducedMotion])
 
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    STATE_CLASSES.forEach(c => root.classList.remove(c))
+    root.classList.add(`state-${variant}`)
+  }, [variant])
+
   if (!isPointerFine || reducedMotion) return null
 
   return (
@@ -98,19 +101,14 @@ export default function Cursor() {
       transition={{ opacity: { duration: 0.3 } }}
     >
       <motion.div
-        className="cursor-lens"
+        className="cursor-main"
         initial="default"
-        variants={LENS_VARIANTS}
+        variants={MAIN_VARIANTS}
         animate={variant}
         transition={SPRING}
-      />
-      <motion.div
-        className="cursor-dot"
-        initial="default"
-        variants={DOT_VARIANTS}
-        animate={variant}
-        transition={SPRING}
-      />
+      >
+        <div className="cursor-scan" />
+      </motion.div>
     </motion.div>
   )
 }
