@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react'
+import Lenis        from 'lenis'
 import Nav          from './components/Nav'
 import Hero         from './components/Hero'
+import AboutMe      from './components/AboutMe'
 import About      from './components/About'
 import Experience   from './components/Experience'
 import Education    from './components/Education'
@@ -35,6 +37,43 @@ export default function App() {
 
   useHotkey('cmd+k', toggleAI)
 
+  // ---- Site-wide momentum scroll (minhpham.design-style feel) ----
+  // Lenis lerps window.scrollTop toward wheel target; Framer Motion's useScroll
+  // reads native scrollTop transparently, so AboutMe's word reveal benefits.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduced) return undefined
+
+    const lenis = new Lenis({
+      duration: 1.6,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    })
+    window.__lenis = lenis
+
+    let rafId
+    const tick = (time) => {
+      lenis.raf(time)
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      lenis.destroy()
+      delete window.__lenis
+    }
+  }, [])
+
+  // Pause Lenis while the AI drawer is open so wheel events don't leak to the page.
+  useEffect(() => {
+    if (!window.__lenis) return
+    if (aiOpen) window.__lenis.stop()
+    else window.__lenis.start()
+  }, [aiOpen])
+
   useEffect(() => {
     const hero = document.getElementById('top')
 
@@ -63,6 +102,7 @@ export default function App() {
       <div onPointerMove={handleGlobalPointerMove}>
         <Nav />
         <Hero         onOpenAI={() => setAiOpen(true)} />
+        <AboutMe />
         <About />
         <Experience />
         <Education />

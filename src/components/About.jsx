@@ -16,9 +16,9 @@ export default function About() {
   const activeChip = STACK.find((s) => s.id === selectedChip)
 
   return (
-    <section id="about">
+    <section id="system">
       <SectionHead
-        idx="02"
+        idx="03"
         title="System"
         em="Specs."
         right="// runtime configuration"

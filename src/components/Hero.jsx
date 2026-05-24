@@ -14,6 +14,7 @@ import InfiniteGrid from './InfiniteGrid'
 import MatrixText from './MatrixText'
 import TextScramble from './TextScramble'
 import Typewriter from './Typewriter'
+import { scrollToId } from '../utils/scrollTo'
 
 const ROLES = [
   'FULL-STACK DEVELOPER',
@@ -77,7 +78,7 @@ export default function Hero({ onOpenAI }) {
   )
 
   const handleDiscoverClick = useCallback(() => {
-    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToId('about')
   }, [])
 
   const handleRobotPointerMove = useCallback((e) => {
@@ -182,7 +183,7 @@ export default function Hero({ onOpenAI }) {
         <motion.div className="hero-manifesto" variants={PASSTHROUGH}>
           {/* Phase 3 — manifesto quote */}
           <motion.p className="manifesto-quote" variants={fade('manifesto')}>
-            I'll skip the standard pitch about having the best 'if statements' in the business—no one hangs code on a fridge. Instead, I focus on what <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>actually matters</span>: turning complex infrastructure bottlenecks into elegant, high-throughput solutions. From bare-metal system administration to silky-smooth React frontends, I build software that <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>performs</span>. Let's build something awesome.
+            I'll skip the standard pitch about having the best 'if statements' in the business, no one hangs code on a fridge. Instead, I focus on what <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>actually matters</span>: turning complex infrastructure bottlenecks into elegant, high-throughput solutions. From bare-metal system administration to silky-smooth React frontends, I build software that <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>performs</span>. Let's build something awesome.
           </motion.p>
 
           {/* Phase 4 — three metric cards together (no per-li stagger) */}
