@@ -34,7 +34,7 @@ vercel --prod       # production deploy
   - Hero per-letter cascade: `HERO_LETTER` (spring per char), `HERO_LINE_PARENT` (still exported but inlined as `nameLineParent` in `Hero.jsx` to accept runtime `T.name` delay), `HERO_INNER_STAGGER` (120ms inner stagger, unused in Hero)
   - `useReducedMotion()` (framer-motion) in `Hero.jsx` sets `T = HERO_SEQUENCE_INSTANT` (all delays 0) and `dur = 0` (all durations 0) — entire sequence collapses to instant show. Apply the same `T`/`dur` pattern to any new Hero-level animation.
 - Animations must be silky smooth (60fps+). Avoid janky layout shifts. Favor hardware-accelerated CSS properties (transform, opacity).
-- **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both `React.lazy` — never eager-load (~600 KB).
+- **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both heavy bundles are code-split: `HeroFluid` is `React.lazy` in `App.jsx`; the `@splinetool/react-spline` package is `React.lazy`-loaded inside `SplineScene.jsx`. Never eager-load (~600 KB).
 - **Styling:** All CSS lives in `src/styles/global.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
 - **Color system (three tokens, each with a semantic role):**
   - `--accent: #c9f558` (lime) — primary actions, brand highlights, hover-revealed states, interactive indicators, data highlights
@@ -42,7 +42,7 @@ vercel --prod       # production deploy
   - `--fg: #ededdf` (cream) — body content, headings
   - When adding a colored element, assign it to one of these three roles. Never introduce a fourth color without updating this section.
 - **Typography (loaded in `index.html`):** Headlines/display → **IBM Plex Sans Condensed** (technical condensed sans, used for `.hero h1`, `.mf-num`, project/edu/exec headings via `--serif` token; loaded with italic axis for editorial accents in `.hero h1 .it` and `.manifesto-quote-sm .serif`). Code/terminal/metadata → **JetBrains Mono** (`--mono`). Body/UI → **Geist** (`--sans`). The `--serif` token name is retained for stability despite IBM Plex Sans Condensed being a sans-serif typeface.
-- **Content:** All copy lives in `src/data/` — `nav.js`, `metrics.js`, `projects.js`, `experience.js`, `education.js`, `agent.js`. Never hardcode content inside components.
+- **Content:** All copy lives in `src/data/` — `nav.js`, `about.js`, `projects.js`, `experience.js`, `education.js`, `agent.js`. Never hardcode content inside components.
 - **Env vars:** `GEMINI_API_KEY` is set in Vercel project settings; `vercel dev` injects it locally — no `.env` file. Read only inside `/api` via `process.env`. Never import from `/src`.
 - **AI chat API (`api/chat.js`):** Single serverless function. No conversation history — every request sends the full system prompt + user message in one `contents` turn. The persona/facts live entirely in `SYSTEM_PROMPT` at the top of that file. `maxOutputTokens: 200` is intentional (keeps responses under 90 words).
 
@@ -57,11 +57,11 @@ vercel --prod       # production deploy
 - **Shader attractor singleton:** `App.jsx` owns `globalMouseRef` (viewport-normalized 0–1 + `lastMove` timestamp) passed to `HeroFluid`. If the fluid stops tracking the cursor, check this ref's `pointermove` listener in `App.jsx`.
 - **Layout shell:** `.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: hidden }` is load-bearing — Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
 - **Spline pointer forwarding (load-bearing):** `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is outside `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
-- **Lazy boundaries:** `HeroFluid` and `SplineScene` are both `React.lazy` + Suspense. Never convert to static imports.
+- **Lazy boundaries:** `HeroFluid` is `React.lazy` + Suspense in `App.jsx` — never convert to a static import. `SplineScene` is a static import in `Hero.jsx`; the heavy `@splinetool/react-spline` package is `React.lazy`-loaded inside `SplineScene.jsx`. The Spline code-split boundary is that package import — keep it lazy.
 - **SplineScene load fade:** `SplineScene` starts at `opacity:0` and crossfades to `1` (0.9s) when Spline fires `onLoad`. A 4s `setTimeout` fallback in `SplineScene.jsx` triggers the fade if `onLoad` never fires (slow/offline). Do not remove either path.
 - **Nav visibility:** Driven by an `IntersectionObserver` on `#top` (Hero root). Toggles `opacity`/`y`/`pointer-events` so a hidden nav is never accidentally clickable.
 - **Footer mount animation:** `Footer.jsx` uses a delayed `initial/animate` fade (delay = `HERO_SEQUENCE.footer`, 5.3s) rather than `whileInView`. It participates in the hero reload sequence even though it is off-screen at page load. Do not revert it to `REVEAL` / `whileInView`.
-- **Project card visuals:** Each project in `src/data/projects.js` maps to a purely CSS/SVG visualization component in `src/components/visuals/` (e.g. `VizAero.jsx`, `VizMF.jsx`). `ProjectVisual.jsx` is the switch that selects the right viz by `project.id`. Adding a new project requires a new `Viz*.jsx` and a case in `ProjectVisual.jsx` — no canvas or third-party deps in these components.
+- **Project card visuals:** Each project in `src/data/projects.js` maps to a purely CSS/SVG visualization component in `src/components/visuals/` (e.g. `VizAero.jsx`, `VizMF.jsx`). `src/components/ProjectVisual.jsx` is the switch — it selects the viz via a `VIZ` map (keyed `aero/mf/spp/ll/wb/sch`) using the `kind` prop. Adding a new project requires a new `Viz*.jsx` in `visuals/` and a `VIZ` map entry in `ProjectVisual.jsx` — no canvas or third-party deps in these components.
 
 ## Workflow
 
