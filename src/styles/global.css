@@ -1926,19 +1926,36 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 }
 
 .about-me-word {
+  position: relative;
   display: inline-block;
   margin-right: 0.28em;
-  will-change: opacity;
 }
 
 .about-me-word:last-child { margin-right: 0; }
 
+.about-me-word__ghost {
+  position: absolute;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.about-me-word__fg {
+  position: relative;
+}
+
 .about-me-word--hl {
   color: var(--accent);
+}
+
+.about-me-word--hl .about-me-word__fg {
   text-shadow:
     0 0 8px rgba(201, 245, 88, 0.55),
     0 0 22px rgba(201, 245, 88, 0.32),
     0 0 42px rgba(201, 245, 88, 0.18);
+}
+
+.about-me-word--em {
+  color: var(--accent-2);
 }
 
 .about-me-word--em em {

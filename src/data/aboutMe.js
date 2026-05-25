@@ -3,4 +3,4 @@ export const ABOUT_ME_STATEMENT =
 
 export const ABOUT_ME_HIGHLIGHT = 'high-precision instrument'
 
-export const ABOUT_ME_EMPHASES = ['advanced agents', 'production-grade']
+export const ABOUT_ME_EMPHASES = ['advanced agents']

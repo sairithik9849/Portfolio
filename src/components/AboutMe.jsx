@@ -3,19 +3,9 @@ import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion
 import SectionHead from './SectionHead'
 import { ABOUT_ME_STATEMENT, ABOUT_ME_HIGHLIGHT, ABOUT_ME_EMPHASES } from '../data/aboutMe'
 
-const REVEAL_START = 0.10
-const REVEAL_SPAN  = 0.28
-const PER_WORD_DUR = 0.08
-const DIM_OPACITY  = 0.18
-
-// Raw hex required: useTransform cannot interpolate var() strings.
-// Keep in sync with --muted and --accent in global.css.
-const EM_COLOR_DIM = '#6e6e66'
-const EM_COLOR_ON  = '#e8c47a'  // --accent-2
-
 const buildHighlights = () => [
   { phrase: ABOUT_ME_HIGHLIGHT, kind: 'accent' },
-  ...ABOUT_ME_EMPHASES.map((phrase) => ({ phrase, kind: 'em' })),
+  ...ABOUT_ME_EMPHASES.map((phrase) => ({ phrase, kind: 'accent' })),
 ]
 
 const splitWords = (chunk, kind) =>
@@ -51,7 +41,7 @@ export default function AboutMe() {
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ['start end', 'end start'],
+    offset: ['start end', 'center center'],
   })
 
   return (
@@ -60,21 +50,10 @@ export default function AboutMe() {
       <div className="shell">
         <p className="about-me-statement">
           {tokens.map((t, i) => {
-            if (t.highlight === 'accent') {
-              return <AccentWord key={`${i}-${t.word}`} word={t.word} />
-            }
-            if (t.highlight === 'em') {
-              return (
-                <EmphasisWord
-                  key={`${i}-${t.word}`}
-                  word={t.word}
-                  index={i}
-                  total={tokens.length}
-                  progress={scrollYProgress}
-                  reduced={prefersReducedMotion}
-                />
-              )
-            }
+            const variant =
+              t.highlight === 'accent' ? 'highlight'
+              : t.highlight === 'em'   ? 'emphasis'
+              :                          'plain'
             return (
               <Word
                 key={`${i}-${t.word}`}
@@ -83,6 +62,7 @@ export default function AboutMe() {
                 total={tokens.length}
                 progress={scrollYProgress}
                 reduced={prefersReducedMotion}
+                variant={variant}
               />
             )
           })}
@@ -92,43 +72,27 @@ export default function AboutMe() {
   )
 }
 
-function Word({ word, index, total, progress, reduced }) {
-  const start = REVEAL_START + (index / Math.max(total - 1, 1)) * REVEAL_SPAN
-  const end   = Math.min(start + PER_WORD_DUR, 0.95)
-  const opacity = useTransform(progress, [start, end], [DIM_OPACITY, 1])
+function Word({ word, index, total, progress, reduced, variant }) {
+  const start = index / total
+  const end = (index + 1) / total
+  const opacity = useTransform(progress, [start, end], [0, 1])
+
+  const wrapperClass = [
+    'about-me-word',
+    variant === 'highlight' && 'about-me-word--hl',
+    variant === 'emphasis'  && 'about-me-word--em',
+  ].filter(Boolean).join(' ')
+
+  const content = variant === 'emphasis' ? <em>{word}</em> : word
 
   if (reduced) {
-    return <span className="about-me-word">{word}</span>
+    return <span className={wrapperClass}>{content}</span>
   }
 
   return (
-    <motion.span className="about-me-word" style={{ opacity }}>
-      {word}
-    </motion.span>
-  )
-}
-
-function AccentWord({ word }) {
-  return <span className="about-me-word about-me-word--hl">{word}</span>
-}
-
-function EmphasisWord({ word, index, total, progress, reduced }) {
-  const start = REVEAL_START + (index / Math.max(total - 1, 1)) * REVEAL_SPAN
-  const end   = Math.min(start + PER_WORD_DUR, 0.95)
-  const opacity = useTransform(progress, [start, end], [DIM_OPACITY, 1])
-  const color   = useTransform(progress, [start, end], [EM_COLOR_DIM, EM_COLOR_ON])
-
-  if (reduced) {
-    return (
-      <span className="about-me-word about-me-word--em" style={{ color: EM_COLOR_ON }}>
-        <em>{word}</em>
-      </span>
-    )
-  }
-
-  return (
-    <motion.span className="about-me-word about-me-word--em" style={{ opacity, color }}>
-      <em>{word}</em>
-    </motion.span>
+    <span className={wrapperClass}>
+      <span className="about-me-word__ghost" aria-hidden="true">{content}</span>
+      <motion.span className="about-me-word__fg" style={{ opacity }}>{content}</motion.span>
+    </span>
   )
 }
