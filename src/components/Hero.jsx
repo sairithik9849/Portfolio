@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'framer-motion'
+import { motion, useMotionValue, useReducedMotion } from 'framer-motion'
 import {
   HERO_PARENT,
   HERO_LETTER,
@@ -47,8 +47,6 @@ export default function Hero({ onOpenAI }) {
 
   const mouseX   = useMotionValue(0.5)
   const mouseY   = useMotionValue(0.5)
-  const hX = useSpring(useTransform(mouseX, [0, 1], [-10, 10]), { stiffness: 60, damping: 18 })
-  const hY = useSpring(useTransform(mouseY, [0, 1], [ -4,  4]), { stiffness: 60, damping: 18 })
 
   const handlePointerMove = useCallback(
     (e) => {
@@ -112,11 +110,12 @@ export default function Hero({ onOpenAI }) {
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
-      {/* Phase 1 — InfiniteGrid fades in */}
+      {/* Phase 1 — InfiniteGrid fades in; wrapper is absolute so it doesn't consume a flex slot */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: T.grid, duration: dur ?? 0.7, ease: 'easeOut' }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       >
         <InfiniteGrid />
       </motion.div>
@@ -170,7 +169,7 @@ export default function Hero({ onOpenAI }) {
         style={{ position: 'relative', zIndex: 2 }}
         variants={PASSTHROUGH}
       >
-        <motion.h1 style={{ x: hX, y: hY }} variants={nameLineParent}>
+        <motion.h1 variants={nameLineParent}>
           {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
           <br />
           {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} className="char--last" />)}
@@ -179,13 +178,13 @@ export default function Hero({ onOpenAI }) {
         </motion.h1>
       </motion.div>
 
+      {/* Phase 3 — manifesto quote; direct .hero child so space-between centers it between H1 and the metrics row */}
+      <motion.p className="manifesto-quote" variants={fade('manifesto')}>
+        I'll skip the standard pitch about having the best 'if statements' in the business, no one hangs code on a fridge. Instead, I focus on what <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>actually matters</span>: turning complex infrastructure bottlenecks into elegant, high-throughput solutions. From bare-metal system administration to silky-smooth React frontends, I build software that <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>performs</span>. Let's build something awesome.
+      </motion.p>
+
       <motion.div className="hero-bottom-row" variants={PASSTHROUGH}>
         <motion.div className="hero-manifesto" variants={PASSTHROUGH}>
-          {/* Phase 3 — manifesto quote */}
-          <motion.p className="manifesto-quote" variants={fade('manifesto')}>
-            I'll skip the standard pitch about having the best 'if statements' in the business, no one hangs code on a fridge. Instead, I focus on what <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>actually matters</span>: turning complex infrastructure bottlenecks into elegant, high-throughput solutions. From bare-metal system administration to silky-smooth React frontends, I build software that <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>performs</span>. Let's build something awesome.
-          </motion.p>
-
           {/* Phase 4 — three metric cards together (no per-li stagger) */}
           <motion.ul className="manifesto-metrics" variants={fade('metrics')}>
             <li className="mf-metric">
