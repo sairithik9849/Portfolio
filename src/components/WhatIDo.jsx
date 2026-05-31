@@ -54,13 +54,13 @@ export default function WhatIDo() {
         const travel = wordH * (N - 1)
 
         // ── geometry: bleed band ───────────────────────────────────────────
-        // The band is taller than a single word so the active word sits
-        // vertically centered with slivers of the neighbors bleeding in
-        // above and below (matching the reference). Both stacks are offset
-        // down by `bleed` so word 0 rests centered in the band at progress=0.
+        // The band is slightly taller than a single word so the active word
+        // sits centered with a slim even margin of lime above and below —
+        // stopping short of the neighbor letters. Both stacks are offset down
+        // by `bleed` so word 0 rests centered in the band at progress=0.
         // At progress = i/(N-1): y = -i·wordH, word i's rendered top =
         // bleed + i·wordH + y = bleed → dead-centered in band at every snap.
-        const bleed = Math.round(wordH * 0.16)
+        const bleed = Math.round(wordH * 0.05)
         const bandH = wordH + bleed * 2
 
         // .wid-left height = bandH; marginTop parks the word column ~1 word-row
