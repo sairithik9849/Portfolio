@@ -1898,7 +1898,6 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .about-me {
   position: relative;
   z-index: 2;
-  background: var(--bg);
   padding: clamp(40px, 7vh, 80px) 0 clamp(80px, 14vh, 160px);
 }
 
@@ -1977,7 +1976,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 
 /* Tighten the gap that follows the Capabilities section by reducing the
    System section's header top padding (global value is 120px). */
-#system .section-head { padding-top: 64px; }
+#system .section-head { padding-top: 64px; border-top: none; }
 
 /* ---- responsive ---- */
 @media (max-width: 1280px) and (min-width: 981px) {
@@ -2248,10 +2247,10 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
    ───────────────────────────────────────────────────────────────────────────── */
 
 .capabilities {
-  /* Flex column so .cap-stage can take the remaining space inside the pinned
-     section container. min-height 100vh ensures the pin has a full viewport
-     to work with. */
-  min-height: 100vh;
+  /* Flex column so .cap-stage can size to its content (header + band + buffer).
+     min-height: auto lets the section be naturally sized; the pin's scroll
+     travel distance is set independently in JS so scrub length is unaffected. */
+  min-height: auto;
   display: flex;
   flex-direction: column;
   /* Lower stacking context so the section scrolls behind .about-me (z-index:2) */
@@ -2262,33 +2261,36 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   --band-w: 68%;
 }
 
-/* Scoped SectionHead override: removes the global 120px top gap and top border
-   so the header sits compact at the top of the pinned flex column (32px matches
-   the old .cap-kicker spacing, keeping the cap-stage flex height unchanged). */
+/* Scoped SectionHead override: mirrors .about-me .section-head — removes the
+   global 120px top gap and top border. width:100% counters .shell's margin:0 auto
+   which would otherwise center the element inside the flex-column .capabilities. */
 .capabilities .section-head {
+  width: 100%;
   padding-top: 32px;
-  padding-bottom: 0;
-  border-top: none;
+  padding-bottom: 48px;
 }
 
 /* Stage: the interactive area — word column (full-width, left), caption (absolute).
    .cap-right is absolutely positioned against --band-w so gap is unused for
    layout but kept for any future flex siblings. */
 .cap-stage {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   /* Match .shell padding so words align with rest of content */
-  padding: 0 24px;
+  padding: 0 24px 80px;
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
   /* position:relative so .cap-right absolute-positions against this element. */
   position: relative;
-  /* overflow:hidden clips word layers that scrub above/below the stage boundary,
-     keeping the kicker legible at all scroll positions. */
-  overflow: hidden;
+  /* clip-path clips past words at the stage top and sides while letting
+     upcoming words overflow below (the -100vh bottom offset keeps them visible
+     as they scroll up into the band). overflow:visible is required for the
+     clip to apply without also clipping the bottom. */
+  overflow: visible;
+  clip-path: inset(0 0 -100vh 0);
 }
 
 /* ── word column (left) ─────────────────────────────────────────────────────

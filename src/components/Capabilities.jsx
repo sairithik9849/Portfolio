@@ -21,6 +21,7 @@ export default function Capabilities() {
   const stackBaseRef = useRef(null)    // cream word stack
   const bandRef     = useRef(null)     // accent band (overflow:hidden clip)
   const stackKoRef  = useRef(null)     // dark knockout stack inside band
+  const capRightRef = useRef(null)     // right-side blurb column
   const activeRef   = useRef(0)
   const [active, setActive] = useState(0)
 
@@ -62,9 +63,11 @@ export default function Capabilities() {
         const bleed = Math.round(wordH * 0.16)
         const bandH = wordH + bleed * 2
 
-        // .cap-left height = bandH (flex align-items:center parks the taller
-        // band at the vertical midpoint of the stage).
-        left.style.height = `${bandH}px`
+        // .cap-left height = bandH; marginTop parks the word column ~1 word-row
+        // below the top of the flex stage so there is one empty row of space
+        // above the green band before the runway below.
+        left.style.height    = `${bandH}px`
+        left.style.marginTop = `${wordH}px`
 
         stackBase.style.top = `${bleed}px`  // word 0 centered in band
 
@@ -75,6 +78,14 @@ export default function Capabilities() {
         // land pixel-perfectly on the cream words.
         stackKo.style.top  = `${bleed}px`
         stackKo.style.left = '0px'
+
+        // Anchor the right-side blurb to the vertical center of the band.
+        // CSS `top:50% + translateY(-50%)` was centered on the stage mid-point
+        // (correct when align-items:center); now that the stage is flex-start
+        // with a top-gap, we override `top` to place the blurb's center on
+        // the band's center: topGap + bandH/2.
+        const capRight = capRightRef.current
+        if (capRight) capRight.style.top = `${wordH + bandH / 2}px`
 
         // ── ScrollTrigger ──────────────────────────────────────────────────
         const st = ScrollTrigger.create({
@@ -114,12 +125,15 @@ export default function Capabilities() {
           // Clear transforms and JS-set geometry so the mobile static layout
           // takes over cleanly if the viewport shrinks below 981 px.
           gsap.set([stackBase, stackKo], { clearProps: 'transform' })
-          left.style.height   = ''
-          stackBase.style.top = ''
-          band.style.height   = ''
-          band.style.top      = ''
-          stackKo.style.top   = ''
-          stackKo.style.left  = ''
+          left.style.height    = ''
+          left.style.marginTop = ''
+          stackBase.style.top  = ''
+          band.style.height    = ''
+          band.style.top       = ''
+          stackKo.style.top    = ''
+          stackKo.style.left   = ''
+          const capRight = capRightRef.current
+          if (capRight) capRight.style.top = ''
         }
       }
 
@@ -197,7 +211,7 @@ export default function Capabilities() {
         </div>
 
         {/* RIGHT — animated blurb readout (desktop: single crossfade) */}
-        <div className="cap-right">
+        <div className="cap-right" ref={capRightRef}>
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
