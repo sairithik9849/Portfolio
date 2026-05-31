@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import SectionHead from './SectionHead'
 import { CAPABILITIES } from '../data/capabilities'
 
 const N = CAPABILITIES.length // 5
@@ -156,9 +157,7 @@ export default function Capabilities() {
 
   return (
     <section ref={sectionRef} id="capabilities" className="capabilities">
-      <div className="shell">
-        <div className="kicker cap-kicker">03 / WHAT I DO</div>
-      </div>
+      <SectionHead idx="03" title="What I" em="Do." right="" />
 
       {/* ── stage: word column (left) + readout (right) ─────────────────── */}
       <div className="cap-stage" ref={stageRef}>

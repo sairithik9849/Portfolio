@@ -1897,6 +1897,8 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 /* ---- about me (editorial scroll reveal) ---- */
 .about-me {
   position: relative;
+  z-index: 2;
+  background: var(--bg);
   padding: clamp(40px, 7vh, 80px) 0 clamp(80px, 14vh, 160px);
 }
 
@@ -1972,6 +1974,10 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 @media (prefers-reduced-motion: reduce) {
   .about-me-word { opacity: 1 !important; }
 }
+
+/* Tighten the gap that follows the Capabilities section by reducing the
+   System section's header top padding (global value is 120px). */
+#system .section-head { padding-top: 64px; }
 
 /* ---- responsive ---- */
 @media (max-width: 1280px) and (min-width: 981px) {
@@ -2248,14 +2254,21 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* Lower stacking context so the section scrolls behind .about-me (z-index:2) */
+  position: relative;
+  z-index: 1;
   /* --band-w drives both the band's fixed width and the caption's left anchor.
      Changing this one token adjusts both in sync. */
   --band-w: 68%;
 }
 
-.cap-kicker {
+/* Scoped SectionHead override: removes the global 120px top gap and top border
+   so the header sits compact at the top of the pinned flex column (32px matches
+   the old .cap-kicker spacing, keeping the cap-stage flex height unchanged). */
+.capabilities .section-head {
   padding-top: 32px;
   padding-bottom: 0;
+  border-top: none;
 }
 
 /* Stage: the interactive area — word column (full-width, left), caption (absolute).
@@ -2329,7 +2342,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 .cap-word {
   font-family: var(--serif);
   font-weight: 700;
-  font-size: clamp(64px, 11vw, 180px);
+  font-size: clamp(48px, 8.25vw, 135px);
   letter-spacing: -0.03em;
   line-height: 0.92;
   text-transform: uppercase;
@@ -2396,7 +2409,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
-    padding: 32px 24px 48px;
+    padding: 32px 24px 24px;
     max-width: 100%;
   }
 
@@ -2421,7 +2434,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   .cap-stack--ko  { display: none; }
 
   .cap-word {
-    font-size: clamp(42px, 12vw, 80px);
+    font-size: clamp(32px, 9vw, 60px);
   }
 
   /* Show all five blurbs inline; hide the desktop animated readout */
