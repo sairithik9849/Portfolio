@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import SectionHead from './SectionHead'
-import { CAPABILITIES } from '../data/capabilities'
+import { WHAT_I_DO } from '../data/whatIDo'
 
-const N = CAPABILITIES.length // 5
+const N = WHAT_I_DO.length // 5
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Desktop media query — pin/scrub/snap is created ONLY inside this condition.
@@ -14,14 +14,14 @@ const N = CAPABILITIES.length // 5
 const DESKTOP_QUERY =
   '(min-width: 981px) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
 
-export default function Capabilities() {
+export default function WhatIDo() {
   const sectionRef  = useRef(null)
   const stageRef    = useRef(null)
-  const leftRef     = useRef(null)     // .cap-left — word column
+  const leftRef     = useRef(null)     // .wid-left — word column
   const stackBaseRef = useRef(null)    // cream word stack
   const bandRef     = useRef(null)     // accent band (overflow:hidden clip)
   const stackKoRef  = useRef(null)     // dark knockout stack inside band
-  const capRightRef = useRef(null)     // right-side blurb column
+  const widRightRef = useRef(null)     // right-side blurb column
   const activeRef   = useRef(0)
   const [active, setActive] = useState(0)
 
@@ -47,7 +47,7 @@ export default function Capabilities() {
       // Fonts affect the measured line-box height. If we measure before the
       // web font swaps in, the pin end and travel distance will be wrong.
       const setup = () => {
-        const firstWord = stackBase.querySelector('.cap-word')
+        const firstWord = stackBase.querySelector('.wid-word')
         if (!firstWord) return
 
         const wordH  = firstWord.getBoundingClientRect().height
@@ -63,7 +63,7 @@ export default function Capabilities() {
         const bleed = Math.round(wordH * 0.16)
         const bandH = wordH + bleed * 2
 
-        // .cap-left height = bandH; marginTop parks the word column ~1 word-row
+        // .wid-left height = bandH; marginTop parks the word column ~1 word-row
         // below the top of the flex stage so there is one empty row of space
         // above the green band before the runway below.
         left.style.height    = `${bandH}px`
@@ -84,8 +84,8 @@ export default function Capabilities() {
         // (correct when align-items:center); now that the stage is flex-start
         // with a top-gap, we override `top` to place the blurb's center on
         // the band's center: topGap + bandH/2.
-        const capRight = capRightRef.current
-        if (capRight) capRight.style.top = `${wordH + bandH / 2}px`
+        const widRight = widRightRef.current
+        if (widRight) widRight.style.top = `${wordH + bandH / 2}px`
 
         // ── ScrollTrigger ──────────────────────────────────────────────────
         const st = ScrollTrigger.create({
@@ -132,8 +132,8 @@ export default function Capabilities() {
           band.style.top       = ''
           stackKo.style.top    = ''
           stackKo.style.left   = ''
-          const capRight = capRightRef.current
-          if (capRight) capRight.style.top = ''
+          const widRight = widRightRef.current
+          if (widRight) widRight.style.top = ''
         }
       }
 
@@ -170,30 +170,30 @@ export default function Capabilities() {
   }, [])
 
   return (
-    <section ref={sectionRef} id="capabilities" className="capabilities">
+    <section ref={sectionRef} id="what-i-do" className="what-i-do">
       <SectionHead idx="03" title="What I" em="Do." right="" />
 
       {/* ── stage: word column (left) + readout (right) ─────────────────── */}
-      <div className="cap-stage" ref={stageRef}>
+      <div className="wid-stage" ref={stageRef}>
 
         {/* LEFT — word column; height set to 1 word by JS so flex centers it */}
-        <div className="cap-left" ref={leftRef}>
+        <div className="wid-left" ref={leftRef}>
 
           {/* Accent band — clips the knockout stack via overflow:hidden. */}
           {/* position/height set by JS to match measured word line-box.   */}
-          <div className="cap-band" ref={bandRef}>
+          <div className="wid-band" ref={bandRef}>
             {/*
               Knockout stack: identical words in --bg color.
               aria-hidden — purely decorative duplicate; the base stack
               below carries the real content for assistive tech.
             */}
             <div
-              className="cap-stack cap-stack--ko"
+              className="wid-stack wid-stack--ko"
               ref={stackKoRef}
               aria-hidden="true"
             >
-              {CAPABILITIES.map((c) => (
-                <div key={c.id} className="cap-word cap-word--ko">
+              {WHAT_I_DO.map((c) => (
+                <div key={c.id} className="wid-word wid-word--ko">
                   {c.word}
                 </div>
               ))}
@@ -201,9 +201,9 @@ export default function Capabilities() {
           </div>
 
           {/* Base stack — cream words, visible above and below the band */}
-          <div className="cap-stack cap-stack--base" ref={stackBaseRef}>
-            {CAPABILITIES.map((c) => (
-              <div key={c.id} className="cap-word">
+          <div className="wid-stack wid-stack--base" ref={stackBaseRef}>
+            {WHAT_I_DO.map((c) => (
+              <div key={c.id} className="wid-word">
                 {c.word}
               </div>
             ))}
@@ -211,18 +211,18 @@ export default function Capabilities() {
         </div>
 
         {/* RIGHT — animated blurb readout (desktop: single crossfade) */}
-        <div className="cap-right" ref={capRightRef}>
+        <div className="wid-right" ref={widRightRef}>
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
-              className="cap-readout-body"
+              className="wid-readout-body"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <p className="cap-readout-blurb">
-                {CAPABILITIES[active].blurb}
+              <p className="wid-readout-blurb">
+                {WHAT_I_DO[active].blurb}
               </p>
             </motion.div>
           </AnimatePresence>
@@ -230,12 +230,12 @@ export default function Capabilities() {
 
         {/* Mobile-only: all five blurbs listed inline below their words  */}
         {/* Hidden on desktop via CSS. The static word stack is rendered  */}
-        {/* by .cap-stack--base in its non-absolute (static) mobile flow. */}
-        <div className="cap-mobile-blurbs">
-          {CAPABILITIES.map((c, i) => (
-            <div key={c.id} className="cap-mobile-blurb-item">
-              <div className="kicker cap-readout-idx">// 0{i + 1}</div>
-              <p className="cap-readout-blurb">{c.blurb}</p>
+        {/* by .wid-stack--base in its non-absolute (static) mobile flow. */}
+        <div className="wid-mobile-blurbs">
+          {WHAT_I_DO.map((c, i) => (
+            <div key={c.id} className="wid-mobile-blurb-item">
+              <div className="kicker wid-readout-idx">// 0{i + 1}</div>
+              <p className="wid-readout-blurb">{c.blurb}</p>
             </div>
           ))}
         </div>

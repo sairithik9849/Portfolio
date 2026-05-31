@@ -1,4 +1,4 @@
-export const CAPABILITIES = [
+export const WHAT_I_DO = [
   {
     id: 'systems',
     word: 'SYSTEMS',

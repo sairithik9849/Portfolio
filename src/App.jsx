@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
-import Capabilities from './components/Capabilities'
+import WhatIDo from './components/WhatIDo'
 import About      from './components/About'
 import Experience   from './components/Experience'
 import Education    from './components/Education'
@@ -122,7 +122,7 @@ export default function App() {
         <Nav />
         <Hero         onOpenAI={() => setAiOpen(true)} />
         <AboutMe />
-        <Capabilities />
+        <WhatIDo />
         <About />
         <Experience />
         <Education />

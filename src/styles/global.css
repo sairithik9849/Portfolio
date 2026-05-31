@@ -1974,7 +1974,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   .about-me-word { opacity: 1 !important; }
 }
 
-/* Tighten the gap that follows the Capabilities section by reducing the
+/* Tighten the gap that follows the What I Do section by reducing the
    System section's header top padding (global value is 120px). */
 #system .section-head { padding-top: 64px; border-top: none; }
 
@@ -2239,15 +2239,15 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   CAPABILITIES — scroll-pinned word scrub
+   WHAT I DO — scroll-pinned word scrub
    Architecture: dual-layer knockout (no mix-blend-mode — HeroFluid shader
    behind the page would shimmer). Base stack = --fg cream words. Accent band
    clips the knockout stack (--bg dark words) via overflow:hidden. Both stacks
    share one GSAP-driven y transform so glyphs register pixel-perfectly.
    ───────────────────────────────────────────────────────────────────────────── */
 
-.capabilities {
-  /* Flex column so .cap-stage can size to its content (header + band + buffer).
+.what-i-do {
+  /* Flex column so .wid-stage can size to its content (header + band + buffer).
      min-height: auto lets the section be naturally sized; the pin's scroll
      travel distance is set independently in JS so scrub length is unaffected. */
   min-height: auto;
@@ -2263,17 +2263,17 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 
 /* Scoped SectionHead override: mirrors .about-me .section-head — removes the
    global 120px top gap and top border. width:100% counters .shell's margin:0 auto
-   which would otherwise center the element inside the flex-column .capabilities. */
-.capabilities .section-head {
+   which would otherwise center the element inside the flex-column .what-i-do. */
+.what-i-do .section-head {
   width: 100%;
   padding-top: 32px;
   padding-bottom: 48px;
 }
 
 /* Stage: the interactive area — word column (full-width, left), caption (absolute).
-   .cap-right is absolutely positioned against --band-w so gap is unused for
+   .wid-right is absolutely positioned against --band-w so gap is unused for
    layout but kept for any future flex siblings. */
-.cap-stage {
+.wid-stage {
   flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
@@ -2283,7 +2283,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
-  /* position:relative so .cap-right absolute-positions against this element. */
+  /* position:relative so .wid-right absolute-positions against this element. */
   position: relative;
   /* clip-path clips past words at the stage top and sides while letting
      upcoming words overflow below (the -100vh bottom offset keeps them visible
@@ -2296,8 +2296,8 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 /* ── word column (left) ─────────────────────────────────────────────────────
    JS sets height = 1 word line-box so flex align-items:center parks it at
    vertical midpoint of the stage. Words overflow above/below — that IS the
-   scroll-through visual. overflow:visible propagates up to .cap-stage. */
-.cap-left {
+   scroll-through visual. overflow:visible propagates up to .wid-stage. */
+.wid-left {
   flex: 1;
   position: relative;
   overflow: visible;
@@ -2306,14 +2306,14 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 
 /* Both stacks are absolutely positioned and share the same GSAP y transform.
    Identical typography is load-bearing for glyph registration. */
-.cap-stack {
+.wid-stack {
   position: absolute;
   top: 0;
   left: 0;
   will-change: transform;
 }
 
-.cap-stack--base {
+.wid-stack--base {
   z-index: 1;
 }
 
@@ -2321,7 +2321,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
    width:var(--band-w) gives the fixed-width strip that ends at the same x
    for every word. The word layers stay full-width (they overflow the band to
    the right in cream on dark), so band width is decoupled from glyph width. */
-.cap-band {
+.wid-band {
   position: absolute;
   left: 0;
   width: var(--band-w);
@@ -2331,9 +2331,9 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   z-index: 2;
 }
 
-/* Knockout stack: lives INSIDE .cap-band (clipped by overflow:hidden).
+/* Knockout stack: lives INSIDE .wid-band (clipped by overflow:hidden).
    Same y transform as base stack → glyphs land exactly on top of cream words. */
-.cap-stack--ko {
+.wid-stack--ko {
   position: absolute;
   /* top and left set by JS after measuring */
 }
@@ -2341,7 +2341,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 /* ── word typography ──────────────────────────────────────────────────────── */
 /* Both layers share IDENTICAL font rules — if these ever diverge, glyph
    registration breaks. Never add different margins or paddings to either. */
-.cap-word {
+.wid-word {
   font-family: var(--serif);
   font-weight: 700;
   font-size: clamp(48px, 8.25vw, 135px);
@@ -2355,7 +2355,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   padding: 0;
 }
 
-.cap-word--ko {
+.wid-word--ko {
   /* Override to --bg inside the accent band — this is the knockout effect */
   color: var(--bg);
 }
@@ -2367,7 +2367,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
    left:calc(--band-w + 4%) so the caption left edge sits just past the lime
    strip, and right:24px matches .shell gutter. top/transform vertically center
    it on the band row (band is centered at stage mid-height). */
-.cap-right {
+.wid-right {
   position: absolute;
   left: calc(var(--band-w) + 4%);
   right: 24px;
@@ -2375,17 +2375,17 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   transform: translateY(-50%);
 }
 
-.cap-readout-body {
+.wid-readout-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.cap-readout-idx {
+.wid-readout-idx {
   /* .kicker provides font-family, size, and --muted color; no overrides needed */
 }
 
-.cap-readout-blurb {
+.wid-readout-blurb {
   font-size: clamp(16px, 1.3vw, 20px);
   color: var(--fg-2);
   line-height: 1.55;
@@ -2394,7 +2394,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
 }
 
 /* Mobile-only blurbs block — hidden on desktop */
-.cap-mobile-blurbs {
+.wid-mobile-blurbs {
   display: none;
 }
 
@@ -2402,12 +2402,12 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
    No pin, no ScrollTrigger, no animated scrub. Words stack naturally. Band
    is hidden. All five blurbs listed inline below the word stack. */
 @media (max-width: 980px) {
-  .capabilities {
+  .what-i-do {
     min-height: auto;
     display: block;
   }
 
-  .cap-stage {
+  .wid-stage {
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
@@ -2416,7 +2416,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   }
 
   /* Release the word stack from absolute positioning — let it flow */
-  .cap-left {
+  .wid-left {
     flex: 0 0 auto;            /* don't stretch in column flex context */
     position: static;
     height: auto !important;   /* override the JS-set height */
@@ -2424,7 +2424,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
     overflow: hidden;          /* clip overlong words on narrow screens */
   }
 
-  .cap-stack {
+  .wid-stack {
     position: static;
     /* Clear any GSAP-set transform via !important (matchMedia teardown
        should already do this, but belt-and-suspenders for SSR/hydration). */
@@ -2432,16 +2432,16 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   }
 
   /* Hide the band and knockout layer on mobile — static layout shows no band */
-  .cap-band       { display: none; }
-  .cap-stack--ko  { display: none; }
+  .wid-band       { display: none; }
+  .wid-stack--ko  { display: none; }
 
-  .cap-word {
+  .wid-word {
     font-size: clamp(32px, 9vw, 60px);
   }
 
   /* Show all five blurbs inline; hide the desktop animated readout */
-  .cap-right        { display: none; }
-  .cap-mobile-blurbs {
+  .wid-right        { display: none; }
+  .wid-mobile-blurbs {
     display: flex;
     flex-direction: column;
     gap: 28px;
@@ -2449,7 +2449,7 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
     width: 100%;
   }
 
-  .cap-mobile-blurb-item {
+  .wid-mobile-blurb-item {
     display: flex;
     flex-direction: column;
     gap: 8px;
