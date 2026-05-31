@@ -1,0 +1,219 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   WHAT I DO — scroll-pinned word scrub
+   Architecture: dual-layer knockout (no mix-blend-mode — HeroFluid shader
+   behind the page would shimmer). Base stack = --fg cream words. Accent band
+   clips the knockout stack (--bg dark words) via overflow:hidden. Both stacks
+   share one GSAP-driven y transform so glyphs register pixel-perfectly.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.what-i-do {
+  /* Flex column so .wid-stage can size to its content (header + band + buffer).
+     min-height: auto lets the section be naturally sized; the pin's scroll
+     travel distance is set independently in JS so scrub length is unaffected. */
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  /* Lower stacking context so the section scrolls behind .about-me (z-index:2) */
+  position: relative;
+  z-index: 1;
+  /* --band-w drives both the band's fixed width and the caption's left anchor.
+     Changing this one token adjusts both in sync. */
+  --band-w: 68%;
+}
+
+/* Scoped SectionHead override: mirrors .about-me .section-head — removes the
+   global 120px top gap and top border. width:100% counters .shell's margin:0 auto
+   which would otherwise center the element inside the flex-column .what-i-do. */
+.what-i-do .section-head {
+  width: 100%;
+  padding-top: 32px;
+  padding-bottom: 48px;
+}
+
+/* Stage: the interactive area — word column (full-width, left), caption (absolute).
+   .wid-right is absolutely positioned against --band-w so gap is unused for
+   layout but kept for any future flex siblings. */
+.wid-stage {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  /* Match .shell padding so words align with rest of content */
+  padding: 0 24px 80px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  /* position:relative so .wid-right absolute-positions against this element. */
+  position: relative;
+  /* clip-path clips past words at the stage top and sides while letting
+     upcoming words overflow below (the -100vh bottom offset keeps them visible
+     as they scroll up into the band). overflow:visible is required for the
+     clip to apply without also clipping the bottom. */
+  overflow: visible;
+  clip-path: inset(0 0 -100vh 0);
+}
+
+/* ── word column (left) ─────────────────────────────────────────────────────
+   JS sets height = 1 word line-box so flex align-items:center parks it at
+   vertical midpoint of the stage. Words overflow above/below — that IS the
+   scroll-through visual. overflow:visible propagates up to .wid-stage. */
+.wid-left {
+  flex: 1;
+  position: relative;
+  overflow: visible;
+  /* height set dynamically in JS */
+}
+
+/* Both stacks are absolutely positioned and share the same GSAP y transform.
+   Identical typography is load-bearing for glyph registration. */
+.wid-stack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.wid-stack--base {
+  z-index: 1;
+}
+
+/* Accent band — the "window" that reveals the knockout words.
+   width:var(--band-w) gives the fixed-width strip that ends at the same x
+   for every word. The word layers stay full-width (they overflow the band to
+   the right in cream on dark), so band width is decoupled from glyph width. */
+.wid-band {
+  position: absolute;
+  left: 0;
+  width: var(--band-w);
+  /* top and height set dynamically in JS to match measured word line-box */
+  overflow: hidden;
+  background: var(--accent);
+  z-index: 2;
+}
+
+/* Knockout stack: lives INSIDE .wid-band (clipped by overflow:hidden).
+   Same y transform as base stack → glyphs land exactly on top of cream words. */
+.wid-stack--ko {
+  position: absolute;
+  /* top and left set by JS after measuring */
+}
+
+/* ── word typography ──────────────────────────────────────────────────────── */
+/* Both layers share IDENTICAL font rules — if these ever diverge, glyph
+   registration breaks. Never add different margins or paddings to either. */
+.wid-word {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(48px, 8.25vw, 135px);
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: var(--fg);
+  display: block;
+  white-space: nowrap;
+  margin: 0;
+  padding: 0;
+}
+
+.wid-word--ko {
+  /* Override to --bg inside the accent band — this is the knockout effect */
+  color: var(--bg);
+}
+
+/* ── right: animated blurb readout (desktop) ────────────────────────────── */
+/* Caption anchored to the band's fixed right edge via --band-w. Because the
+   word column is full-width (words extend past the band in cream on dark), a
+   flex sibling would be stranded at the far edge. Instead we anchor with
+   left:calc(--band-w + 4%) so the caption left edge sits just past the lime
+   strip, and right:24px matches .shell gutter. top/transform vertically center
+   it on the band row (band is centered at stage mid-height). */
+.wid-right {
+  position: absolute;
+  left: calc(var(--band-w) + 4%);
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.wid-readout-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wid-readout-idx {
+  /* .kicker provides font-family, size, and --muted color; no overrides needed */
+}
+
+.wid-readout-blurb {
+  font-size: clamp(16px, 1.3vw, 20px);
+  color: var(--fg-2);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 32ch;
+}
+
+/* Mobile-only blurbs block — hidden on desktop */
+.wid-mobile-blurbs {
+  display: none;
+}
+
+/* ── mobile / coarse-pointer / reduced-motion static fallback ───────────────
+   No pin, no ScrollTrigger, no animated scrub. Words stack naturally. Band
+   is hidden. All five blurbs listed inline below the word stack. */
+@media (max-width: 980px) {
+  .what-i-do {
+    min-height: auto;
+    display: block;
+  }
+
+  .wid-stage {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 32px 24px 24px;
+    max-width: 100%;
+  }
+
+  /* Release the word stack from absolute positioning — let it flow */
+  .wid-left {
+    flex: 0 0 auto;            /* don't stretch in column flex context */
+    position: static;
+    height: auto !important;   /* override the JS-set height */
+    width: 100%;
+    overflow: hidden;          /* clip overlong words on narrow screens */
+  }
+
+  .wid-stack {
+    position: static;
+    /* Clear any GSAP-set transform via !important (matchMedia teardown
+       should already do this, but belt-and-suspenders for SSR/hydration). */
+    transform: none !important;
+  }
+
+  /* Hide the band and knockout layer on mobile — static layout shows no band */
+  .wid-band       { display: none; }
+  .wid-stack--ko  { display: none; }
+
+  .wid-word {
+    font-size: clamp(32px, 9vw, 60px);
+  }
+
+  /* Show all five blurbs inline; hide the desktop animated readout */
+  .wid-right        { display: none; }
+  .wid-mobile-blurbs {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin-top: 28px;
+    width: 100%;
+  }
+
+  .wid-mobile-blurb-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+}

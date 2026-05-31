@@ -1,0 +1,46 @@
+:root {
+  --bg: #070707;
+  --bg-2: #0c0c0c;
+  --bg-3: #111111;
+  --fg: #ededdf;
+  --fg-2: #cfcfc4;
+  --muted: #6e6e66;
+  --muted-2: #3a3a36;
+  --line: rgba(237, 237, 223, 0.08);
+  --line-2: rgba(237, 237, 223, 0.16);
+  --accent: #c9f558;
+  --accent-dim: rgba(201, 245, 88, 0.18);
+  --accent-2: #e8c47a;
+  --accent-2-dim: rgba(232, 196, 122, 0.18);
+  --serif: "IBM Plex Sans Condensed", "Helvetica Neue", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Geist", "Helvetica Neue", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+body {
+  /* overflow-x: clip instead of hidden — `hidden` makes body a scroll container
+     which breaks ScrollTrigger's position:fixed pin. `clip` contains horizontal
+     overflow without creating a scroll container. */
+  overflow-x: clip;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(201, 245, 88, 0.06), transparent 60%),
+    radial-gradient(900px 700px at -10% 30%, rgba(255, 255, 255, 0.025), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+::selection { background: var(--accent); color: #0a0a0a; }

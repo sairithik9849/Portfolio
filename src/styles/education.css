@@ -1,0 +1,63 @@
+/* ---- education (ledger grid) ---- */
+.edu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid var(--line-2);
+  border-left: 1px solid var(--line-2);
+}
+
+.edu-card {
+  border-right: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.edu-card:hover { background: rgba(201, 245, 88, 0.025); }
+
+.edu-card.primary::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 48px;
+  background: var(--accent);
+}
+
+.edu-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.edu-degree { font-family: var(--serif); font-size: 32px; line-height: 1.05; letter-spacing: -0.015em; color: var(--fg); }
+.edu-school { font-family: var(--mono); font-size: 12px; color: var(--fg-2); letter-spacing: 0.04em; }
+
+.edu-stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+
+.edu-stat .kicker { margin-bottom: 8px; }
+.edu-gpa { font-family: var(--serif); font-size: 56px; line-height: 1; letter-spacing: -0.02em; }
+.edu-gpa-u { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-left: 6px; letter-spacing: 0.04em; }
+.edu-status { font-family: var(--mono); font-size: 14px; color: var(--accent); letter-spacing: 0.14em; padding-top: 18px; }
+.edu-note { font-size: 13px; color: var(--fg-2); line-height: 1.55; }
+.edu-courses .edu-course-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.edu-courses .edu-course-list span {
+  font-family: var(--mono);
+  font-size: 10px;
+  border: 1px solid var(--line-2);
+  padding: 5px 8px;
+  letter-spacing: 0.08em;
+  color: var(--fg-2);
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .edu-grid { grid-template-columns: 1fr; }
+}

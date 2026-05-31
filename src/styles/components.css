@@ -1,0 +1,62 @@
+/* ---- Typewriter component ---- */
+.tw-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.tw-ghost {
+  visibility: hidden;
+  white-space: pre;
+}
+
+.tw-visible {
+  position: absolute;
+  inset: 0;
+  white-space: pre;
+}
+
+.tw-caret {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent);
+  animation: tw-blink 1s steps(2) infinite;
+}
+
+@keyframes tw-blink {
+  50% { opacity: 0; }
+}
+
+/* ---- MatrixText component ---- */
+.matrix-wrap {
+  display: inline;
+}
+
+.matrix-char {
+  display: inline-block;
+  white-space: pre;
+  transition: color 380ms ease-out, text-shadow 380ms ease-out, opacity 220ms ease-out;
+}
+
+.matrix-char--settled {
+  color: inherit;
+}
+
+.matrix-char--green {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent-dim);
+}
+
+.matrix-char--hidden {
+  opacity: 0;
+}
+
+.role-bracket {
+  display: inline-block;
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent-dim);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.role-bracket--left  { margin-right: 8px; }
+.role-bracket--right { margin-left:  8px; }
