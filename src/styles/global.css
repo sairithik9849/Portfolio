@@ -30,7 +30,10 @@ html, body {
 }
 
 body {
-  overflow-x: hidden;
+  /* overflow-x: clip instead of hidden — `hidden` makes body a scroll container
+     which breaks ScrollTrigger's position:fixed pin. `clip` contains horizontal
+     overflow without creating a scroll container. */
+  overflow-x: clip;
   background:
     radial-gradient(1200px 600px at 80% -10%, rgba(201, 245, 88, 0.06), transparent 60%),
     radial-gradient(900px 700px at -10% 30%, rgba(255, 255, 255, 0.025), transparent 60%),
@@ -336,15 +339,6 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   backdrop-filter: blur(6px) saturate(120%);
   -webkit-backdrop-filter: blur(6px) saturate(120%);
   border-radius: 4px;
-}
-
-@media (max-width: 768px) {
-  .hero .meta-row .meta-syslog { display: none; }
-}
-
-.meta-version {
-  color: var(--accent-2);
-  text-shadow: 0 0 8px var(--accent-2-dim);
 }
 
 .meta-email-link {
@@ -2236,5 +2230,215 @@ button { font-family: inherit; color: inherit; background: none; border: none; c
   .robot-agent-cta {
     opacity: 1;
     transform: translateY(0) skewX(-6deg) scale(1);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CAPABILITIES — scroll-pinned word scrub
+   Architecture: dual-layer knockout (no mix-blend-mode — HeroFluid shader
+   behind the page would shimmer). Base stack = --fg cream words. Accent band
+   clips the knockout stack (--bg dark words) via overflow:hidden. Both stacks
+   share one GSAP-driven y transform so glyphs register pixel-perfectly.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.capabilities {
+  /* Flex column so .cap-stage can take the remaining space inside the pinned
+     section container. min-height 100vh ensures the pin has a full viewport
+     to work with. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* --band-w drives both the band's fixed width and the caption's left anchor.
+     Changing this one token adjusts both in sync. */
+  --band-w: 68%;
+}
+
+.cap-kicker {
+  padding-top: 32px;
+  padding-bottom: 0;
+}
+
+/* Stage: the interactive area — word column (full-width, left), caption (absolute).
+   .cap-right is absolutely positioned against --band-w so gap is unused for
+   layout but kept for any future flex siblings. */
+.cap-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  /* Match .shell padding so words align with rest of content */
+  padding: 0 24px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  /* position:relative so .cap-right absolute-positions against this element. */
+  position: relative;
+  /* overflow:hidden clips word layers that scrub above/below the stage boundary,
+     keeping the kicker legible at all scroll positions. */
+  overflow: hidden;
+}
+
+/* ── word column (left) ─────────────────────────────────────────────────────
+   JS sets height = 1 word line-box so flex align-items:center parks it at
+   vertical midpoint of the stage. Words overflow above/below — that IS the
+   scroll-through visual. overflow:visible propagates up to .cap-stage. */
+.cap-left {
+  flex: 1;
+  position: relative;
+  overflow: visible;
+  /* height set dynamically in JS */
+}
+
+/* Both stacks are absolutely positioned and share the same GSAP y transform.
+   Identical typography is load-bearing for glyph registration. */
+.cap-stack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.cap-stack--base {
+  z-index: 1;
+}
+
+/* Accent band — the "window" that reveals the knockout words.
+   width:var(--band-w) gives the fixed-width strip that ends at the same x
+   for every word. The word layers stay full-width (they overflow the band to
+   the right in cream on dark), so band width is decoupled from glyph width. */
+.cap-band {
+  position: absolute;
+  left: 0;
+  width: var(--band-w);
+  /* top and height set dynamically in JS to match measured word line-box */
+  overflow: hidden;
+  background: var(--accent);
+  z-index: 2;
+}
+
+/* Knockout stack: lives INSIDE .cap-band (clipped by overflow:hidden).
+   Same y transform as base stack → glyphs land exactly on top of cream words. */
+.cap-stack--ko {
+  position: absolute;
+  /* top and left set by JS after measuring */
+}
+
+/* ── word typography ──────────────────────────────────────────────────────── */
+/* Both layers share IDENTICAL font rules — if these ever diverge, glyph
+   registration breaks. Never add different margins or paddings to either. */
+.cap-word {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(64px, 11vw, 180px);
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: var(--fg);
+  display: block;
+  white-space: nowrap;
+  margin: 0;
+  padding: 0;
+}
+
+.cap-word--ko {
+  /* Override to --bg inside the accent band — this is the knockout effect */
+  color: var(--bg);
+}
+
+/* ── right: animated blurb readout (desktop) ────────────────────────────── */
+/* Caption anchored to the band's fixed right edge via --band-w. Because the
+   word column is full-width (words extend past the band in cream on dark), a
+   flex sibling would be stranded at the far edge. Instead we anchor with
+   left:calc(--band-w + 4%) so the caption left edge sits just past the lime
+   strip, and right:24px matches .shell gutter. top/transform vertically center
+   it on the band row (band is centered at stage mid-height). */
+.cap-right {
+  position: absolute;
+  left: calc(var(--band-w) + 4%);
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.cap-readout-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cap-readout-idx {
+  /* .kicker provides font-family, size, and --muted color; no overrides needed */
+}
+
+.cap-readout-blurb {
+  font-size: clamp(16px, 1.3vw, 20px);
+  color: var(--fg-2);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 32ch;
+}
+
+/* Mobile-only blurbs block — hidden on desktop */
+.cap-mobile-blurbs {
+  display: none;
+}
+
+/* ── mobile / coarse-pointer / reduced-motion static fallback ───────────────
+   No pin, no ScrollTrigger, no animated scrub. Words stack naturally. Band
+   is hidden. All five blurbs listed inline below the word stack. */
+@media (max-width: 980px) {
+  .capabilities {
+    min-height: auto;
+    display: block;
+  }
+
+  .cap-stage {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 32px 24px 48px;
+    max-width: 100%;
+  }
+
+  /* Release the word stack from absolute positioning — let it flow */
+  .cap-left {
+    flex: 0 0 auto;            /* don't stretch in column flex context */
+    position: static;
+    height: auto !important;   /* override the JS-set height */
+    width: 100%;
+    overflow: hidden;          /* clip overlong words on narrow screens */
+  }
+
+  .cap-stack {
+    position: static;
+    /* Clear any GSAP-set transform via !important (matchMedia teardown
+       should already do this, but belt-and-suspenders for SSR/hydration). */
+    transform: none !important;
+  }
+
+  /* Hide the band and knockout layer on mobile — static layout shows no band */
+  .cap-band       { display: none; }
+  .cap-stack--ko  { display: none; }
+
+  .cap-word {
+    font-size: clamp(42px, 12vw, 80px);
+  }
+
+  /* Show all five blurbs inline; hide the desktop animated readout */
+  .cap-right        { display: none; }
+  .cap-mobile-blurbs {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin-top: 28px;
+    width: 100%;
+  }
+
+  .cap-mobile-blurb-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
   }
 }

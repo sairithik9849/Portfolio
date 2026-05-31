@@ -18,7 +18,7 @@ export default function About() {
   return (
     <section id="system">
       <SectionHead
-        idx="03"
+        idx="04"
         title="System"
         em="Specs."
         right="// runtime configuration"

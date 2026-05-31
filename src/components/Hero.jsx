@@ -153,9 +153,6 @@ export default function Hero({ onOpenAI }) {
               : <Typewriter text={EMAIL} speed={35} delay={0} caret />}
           </a>
         </motion.span>
-        <motion.span layout transition={LAYOUT_TWEEN} className="meta-version">
-          <Typewriter text="v.2026.05 / build 0069" speed={28} delay={0} />
-        </motion.span>
       </motion.div>
 
       {/*

@@ -7,7 +7,7 @@ export default function Education() {
   return (
     <section id="education">
       <SectionHead
-        idx="04"
+        idx="06"
         title="Education"
         em="ledger."
         right="Two entries. Both 4.0. Same institution — different surfaces."

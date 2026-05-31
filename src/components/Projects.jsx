@@ -26,7 +26,7 @@ export default function Projects() {
   return (
     <section id="work">
       <SectionHead
-        idx="05"
+        idx="07"
         title="Featured"
         em="engineering."
         right="Six selected projects. Click to expand. Each is a different layer of the stack."

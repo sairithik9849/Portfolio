@@ -10,7 +10,7 @@ export default function Footer({ onOpenAI }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: HERO_SEQUENCE.footer, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="kicker" style={{ marginBottom: 32 }}>07 — END OF FILE</div>
+      <div className="kicker" style={{ marginBottom: 32 }}>08 — END OF FILE</div>
       <div className="big">
         Let's build<br />
         something <em>load-<br />bearing.</em>

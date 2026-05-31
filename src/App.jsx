@@ -1,8 +1,11 @@
 import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react'
 import Lenis        from 'lenis'
+import { gsap }    from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
+import Capabilities from './components/Capabilities'
 import About      from './components/About'
 import Experience   from './components/Experience'
 import Education    from './components/Education'
@@ -12,6 +15,9 @@ import AIDrawer     from './components/AIDrawer'
 import AIOrb        from './components/AIOrb'
 import Cursor       from './components/Cursor'
 import { useHotkey } from './hooks/useHotkey'
+
+// Register ScrollTrigger once at module level.
+gsap.registerPlugin(ScrollTrigger)
 
 // Three.js is ~600 KB — lazy-load so it doesn't block initial paint
 const HeroFluid = lazy(() => import('./components/HeroFluid'))
@@ -40,6 +46,11 @@ export default function App() {
   // ---- Site-wide momentum scroll (minhpham.design-style feel) ----
   // Lenis lerps window.scrollTop toward wheel target; Framer Motion's useScroll
   // reads native scrollTop transparently, so AboutMe's word reveal benefits.
+  //
+  // Lenis and GSAP ScrollTrigger share ONE clock: gsap.ticker drives lenis.raf,
+  // and Lenis fires lenis.on('scroll', ScrollTrigger.update) so ScrollTrigger
+  // always reads a Lenis-smoothed scroll position. This prevents the double-rAF
+  // jitter that would occur if both ran their own requestAnimationFrame loops.
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
 
@@ -53,15 +64,23 @@ export default function App() {
     })
     window.__lenis = lenis
 
-    let rafId
-    const tick = (time) => {
-      lenis.raf(time)
-      rafId = requestAnimationFrame(tick)
-    }
-    rafId = requestAnimationFrame(tick)
+    // Wire Lenis → ScrollTrigger: every Lenis scroll event updates ST's
+    // internal scroll position (keeps pin math and scrub in sync).
+    lenis.on('scroll', ScrollTrigger.update)
 
+    // gsap.ticker is now the sole rAF driver for Lenis.
+    // gsap.ticker time is in seconds; lenis.raf expects milliseconds.
+    // lagSmoothing(0) prevents GSAP from skipping frames after a tab blur.
+    const tickerFn = (time) => lenis.raf(time * 1000)
+    gsap.ticker.add(tickerFn)
+    gsap.ticker.lagSmoothing(0)
+
+    // ── cleanup is ADDITIVE — ticker/off lines join the existing teardown ──
+    // lenis.destroy() and delete window.__lenis MUST stay to prevent
+    // leaking the Lenis instance and leaving a dangling global.
     return () => {
-      cancelAnimationFrame(rafId)
+      gsap.ticker.remove(tickerFn)
+      lenis.off('scroll', ScrollTrigger.update)
       lenis.destroy()
       delete window.__lenis
     }
@@ -103,6 +122,7 @@ export default function App() {
         <Nav />
         <Hero         onOpenAI={() => setAiOpen(true)} />
         <AboutMe />
+        <Capabilities />
         <About />
         <Experience />
         <Education />
