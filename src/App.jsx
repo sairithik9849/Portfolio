@@ -119,7 +119,7 @@ export default function App() {
 
       {/* Page content — onPointerMove feeds globalMouseRef for the shader attractor */}
       <div onPointerMove={handleGlobalPointerMove}>
-        <Nav />
+        {/* <Nav /> */}
         <Hero         onOpenAI={() => setAiOpen(true)} />
         <AboutMe />
         <WhatIDo />
