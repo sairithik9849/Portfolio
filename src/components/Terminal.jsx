@@ -89,8 +89,7 @@ export default function Terminal() {
         <div className="lights">
           <span /><span /><span />
         </div>
-        <span className="bar-title">~/sairithik · zsh</span>
-        <span className="bar-id">0049</span>
+        <span className="bar-title">~/sairithik · <span className="bar-shell">zsh</span></span>
       </div>
       <motion.div className="body" initial="hidden" animate="show" variants={BODY_VARIANTS}>
         {lines.map((l) => (

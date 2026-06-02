@@ -544,7 +544,7 @@
   color: var(--fg-2);
   text-transform: uppercase;
 }
-.terminal .bar-id {
+.terminal .bar-shell {
   color: var(--accent-2);
   text-shadow: 0 0 10px rgba(232, 196, 122, 0.22);
 }
