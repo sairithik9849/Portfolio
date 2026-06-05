@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useMotionValue, useReducedMotion } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import SectionHead from './SectionHead'
+import WidVisual from './WidVisual'
 import { WHAT_I_DO } from '../data/whatIDo'
 
 const N = WHAT_I_DO.length // 5
@@ -24,6 +25,12 @@ export default function WhatIDo() {
   const widRightRef = useRef(null)     // right-side blurb column
   const activeRef   = useRef(0)
   const [active, setActive] = useState(0)
+
+  // Scroll-progress MotionValue — set in the existing onUpdate callback below.
+  // useMotionValue gives automatic subscriber cleanup on unmount (vs module-level
+  // motionValue() which needs manual teardown). .set() never triggers re-renders.
+  const progress = useMotionValue(0)
+  const reduced  = useReducedMotion()
 
   useEffect(() => {
     const section  = sectionRef.current
@@ -110,6 +117,9 @@ export default function WhatIDo() {
             const y = -self.progress * travel
             gsap.set([stackBase, stackKo], { y })
 
+            // Feed the right-side viz without triggering a React re-render.
+            progress.set(self.progress)
+
             // Guard against redundant state sets (React bailout only fires
             // after reconciliation; this avoids even scheduling it).
             const i = Math.round(self.progress * (N - 1))
@@ -167,6 +177,10 @@ export default function WhatIDo() {
     // mm.revert() disposes every trigger/tween the matchMedia ever created,
     // including triggers created after a later resize into the desktop range.
     return () => mm.revert()
+    // progress is a stable MotionValue ref (useMotionValue) — it won't change
+    // between renders and doesn't need to trigger re-setup of the GSAP/Lenis
+    // ScrollTrigger. Omitting it from deps is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -210,31 +224,20 @@ export default function WhatIDo() {
           </div>
         </div>
 
-        {/* RIGHT — animated blurb readout (desktop: single crossfade) */}
+        {/* RIGHT — live-system viz panel (desktop only) */}
         <div className="wid-right" ref={widRightRef}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              className="wid-readout-body"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <p className="wid-readout-blurb">
-                {WHAT_I_DO[active].blurb}
-              </p>
-            </motion.div>
-          </AnimatePresence>
+          <WidVisual progress={progress} active={active} reduced={reduced} />
         </div>
 
-        {/* Mobile-only: all five blurbs listed inline below their words  */}
-        {/* Hidden on desktop via CSS. The static word stack is rendered  */}
-        {/* by .wid-stack--base in its non-absolute (static) mobile flow. */}
+        {/* Mobile-only (and reduced-motion): all five blurbs listed inline.
+            Each item gets a frozen single-viz final frame above the blurb. */}
         <div className="wid-mobile-blurbs">
           {WHAT_I_DO.map((c, i) => (
             <div key={c.id} className="wid-mobile-blurb-item">
               <div className="kicker wid-readout-idx">// 0{i + 1}</div>
+              <div className="wid-mobile-viz">
+                <WidVisual frozen index={i} />
+              </div>
               <p className="wid-readout-blurb">{c.blurb}</p>
             </div>
           ))}

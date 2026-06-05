@@ -106,3 +106,24 @@ export const HERO_INNER_STAGGER = {
     show: { transition: { staggerChildren: 0.12 } },
   },
 }
+
+// ─── WhatIDo live-system viz shared variants ──────────────────────────────────
+
+// Panel-level entrance — bezel fades in when section enters the viewport.
+// Instant under reduced motion (callers pass duration:0 when reduced).
+export const WID_PANEL_REVEAL = {
+  initial: { opacity: 0 },
+  whileInView: { opacity: 1 },
+  viewport: { once: true, margin: '-60px 0px' },
+  transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+}
+
+// Shared pathLength draw transition used by every viz's structural SVG edges.
+export const WID_DRAW = {
+  duration: 0.6,
+  ease: [0.22, 1, 0.36, 1],
+}
+
+// The "at rest" animate target for all ambient elements.
+// Each viz's ambient element transitions to this when isActive becomes false.
+export const WID_AMBIENT_REST = { opacity: 0 }

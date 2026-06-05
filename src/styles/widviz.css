@@ -1,0 +1,564 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   WID VIZ — shared bezel + five per-word live-system visuals
+   Architecture: 5 .widviz-layer children are position:absolute; inset:0 so
+   they overlap for cross-dissolve. Framer Motion drives their opacity.
+   All animation via transform/opacity/pathLength only. 60fps floor.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Panel ──────────────────────────────────────────────────────────────────── */
+.widviz-panel {
+  position: relative;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.012);
+  /* Height sized to fill the right column well at every viewport in range */
+  height: clamp(280px, 32vw, 340px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Corner crop-bracket motif ──────────────────────────────────────────────── */
+/* Each corner is a 12×12 px L-shape formed by two borders on one element.
+   Lime, ~0.6 opacity — chrome, not focus. Echoes .role-bracket treatment. */
+.widviz-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 4;
+}
+.widviz-corner--tl { top: -1px;  left: -1px;  border-top: 1.5px solid var(--accent); border-left:  1.5px solid var(--accent); }
+.widviz-corner--tr { top: -1px;  right: -1px; border-top: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); }
+.widviz-corner--bl { bottom: -1px; left: -1px;  border-bottom: 1.5px solid var(--accent); border-left:  1.5px solid var(--accent); }
+.widviz-corner--br { bottom: -1px; right: -1px; border-bottom: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); }
+
+/* ── Head ───────────────────────────────────────────────────────────────────── */
+.widviz-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.widviz-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent-2);
+  opacity: 0.8;
+}
+
+.widviz-mode {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+/* ── Body — five absolutely-stacked layers ──────────────────────────────────── */
+.widviz-body {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.widviz-layer {
+  position: absolute;
+  inset: 0;
+  /* Each viz manages its own inner layout */
+}
+
+/* ── Foot — blurb caption ───────────────────────────────────────────────────── */
+.widviz-foot {
+  flex-shrink: 0;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--line);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.widviz-blurb {
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fg-2);
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIZ: BACKEND
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.widviz-backend {
+  display: grid;
+  grid-template-columns: 1fr 100px;
+  grid-template-rows: 1fr auto;
+  gap: 0;
+  padding: 8px 14px;
+}
+
+/* Layer stack — left column, full height */
+.wbk-layers {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 0;
+}
+
+.wbk-layer {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: rgba(237, 237, 223, 0.025);
+  flex-shrink: 0;
+}
+
+/* Highlight the CACHE layer — it's the key layer for hit/miss story */
+.wbk-layer--cache {
+  border-color: var(--accent-dim);
+  background: rgba(201, 245, 88, 0.04);
+}
+
+.wbk-layer-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--fg-2);
+}
+
+.wbk-layer-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+/* Packet indicator — absolutely positioned within .wbk-layers */
+.wbk-packet {
+  position: absolute;
+  left: -8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  transform: translateY(-50%);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* Sparkline — right column */
+.wbk-spark {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 0 0 10px;
+  border-left: 1px solid var(--line);
+  justify-content: center;
+}
+
+.wbk-spark-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+  opacity: 0.7;
+}
+
+.wbk-spark-svg {
+  width: 100%;
+  height: 28px;
+  display: block;
+}
+
+.wbk-spark-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wbk-spark-meta span {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+/* RPS label — bottom row, full width */
+.wbk-rps {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  opacity: 0.6;
+  padding-top: 6px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIZ: SYSTEMS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.widviz-systems {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  gap: 8px;
+}
+
+.wsys-grid {
+  display: grid;
+  /* 7 cols × 7 rows — JS injects --enter, each dot uses --i for stagger */
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  flex: 1;
+}
+
+.wsys-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  /* Staggered reveal: dot at --i lights up when --enter >= --i.
+     Multiplier 40 gives a crisp ~2.5% ramp per dot (no per-dot JS loop). */
+  opacity: clamp(0, calc((var(--enter, 1) - var(--i)) * 40), 1);
+  will-change: opacity;
+  justify-self: center;
+  align-self: center;
+}
+
+.wsys-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.wsys-status-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.wsys-status-val {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+/* Heal-pulse ring — position:absolute over the grid; JS drives cx/cy via motion */
+.wsys-pulse {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIZ: DATA
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.widviz-data {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wdat-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.wdat-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wdat-node-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg);
+  flex-shrink: 0;
+}
+
+.wdat-node--emit .wdat-node-bullet {
+  background: var(--accent);
+}
+
+.wdat-node-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--fg-2);
+}
+
+.wdat-edge {
+  width: 2px;
+  height: 12px;
+  background: var(--line-2);
+  margin-left: 3px;
+  flex-shrink: 0;
+}
+
+.wdat-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.wdat-counter {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent-2);
+  letter-spacing: 0.1em;
+}
+
+.wdat-cost {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIZ: INTERFACE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.widviz-interface {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wifc-wireframe {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  grid-template-rows: 28px 1fr 1fr;
+  gap: 4px;
+  flex: 1;
+}
+
+.wifc-zone {
+  border: 1px solid var(--line-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(237, 237, 223, 0.02);
+}
+
+.wifc-zone--header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.wifc-zone--sidebar {
+  grid-column: 1;
+  grid-row: 2 / -1;
+}
+
+.wifc-zone--main {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.wifc-zone--cards {
+  grid-column: 2;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+}
+
+.wifc-card {
+  border: 1px solid var(--line);
+  background: rgba(237, 237, 223, 0.015);
+}
+
+.wifc-zone-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.wifc-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.wifc-stack-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent-2);
+  letter-spacing: 0.1em;
+}
+
+.wifc-fps-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIZ: AGENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.widviz-agents {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wagnt-cycle {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wagnt-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.wagnt-ring {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1.5;
+}
+
+.wagnt-ring--active {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.wagnt-nodes {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.wagnt-node {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--fg-2);
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.wagnt-node--active {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: rgba(201, 245, 88, 0.04);
+}
+
+.wagnt-tokens {
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: 16px;
+  letter-spacing: 0.06em;
+}
+
+.wagnt-tokens span {
+  color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FROZEN / MOBILE variant
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.widviz-panel--frozen {
+  /* Smaller in the mobile blurb list context */
+  height: auto;
+  min-height: 180px;
+  margin-bottom: 0;
+}
+
+.widviz-panel--frozen .widviz-body {
+  /* Don't overflow the panel height when frozen */
+  position: relative;
+  min-height: 120px;
+}
+
+.widviz-panel--frozen .widviz-layer {
+  position: static;
+  height: auto;
+}
+
+/* Mobile container — sits above the blurb in .wid-mobile-blurb-item */
+.wid-mobile-viz {
+  margin-bottom: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 980px) {
+  /* Frozen mobile panels scale down */
+  .widviz-panel--frozen {
+    min-height: 140px;
+  }
+
+  /* Tighten dot grid on narrow viewports */
+  .wsys-grid {
+    gap: 4px;
+  }
+
+  .wsys-dot {
+    width: 5px;
+    height: 5px;
+  }
+}
