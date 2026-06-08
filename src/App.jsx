@@ -24,7 +24,8 @@ const HeroFluid = lazy(() => import('./components/HeroFluid'))
 
 export default function App() {
   const [aiOpen, setAiOpen] = useState(false)
-  const [heroVisible, setHeroVisible] = useState(true)
+  const [heroVisible,  setHeroVisible]  = useState(true)
+  const [whatIdoVisible, setWhatIdoVisible] = useState(false)
   const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
 
@@ -109,6 +110,22 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    const section = document.getElementById('what-i-do')
+
+    if (!section || !('IntersectionObserver' in window)) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setWhatIdoVisible(entry.isIntersecting),
+      { threshold: 0 },
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
       {/* Fixed background layers — painted in z-order: fluid (0) < noise (2) */}
@@ -130,7 +147,7 @@ export default function App() {
         <Footer       onOpenAI={() => setAiOpen(true)} />
       </div>
 
-      <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible} />
+      <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible} />
       <AIDrawer open={aiOpen} onClose={closeAI} />
       <Cursor />
     </>

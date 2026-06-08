@@ -16,8 +16,9 @@
   /* Lower stacking context so the section scrolls behind .about-me (z-index:2) */
   position: relative;
   z-index: 1;
-  /* --band-w drives both the band's fixed width and the caption's left anchor.
-     Changing this one token adjusts both in sync. */
+  /* --band-w drives the band's fixed width.
+     The field panel and caption use a section-relative left/right formula in CSS
+     that mirrors the stage's max-width:1440px centering, so both adjust in sync. */
   --band-w: 68%;
 }
 
@@ -120,25 +121,45 @@
   color: var(--bg);
 }
 
-/* ── right: animated blurb readout (desktop) ────────────────────────────── */
-/* Caption anchored to the band's fixed right edge via --band-w. Because the
-   word column is full-width (words extend past the band in cream on dark), a
-   flex sibling would be stranded at the far edge. Instead we anchor with
-   left:calc(--band-w + 4%) so the caption left edge sits just past the lime
-   strip, and right:24px matches .shell gutter. top/transform vertically center
-   it on the band row (band is centered at stage mid-height). */
-.wid-right {
+/* ── field-anchored blurb caption (lower-left of the viz field) ──────────── */
+/* Geometrically mirrors .widviz-panel (same left/right/top/height via the
+   same section-relative formula) so the two co-locate automatically.
+   Text is flex-end aligned to the bottom-left of the field, sitting above
+   the ALIVE readout. z-index:5 ensures it paints above the word stacks
+   (z:1/2). This is real DOM text for screen readers — the viz is aria-hidden.
+   The panel is also a direct child of .what-i-do (section), so both elements
+   share the same containing block and the formulas produce identical geometry. */
+.wid-caption {
   position: absolute;
-  left: calc(var(--band-w) + 4%);
-  right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.wid-readout-body {
+  left: calc(max(0px, 50vw - 720px) + 0.72 * min(100vw, 1440px));
+  right: max(0px, 50vw - 720px);
+  top: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  justify-content: flex-end;
+  /* padding-bottom lifts text clear of the ALIVE readout and the mask-image
+     bottom fade; padding-left aligns with the status label. */
+  padding: 0 18px 96px 18px;
+  align-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.wid-caption-text {
+  font-size: clamp(13px, 1.1vw, 15px);
+  font-family: var(--sans);
+  color: var(--fg-2);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 32ch;
+  text-align: center;
+  /* Subtle shadow for legibility over the sparse node field — no box, no bg */
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.6);
+}
+
+.wid-caption-num {
+  color: var(--accent-2);
 }
 
 .wid-readout-idx {
@@ -203,8 +224,10 @@
     font-size: clamp(32px, 9vw, 60px);
   }
 
-  /* Show all five blurbs inline; hide the desktop animated readout */
-  .wid-right        { display: none; }
+  /* Hide the desktop caption and live viz panel; show mobile blurbs */
+  .wid-caption      { display: none; }
+  /* Live (non-frozen) panel is position:absolute and must be hidden explicitly */
+  .widviz-panel:not(.widviz-panel--frozen) { display: none; }
   .wid-mobile-blurbs {
     display: flex;
     flex-direction: column;

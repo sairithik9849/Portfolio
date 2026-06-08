@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { useMotionValue, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useReducedMotion } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import SectionHead from './SectionHead'
@@ -7,6 +7,15 @@ import WidVisual from './WidVisual'
 import { WHAT_I_DO } from '../data/whatIDo'
 
 const N = WHAT_I_DO.length // 5
+
+// Splits blurb text on numeric tokens (e.g. "50+", "10M", "60fps") and wraps
+// them in gold so metrics stand out without hardcoding per-blurb markup.
+const highlightNums = text =>
+  text.split(/(\d[\w+]*)/).map((part, i) =>
+    /^\d/.test(part)
+      ? <span key={i} className="wid-caption-num">{part}</span>
+      : part
+  )
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Desktop media query — pin/scrub/snap is created ONLY inside this condition.
@@ -22,7 +31,6 @@ export default function WhatIDo() {
   const stackBaseRef = useRef(null)    // cream word stack
   const bandRef     = useRef(null)     // accent band (overflow:hidden clip)
   const stackKoRef  = useRef(null)     // dark knockout stack inside band
-  const widRightRef = useRef(null)     // right-side blurb column
   const activeRef   = useRef(0)
   const [active, setActive] = useState(0)
 
@@ -86,14 +94,6 @@ export default function WhatIDo() {
         stackKo.style.top  = `${bleed}px`
         stackKo.style.left = '0px'
 
-        // Anchor the right-side blurb to the vertical center of the band.
-        // CSS `top:50% + translateY(-50%)` was centered on the stage mid-point
-        // (correct when align-items:center); now that the stage is flex-start
-        // with a top-gap, we override `top` to place the blurb's center on
-        // the band's center: topGap + bandH/2.
-        const widRight = widRightRef.current
-        if (widRight) widRight.style.top = `${wordH + bandH / 2}px`
-
         // ── ScrollTrigger ──────────────────────────────────────────────────
         const st = ScrollTrigger.create({
           trigger: section,
@@ -142,8 +142,6 @@ export default function WhatIDo() {
           band.style.top       = ''
           stackKo.style.top    = ''
           stackKo.style.left   = ''
-          const widRight = widRightRef.current
-          if (widRight) widRight.style.top = ''
         }
       }
 
@@ -222,11 +220,7 @@ export default function WhatIDo() {
               </div>
             ))}
           </div>
-        </div>
 
-        {/* RIGHT — live-system viz panel (desktop only) */}
-        <div className="wid-right" ref={widRightRef}>
-          <WidVisual progress={progress} active={active} reduced={reduced} />
         </div>
 
         {/* Mobile-only (and reduced-motion): all five blurbs listed inline.
@@ -244,6 +238,31 @@ export default function WhatIDo() {
         </div>
 
       </div>
+
+      {/* Desktop viz field + caption — direct children of the section (not the
+          stage) so they are NOT clipped by the stage's clip-path:inset and can
+          span the full 100vh. The section is position:relative and the
+          containing block for these absolute elements. */}
+      <WidVisual progress={progress} active={active} reduced={reduced} />
+
+      {/* Caption — real DOM text (active blurb) for screen readers.
+          Mirrors the field's geometry (same left/right/height). z:5 paints it
+          above the word stacks. The viz region is aria-hidden. */}
+      <div className="wid-caption" aria-live="polite">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={active}
+            className="wid-caption-text"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {highlightNums(WHAT_I_DO[active]?.blurb ?? '')}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+
     </section>
   )
 }

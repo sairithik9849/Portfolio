@@ -1,70 +1,45 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   WID VIZ — shared bezel + five per-word live-system visuals
-   Architecture: 5 .widviz-layer children are position:absolute; inset:0 so
-   they overlap for cross-dissolve. Framer Motion drives their opacity.
+   WID VIZ — unboxed full-height system field + five per-word live visuals
+   Architecture: .widviz-panel is position:absolute inside the pinned .wid-stage
+   (position:relative), filling from the band's right edge to the stage's right
+   edge and top-to-bottom. A layered mask-image fades all content at the top,
+   right, and bottom so every viz dissolves into the dark background — the field
+   reads as the page itself, not a card. No border, no background, no chrome.
+   Five .widviz-layer children are position:absolute; inset:0 for cross-dissolve.
    All animation via transform/opacity/pathLength only. 60fps floor.
    ───────────────────────────────────────────────────────────────────────────── */
 
-/* ── Panel ──────────────────────────────────────────────────────────────────── */
+/* ── Panel — full-height unboxed field ──────────────────────────────────────── */
 .widviz-panel {
-  position: relative;
-  border: 1px solid var(--line-2);
-  background: rgba(255, 255, 255, 0.012);
-  /* Height sized to fill the right column well at every viewport in range */
-  height: clamp(280px, 32vw, 340px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ── Corner crop-bracket motif ──────────────────────────────────────────────── */
-/* Each corner is a 12×12 px L-shape formed by two borders on one element.
-   Lime, ~0.6 opacity — chrome, not focus. Echoes .role-bracket treatment. */
-.widviz-corner {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  opacity: 0.55;
+  /* Panel is now a direct child of .what-i-do (position:relative, full-width).
+     left/right mirror the stage's max-width:1440px centered layout so the
+     field region aligns with the word band at any viewport width.
+     Formula: stage_left + (band-w + 4%) × stage_width
+             = max(0, 50vw - 720px) + 0.72 × min(100vw, 1440px) */
+  left: calc(max(0px, 50vw - 720px) + 0.72 * min(100vw, 1440px));
+  right: max(0px, 50vw - 720px);   /* matches stage right padding edge */
+  top: 0;
+  height: 100vh;
   pointer-events: none;
-  z-index: 4;
-}
-.widviz-corner--tl { top: -1px;  left: -1px;  border-top: 1.5px solid var(--accent); border-left:  1.5px solid var(--accent); }
-.widviz-corner--tr { top: -1px;  right: -1px; border-top: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); }
-.widviz-corner--bl { bottom: -1px; left: -1px;  border-bottom: 1.5px solid var(--accent); border-left:  1.5px solid var(--accent); }
-.widviz-corner--br { bottom: -1px; right: -1px; border-bottom: 1.5px solid var(--accent); border-right: 1.5px solid var(--accent); }
-
-/* ── Head ───────────────────────────────────────────────────────────────────── */
-.widviz-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 8px;
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-}
-
-.widviz-kicker {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--accent-2);
-  opacity: 0.8;
-}
-
-.widviz-mode {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent-2);
+  /* Top fade (20%) covers the ~168px section header so nodes never paint on
+     the heading text. Bottom fade starts at 94% to keep the readout visible.
+     Right fade 10%. Left edge is hard — the lime band is the visual boundary. */
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, black 20%, black 94%, transparent 100%),
+    linear-gradient(to left, transparent 0%, black 10%);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, black 20%, black 94%, transparent 100%),
+    linear-gradient(to left, transparent 0%, black 10%);
+  -webkit-mask-composite: destination-in;
 }
 
 /* ── Body — five absolutely-stacked layers ──────────────────────────────────── */
 .widviz-body {
-  position: relative;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
+  /* overflow:visible so viz content reaches the panel edges where mask fades it */
 }
 
 .widviz-layer {
@@ -73,23 +48,6 @@
   /* Each viz manages its own inner layout */
 }
 
-/* ── Foot — blurb caption ───────────────────────────────────────────────────── */
-.widviz-foot {
-  flex-shrink: 0;
-  padding: 8px 14px 10px;
-  border-top: 1px solid var(--line);
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-
-.widviz-blurb {
-  font-family: var(--sans);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--fg-2);
-  margin: 0;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: BACKEND
@@ -213,70 +171,159 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: SYSTEMS
+   VIZ: SYSTEMS — Fibonacci sphere field
+   50 nodes on a projected sphere + rotating mesh + data pulses + spring physics.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-systems {
-  display: flex;
-  flex-direction: column;
-  padding: 10px 14px;
-  gap: 8px;
+  /* position:absolute + inset:0 is inherited from the co-applied .widviz-layer
+     rule. Do NOT add position:relative here — it would override the absolute
+     positioning, collapse the element's height to 0, and break node top:% math.
+     All absolutely-positioned children (.wsys-field, .wsys-status, .wsys-pulse)
+     use this element as their containing block via its absolute positioning. */
 }
 
-.wsys-grid {
-  display: grid;
-  /* 7 cols × 7 rows — JS injects --enter, each dot uses --i for stagger */
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  flex: 1;
+/* Container that holds --enter CSS custom prop (set by Framer subscription).
+   All child nodes inherit it and compute their assembly opacity via it. */
+.wsys-field {
+  position: absolute;
+  inset: 0;
 }
 
-.wsys-dot {
-  width: 6px;
-  height: 6px;
+/* Mesh SVG — behind nodes in DOM order, no pointer events */
+.wsys-mesh-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.wsys-mesh-path {
+  /* Single <path> replaces individual <line> elements — updated by RAF each frame.
+     Faint lime so the rotating mesh reads as a network without being loud. */
+  fill: none;
+  stroke: rgba(201, 245, 88, 0.10);
+  stroke-width: 0.6;
+}
+
+/* Data pulse dots — bright lime circles traveling along selected edges via SMIL */
+.wsys-pulse-dot {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 4px rgba(201, 245, 88, 0.85));
+}
+
+/* Each node is a circle positioned via left/top percentages.
+   --z (0 back → 1 front) scales size and glow: back nodes are 4px/faint,
+   front nodes are 8px/bright, giving the sphere a 3D depth reading.
+   Assembly opacity is driven by --enter (container) + --i (per-node stagger).
+   Breathing composes via filter:brightness without touching opacity. */
+.wsys-node {
+  position: absolute;
+  width:  calc(4px + 4px * var(--z, 0.5));
+  height: calc(4px + 4px * var(--z, 0.5));
   border-radius: 50%;
   background: var(--accent);
-  /* Staggered reveal: dot at --i lights up when --enter >= --i.
-     Multiplier 40 gives a crisp ~2.5% ramp per dot (no per-dot JS loop). */
-  opacity: clamp(0, calc((var(--enter, 1) - var(--i)) * 40), 1);
-  will-change: opacity;
-  justify-self: center;
-  align-self: center;
+  transform: translate(-50%, -50%);
+  opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0)) * 20), 1);
+  will-change: transform, opacity, filter;
+  box-shadow: 0 0 calc(5px + 12px * var(--z, 0.5)) 1px
+              rgba(201, 245, 88, calc(0.18 + 0.5 * var(--z, 0.5)));
+  animation: wsys-breathe 2.8s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
 }
 
-.wsys-status {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
+@keyframes wsys-breathe {
+  0%, 100% { filter: brightness(1); }
+  /* Floor raised to 0.65 — nodes stay visibly lime at peak dim */
+  50%       { filter: brightness(0.65); }
 }
 
-.wsys-status-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--muted);
+/* Temporarily healing node: drop to muted, pause breathing */
+.wsys-node--healing {
+  background: var(--muted);
+  animation: none;
 }
 
-.wsys-status-val {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-}
-
-/* Heal-pulse ring — position:absolute over the grid; JS drives cx/cy via motion */
+/* Heal-pulse ring — JS drives left/top via MotionValues */
 .wsys-pulse {
   position: absolute;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 1.5px solid var(--accent);
-  width: 14px;
-  height: 14px;
   transform: translate(-50%, -50%);
   pointer-events: none;
   will-change: transform, opacity;
 }
+
+/* Center logo — pentagon nucleus + PCB traces + text label.
+   Framer owns x/y; no CSS transform here to avoid conflict. */
+.wsys-center-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  pointer-events: none;
+  z-index: 2;
+  animation: wsys-icon-glow 3s ease-in-out infinite;
+}
+
+/* Frosted dark backdrop behind just the text so sphere nodes don't obscure it */
+.wsys-logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px 6px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.wsys-logo-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  color: var(--accent);
+  text-shadow:
+    0 0 16px rgba(201, 245, 88, 0.6),
+    0 1px 8px rgba(0, 0, 0, 0.95);
+}
+
+.wsys-logo-sub {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.18em;
+  color: var(--accent-2);
+  text-shadow:
+    0 0 10px rgba(232, 196, 122, 0.7),
+    0 0 20px rgba(232, 196, 122, 0.35),
+    0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* Center dot pulses gently in sync with node breathing */
+.wsys-icon-dot {
+  transform-origin: 45px 45px;
+  animation: wsys-icon-dot-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes wsys-icon-glow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(201, 245, 88, 0.3)); }
+  50%       { filter: drop-shadow(0 0 12px rgba(201, 245, 88, 0.65)); }
+}
+
+@keyframes wsys-icon-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.8); opacity: 0.4; }
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: DATA
@@ -517,25 +564,40 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    FROZEN / MOBILE variant
+   Desktop: fully unboxed (no border). Mobile only: minimal hairline frame
+   for legibility against the shader background.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-panel--frozen {
-  /* Smaller in the mobile blurb list context */
+  /* Override the absolute full-height panel — frozen panels are in-flow */
+  position: relative;
   height: auto;
   min-height: 180px;
   margin-bottom: 0;
+  /* No mask on frozen panels */
+  mask-image: none;
+  -webkit-mask-image: none;
+  /* No pointer-events override needed — panel is decorative */
+  overflow: hidden;
 }
 
 .widviz-panel--frozen .widviz-body {
-  /* Don't overflow the panel height when frozen */
   position: relative;
-  min-height: 120px;
+  min-height: 140px;
 }
 
 .widviz-panel--frozen .widviz-layer {
   position: static;
   height: auto;
 }
+
+/* Frozen SYSTEMS: field needs explicit height for absolute node positions */
+.widviz-panel--frozen .wsys-field {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+}
+
 
 /* Mobile container — sits above the blurb in .wid-mobile-blurb-item */
 .wid-mobile-viz {
@@ -547,18 +609,10 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 980px) {
-  /* Frozen mobile panels scale down */
+  /* Frozen mobile panels: add hairline border for legibility against shader */
   .widviz-panel--frozen {
     min-height: 140px;
-  }
-
-  /* Tighten dot grid on narrow viewports */
-  .wsys-grid {
-    gap: 4px;
-  }
-
-  .wsys-dot {
-    width: 5px;
-    height: 5px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
   }
 }
