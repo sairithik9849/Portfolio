@@ -7,28 +7,28 @@ const DATA = WID_VIZ.backend
 const N    = 5
 
 // ── Layout constants (% of the 0–100 SVG / HTML field) ───────────────────────
-// Pipeline is a vertically-centered band (y 24–63) with empty space above/below.
-// Panel's top-fade covers ~20%, bottom-fade starts at 94% — pipeline clears both.
+// Pipeline band shifted up (y 18–57) so there is more breathing room between
+// the readout cluster and the bottom caption text.
+// Panel's top-fade covers ~20% — EDGE at y18 sits just inside the fade boundary.
 const SPINE_X = 26   // x% of the spine line and token travel
 
 const STATIONS = [
-  { id: 'edge',  y: 24, rank: 0 },
-  { id: 'api',   y: 37, rank: 1 },
-  { id: 'cache', y: 50, rank: 2 },
-  { id: 'db',    y: 63, rank: 3 },
+  { id: 'edge',  y: 18, rank: 0 },
+  { id: 'api',   y: 31, rank: 1 },
+  { id: 'cache', y: 44, rank: 2 },
+  { id: 'db',    y: 57, rank: 3 },
 ]
 
 // Stagger bands: each station assembles 0.22 after the previous.
 // rank 0 → --i 0, rank 3 → --i 0.66; all fully visible by enter = 1.
 const STATION_I = rank => rank * 0.22
 
-// Waveform: mostly flat, one spike near the right edge (MISS events).
-// Drawn in the same 0–100 SVG coordinate space.
-const WAVE_POINTS = '26,73 32,73 38,73 42,72 48,74 52,73 58,73 64,72 70,73'
+// Waveform: mostly flat, one pre-authored spike. Shifted up 6 units with the pipeline.
+const WAVE_POINTS = '26,67 32,67 38,67 42,66 48,68 52,67 58,67 64,66 70,67'
 const WAVE_CX     = '26;32;38;42;48;52;58;64;70'
-const WAVE_CY     = '73;73;73;72;74;73;73;72;73'
-// Readout cluster top position (% — below the pipeline, above the caption)
-const READOUT_TOP = '78%'
+const WAVE_CY     = '67;67;67;66;68;67;67;66;67'
+// Readout cluster sits below the waveform with clear breathing room above the caption.
+const READOUT_TOP = '72%'
 
 // Hit : miss cycling — 4 hits then 1 miss, repeating.
 const HIT_CYCLE = 4
