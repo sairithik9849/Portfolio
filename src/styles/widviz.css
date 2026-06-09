@@ -50,17 +50,21 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: BACKEND
+   VIZ: BACKEND — "the life of a request"
+   Vertical pipeline: EDGE → API → CACHE → DB. A lime ◆ token descends each
+   cycle; most cycles flash CACHE (HIT, returns fast); rare cycles fall to DB
+   (MISS, blips the latency line). Tells the story that matches the caption:
+   "boring is the highest compliment."
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.widviz-backend { /* inherits position:absolute; inset:0 from .widviz-layer */ }
+.widviz-backend {
+  /* position:absolute + inset:0 inherited from .widviz-layer */
+}
 
 .wbk-field {
   position: absolute;
   inset: 0;
-  /* Horizontal river mask — traffic flows in and out of frame edges */
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-          mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  /* No mask — labels need full visibility; field mask on .widviz-panel handles edges */
 }
 
 .wbk-mesh-svg {
@@ -72,10 +76,10 @@
   overflow: visible;
 }
 
-/* Rails + waveform: draw in as --enter passes each element's --i threshold.
-   pathLength="1" + dasharray=1: dashoffset=1 → invisible, 0 → fully drawn.
-   Each element draws over a 0.2-wide enter window starting at --i. */
-.wbk-rail,
+/* Spine + station ticks + waveform: all draw in via --enter / --i dashoffset.
+   pathLength="1" normalizes dash math to 0–1. Window = 0.2 per element. */
+.wbk-spine,
+.wbk-tick,
 .wbk-wave {
   fill: none;
   stroke: var(--line-2);
@@ -84,63 +88,137 @@
   stroke-dasharray: 1;
   stroke-dashoffset: clamp(0, calc(1 - (var(--enter, 1) - var(--i, 0)) * 5), 1);
 }
-.wbk-rail--cache { stroke: var(--accent-dim); }
-.wbk-rail--hit {
-  stroke: var(--accent);
-  filter: drop-shadow(0 0 4px rgba(201, 245, 88, 0.8));
-  transition: stroke 0.12s, filter 0.12s;
-}
 
-.wbk-flow-dot { fill: var(--line-2); }
-.wbk-flow-dot--cache { fill: var(--accent); opacity: 0.85; }
+/* Latency line brightens to gold on a MISS blip (JS toggles this class) */
+.wbk-wave--spike {
+  stroke: var(--accent-2);
+  filter: drop-shadow(0 0 3px rgba(232, 196, 122, 0.7));
+  transition: stroke 0.15s, filter 0.15s;
+}
 
 .wbk-wave-sample {
   fill: var(--accent);
-  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.8));
+  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.7));
 }
 
-/* Rail labels fade in with their rail via --enter + --i */
-.wbk-rail-label {
+/* ── Station nodes — HTML for crisp rendering over a non-uniform SVG ── */
+.wbk-station {
   position: absolute;
-  transform: translateY(-50%);
-  font-family: var(--mono);
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  color: var(--fg-2);
+  transform: translate(0, -50%);   /* vertically centered on the spine point */
+  display: flex;
+  align-items: center;
+  gap: 7px;
   white-space: nowrap;
   pointer-events: none;
   opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0)) * 6), 1);
+  will-change: opacity;
 }
-.wbk-rail-label--cache { color: var(--accent); }
-.wbk-rail-tag { margin-left: 6px; color: var(--accent-2); opacity: 0.8; }
 
-/* Focal probe — glow dot; JS drives left/top via MotionValues */
-.wbk-probe {
-  position: absolute;
+.wbk-station-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  will-change: top, left, opacity;
+  background: var(--bg);
+  border: 1.5px solid var(--line-2);
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
-/* Corner readouts — unboxed, no border */
-.wbk-counter,
-.wbk-rps,
-.wbk-pmeta {
-  position: absolute;
-  pointer-events: none;
+.wbk-station-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--fg-2);
+}
+
+.wbk-station-tag {
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+  opacity: 0.85;
 }
-.wbk-counter { left: 16px; bottom: 14px; color: var(--accent-2); }
-.wbk-counter b { color: var(--accent); font-weight: 400; }
-.wbk-rps { right: 16px; bottom: 14px; color: var(--accent); opacity: 0.7; }
-.wbk-pmeta { right: 16px; color: var(--muted); font-size: 8px; }
+
+/* CACHE is the hero station */
+.wbk-station--cache .wbk-station-dot   { border-color: var(--accent-dim); }
+.wbk-station--cache .wbk-station-label { color: var(--accent); }
+
+/* Hit/miss flashes — JS adds/removes these classes */
+.wbk-station--hit  .wbk-station-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(201, 245, 88, 0.8);
+}
+.wbk-station--miss .wbk-station-dot { border-color: var(--accent-2); }
+
+/* ── Request token — lime ◆ diamond glow ── */
+.wbk-token {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(201, 245, 88, 0.9), 0 0 20px rgba(201, 245, 88, 0.4);
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
+  will-change: top, opacity;
+}
+
+/* ── Status tag — HIT · 4ms / MISS · 28ms, shown near CACHE ── */
+.wbk-status {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+/* ── Centered readout cluster — below graph, above caption ── */
+.wbk-readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  pointer-events: none;
+  text-align: center;
+}
+
+.wbk-readout-lat-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--accent-2);
+  opacity: 0.8;
+}
+
+.wbk-readout-lat {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--fg-2);
+}
+.wbk-readout-lat .p50 { color: var(--accent); }
+.wbk-readout-lat .p99 { color: var(--accent-2); }
+
+.wbk-readout-req {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+  margin-top: 4px;
+}
+.wbk-readout-req b { color: var(--accent); font-weight: 400; }
+
+.wbk-readout-rps {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  opacity: 0.8;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: SYSTEMS — Fibonacci sphere field

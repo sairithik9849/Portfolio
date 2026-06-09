@@ -77,18 +77,24 @@ export const WID_VIZ = {
   },
 
   backend: {
-    kicker:  '// 03·02',
-    mode:    'BACKEND',
-    layers:  ['EDGE', 'API', 'CACHE', 'DB'],
-    hitLabel:  'CACHE HIT',
-    missLabel: 'CACHE MISS',
-    sparkLabel: 'LATENCY',
-    // p-values shown in the sparkline legend
-    p50: 'p50 · 4ms',
-    p99: 'p99 · 28ms',
-    reqLabel: 'REQ',
-    rpsLabel: '10M req/day',
-    cacheTag: 'REDIS',
+    kicker: '// 03·02',
+    mode:   'BACKEND',
+    // top → bottom of the request stack; tag = engine shown in gold
+    stations: [
+      { id: 'edge',  label: 'EDGE',  tag: 'TLS'      },
+      { id: 'api',   label: 'API',   tag: 'NODE'      },
+      { id: 'cache', label: 'CACHE', tag: 'REDIS'     },
+      { id: 'db',    label: 'DB',    tag: 'POSTGRES'  },
+    ],
+    hitLabel:     'HIT',
+    missLabel:    'MISS',
+    hitMs:        '4ms',
+    missMs:       '28ms',
+    latencyLabel: 'LATENCY',
+    p50:          'p50 · 4ms',
+    p99:          'p99 · 28ms',
+    reqLabel:     'REQ',
+    rpsLabel:     '10M req / day',
   },
 
   data: {

@@ -1,88 +1,160 @@
-import { useTransform, motion, useMotionValue, animate } from 'framer-motion'
 import { useEffect, useRef } from 'react'
+import { motion, useTransform, useMotionValue, animate } from 'framer-motion'
 import { widSlice } from '../../utils/widSlice'
 import { WID_VIZ } from '../../data/widViz'
 
 const DATA = WID_VIZ.backend
 const N    = 5
 
-// ── Layout constants (% of 0–100 SVG field) ──────────────────────────────────
-const RAILS = [
-  { id: 'edge',  y: 30, rank: 0 },
-  { id: 'api',   y: 39, rank: 1 },
-  { id: 'cache', y: 48, rank: 2 },
-  { id: 'db',    y: 57, rank: 3 },
+// ── Layout constants (% of the 0–100 SVG / HTML field) ───────────────────────
+// Pipeline is a vertically-centered band (y 24–63) with empty space above/below.
+// Panel's top-fade covers ~20%, bottom-fade starts at 94% — pipeline clears both.
+const SPINE_X = 26   // x% of the spine line and token travel
+
+const STATIONS = [
+  { id: 'edge',  y: 24, rank: 0 },
+  { id: 'api',   y: 37, rank: 1 },
+  { id: 'cache', y: 50, rank: 2 },
+  { id: 'db',    y: 63, rank: 3 },
 ]
-const RAIL_X0 = 14, RAIL_X1 = 86
-const LANE_HIT  = 40
-const LANE_MISS = 64
-const WAVE_D  = 'M30,72 L35,70 L40,71 L45,68 L50,73 L55,70 L60,71 L65,70 L68,69'
-const WAVE_CX = '30;35;40;45;50;55;60;65;68'
-const WAVE_CY = '72;70;71;68;73;70;71;70;69'
+
+// Stagger bands: each station assembles 0.22 after the previous.
+// rank 0 → --i 0, rank 3 → --i 0.66; all fully visible by enter = 1.
+const STATION_I = rank => rank * 0.22
+
+// Waveform: mostly flat, one spike near the right edge (MISS events).
+// Drawn in the same 0–100 SVG coordinate space.
+const WAVE_POINTS = '26,73 32,73 38,73 42,72 48,74 52,73 58,73 64,72 70,73'
+const WAVE_CX     = '26;32;38;42;48;52;58;64;70'
+const WAVE_CY     = '73;73;73;72;74;73;73;72;73'
+// Readout cluster top position (% — below the pipeline, above the caption)
+const READOUT_TOP = '78%'
+
+// Hit : miss cycling — 4 hits then 1 miss, repeating.
+const HIT_CYCLE = 4
 
 export default function VizBackend({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
 
   const { dissolveIn, enterIn } = widSlice(index, N)
 
-  // ── scroll clock — all hooks called unconditionally ───────────────────────
+  // ── Scroll clock — all hooks called unconditionally ──────────────────────
   const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
   const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
   const enter     = useTransform(progress, enterIn,   [0, 1],     { clamp: true })
-  const readoutOp = useTransform(enter, [0.8, 1], [0, 1],         { clamp: true })
+  // Readout cluster fades in after the pipeline is fully assembled — mirrors
+  // VizSystems statusOp / VizData costOp.
+  const readoutOp = useTransform(enter, [0.8, 1], [0, 1], { clamp: true })
 
-  // Probe position/opacity — MotionValues + derived CSS-string transforms
-  const probeXMV  = useMotionValue(LANE_HIT)
-  const probeYMV  = useMotionValue(RAILS[0].y)
-  const probeOpMV = useMotionValue(0)
-  const probeLeft = useTransform(probeXMV, v => `${v}%`)
-  const probeTop  = useTransform(probeYMV, v => `${v}%`)
+  // Token position (top %) and opacity — JS-driven MotionValues, same pattern
+  // as VizSystems heal-pulse (pulseXMV/pulseYMV).
+  const tokenTopMV = useMotionValue(STATIONS[0].y)
+  const tokenOpMV  = useMotionValue(0)
+  const tokenTop   = useTransform(tokenTopMV, v => `${v}%`)
 
-  // Rail DOM refs for classList flash on hit/miss
-  const railRefs  = useRef([null, null, null, null])
-  const counterEl = useRef(null)
-  const loopRef   = useRef(null)
-  const isHitRef  = useRef(true)
+  // DOM refs for classList flash (same pattern as wsys-node--healing / railRefs)
+  const stationRefs = useRef([null, null, null, null])
+  const statusRef   = useRef(null)
+  const waveRef     = useRef(null)
+  const counterEl   = useRef(null)
+  const loopRef     = useRef(null)
+  const cycleRef    = useRef(0)  // tracks position in HIT_CYCLE
 
-  // ── Wall clock #1 — focal probe ───────────────────────────────────────────
+  // ── Wall clock #1 — request lifecycle ────────────────────────────────────
+  // Each cycle: token descends EDGE→API→CACHE; on HIT it returns; on MISS it
+  // continues to DB, blips the latency line, then rises back through CACHE.
+  // Cancel-flag pattern + loopRef cleanup mirrors VizSystems heal-pulse exactly.
   useEffect(() => {
     if (!isActive || isFinal) {
-      animate(probeOpMV, 0, { duration: 0.3 })
+      animate(tokenOpMV, 0, { duration: 0.3 })
       loopRef.current?.()
       return
     }
 
     let cancelled = false
 
+    const setStatus = (text, visible) => {
+      if (statusRef.current) {
+        statusRef.current.textContent = text
+        statusRef.current.style.opacity = visible ? '1' : '0'
+      }
+    }
+
+    const flashStation = (idx, className, durationMs) => {
+      stationRefs.current[idx]?.classList.add(className)
+      return new Promise(r => setTimeout(() => {
+        stationRefs.current[idx]?.classList.remove(className)
+        r()
+      }, durationMs))
+    }
+
     const runLoop = async () => {
-      await animate(probeOpMV, 1, { duration: 0.2 })
+      await animate(tokenOpMV, 1, { duration: 0.2 })
 
       while (!cancelled) {
-        const isHit = isHitRef.current
-        isHitRef.current = !isHitRef.current
-        const dur = isHit ? 0.2 : 0.28
-        const seq = isHit
-          ? [RAILS[0], RAILS[1], RAILS[2]]
-          : [RAILS[0], RAILS[1], RAILS[2], RAILS[3]]
-        const flashIdx = isHit ? 2 : 3
+        const isHit = (cycleRef.current % (HIT_CYCLE + 1)) < HIT_CYCLE
+        cycleRef.current++
 
-        // Snap probe to correct lane, then descend
-        await animate(probeXMV, isHit ? LANE_HIT : LANE_MISS, { duration: 0 })
-        for (const rail of seq) {
+        // Reset token to EDGE
+        tokenTopMV.set(STATIONS[0].y)
+        setStatus('', false)
+
+        // ── Descend to CACHE ─────────────────────────────────────────────
+        for (let i = 0; i <= 2; i++) {
           if (cancelled) break
-          await animate(probeYMV, rail.y, { duration: dur, ease: 'easeInOut' })
+          await animate(tokenTopMV, STATIONS[i].y, { duration: 0.18, ease: 'easeInOut' })
+        }
+        if (cancelled) break
+
+        if (isHit) {
+          // ── HIT: flash CACHE, show HIT · 4ms, ascend ─────────────────
+          setStatus(`${DATA.hitLabel} · ${DATA.hitMs}`, true)
+          await flashStation(2, 'wbk-station--hit', 500)
+          setStatus('', false)
+          if (cancelled) break
+
+          // Ascend CACHE → EDGE
+          for (let i = 1; i >= 0; i--) {
+            if (cancelled) break
+            await animate(tokenTopMV, STATIONS[i].y, { duration: 0.18, ease: 'easeInOut' })
+          }
+        } else {
+          // ── MISS: brief CACHE miss-flash, descend to DB ───────────────
+          setStatus(DATA.missLabel, true)
+          stationRefs.current[2]?.classList.add('wbk-station--miss')
+          await new Promise(r => setTimeout(r, 220))
+          stationRefs.current[2]?.classList.remove('wbk-station--miss')
+          if (cancelled) break
+
+          // Descend CACHE → DB
+          await animate(tokenTopMV, STATIONS[3].y, { duration: 0.28, ease: 'easeInOut' })
+          if (cancelled) break
+
+          // Flash DB + show MISS · 28ms + blip the latency line
+          setStatus(`${DATA.missLabel} · ${DATA.missMs}`, true)
+          waveRef.current?.classList.add('wbk-wave--spike')
+          await flashStation(3, 'wbk-station--hit', 700)
+          waveRef.current?.classList.remove('wbk-wave--spike')
+          if (cancelled) break
+
+          // Ascend DB → CACHE (re-flash CACHE = cache fill) → EDGE
+          await animate(tokenTopMV, STATIONS[2].y, { duration: 0.28, ease: 'easeInOut' })
+          if (cancelled) break
+          stationRefs.current[2]?.classList.add('wbk-station--hit')
+          await new Promise(r => setTimeout(r, 300))
+          stationRefs.current[2]?.classList.remove('wbk-station--hit')
+          setStatus('', false)
+          if (cancelled) break
+
+          await animate(tokenTopMV, STATIONS[1].y, { duration: 0.18, ease: 'easeInOut' })
+          if (cancelled) break
+          await animate(tokenTopMV, STATIONS[0].y, { duration: 0.18, ease: 'easeInOut' })
         }
 
         if (!cancelled) {
-          railRefs.current[flashIdx]?.classList.add('wbk-rail--hit')
-          await new Promise(r => setTimeout(r, isHit ? 600 : 900))
-          railRefs.current[flashIdx]?.classList.remove('wbk-rail--hit')
-        }
-
-        // Ascend back to EDGE
-        for (const rail of [...seq].reverse().slice(1)) {
-          if (cancelled) break
-          await animate(probeYMV, rail.y, { duration: dur, ease: 'easeInOut' })
+          await animate(tokenOpMV, 0, { duration: 0.15 })
+          await new Promise(r => setTimeout(r, isHit ? 500 : 900))
+          await animate(tokenOpMV, 1, { duration: 0.15 })
         }
       }
     }
@@ -90,11 +162,12 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     runLoop()
     loopRef.current = () => { cancelled = true }
     return () => { cancelled = true }
-    // probeXMV, probeYMV, probeOpMV are stable MotionValue refs — omit from deps.
+    // tokenTopMV and tokenOpMV are stable MotionValue refs — intentionally omitted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isFinal])
 
-  // ── Wall clock #2 — req counter ───────────────────────────────────────────
+  // ── Wall clock #2 — REQ counter ──────────────────────────────────────────
+  // Verbatim from VizData — reuse identical pattern.
   useEffect(() => {
     if (!isActive || isFinal) return
     let cancelled = false
@@ -115,118 +188,131 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
       className="widviz-layer widviz-backend"
       style={{ opacity: isFinal ? 1 : dissolve, scale: isFinal ? 1 : scale }}
     >
+      {/* Single --enter subscriber — all CSS assembly inherits from here.
+          Pattern identical to VizSystems (.wsys-field) and VizData (.wdat-field). */}
       <motion.div
         className="wbk-field"
         style={{ '--enter': isFinal ? 1 : enter }}
       >
-        {/* ── SVG field: rails + traffic + waveform ──────────────────────── */}
+
+        {/* ── SVG layer: spine + ticks + waveform ───────────────────────────
+            preserveAspectRatio="none" stretches the 0 0 100 100 viewBox to fill
+            the full-height panel — matches VizSystems / VizData convention.
+            Only lines live here; nodes and token are HTML (crisp text/shapes). */}
         <svg
           className="wbk-mesh-svg"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          {RAILS.map((rail, i) => (
+          {/* Vertical spine connecting EDGE to DB */}
+          <path
+            className="wbk-spine"
+            pathLength="1"
+            d={`M${SPINE_X},${STATIONS[0].y} L${SPINE_X},${STATIONS[3].y}`}
+            style={{ '--i': 0 }}
+          />
+
+          {/* Short horizontal tick per station — draws with its node */}
+          {STATIONS.map(s => (
             <path
-              key={rail.id}
-              ref={el => { railRefs.current[i] = el }}
-              className={`wbk-rail${rail.id === 'cache' ? ' wbk-rail--cache' : ''}`}
+              key={s.id}
+              className="wbk-tick"
               pathLength="1"
-              d={`M${RAIL_X0},${rail.y} L${RAIL_X1},${rail.y}`}
-              style={{ '--i': rail.rank * 0.25 }}
+              d={`M${SPINE_X},${s.y} L${SPINE_X + 5},${s.y}`}
+              style={{ '--i': STATION_I(s.rank) }}
             />
           ))}
 
-          {RAILS.map(rail =>
-            [0, 1].map(k => (
-              <circle
-                key={`${rail.id}-${k}`}
-                className={`wbk-flow-dot${rail.id === 'cache' ? ' wbk-flow-dot--cache' : ''}`}
-                r="0.9"
-                cy={rail.y}
-              >
-                <animate
-                  attributeName="cx"
-                  from={RAIL_X0} to={RAIL_X1}
-                  dur="2.8s"
-                  repeatCount="indefinite"
-                  begin={`${(rail.rank * 0.35 + k * 1.4).toFixed(2)}s`}
-                />
-                <animate
-                  attributeName="opacity"
-                  values="0;1;1;0"
-                  keyTimes="0;0.08;0.92;1"
-                  dur="2.8s"
-                  repeatCount="indefinite"
-                  begin={`${(rail.rank * 0.35 + k * 1.4).toFixed(2)}s`}
-                />
-              </circle>
-            ))
-          )}
-
-          <path
+          {/* Latency waveform — mostly flat, one pre-authored spike at mid-right.
+              Draws last (--i 0.85); SMIL sample dot travels its points.
+              JS adds .wbk-wave--spike on MISS cycles. */}
+          <polyline
+            ref={waveRef}
             className="wbk-wave"
             pathLength="1"
-            d={WAVE_D}
-            style={{ '--i': 0.9 }}
+            points={WAVE_POINTS}
+            style={{ '--i': 0.85 }}
           />
 
-          <circle className="wbk-wave-sample" r="1.2">
-            <animate attributeName="cx" values={WAVE_CX} dur="3s" repeatCount="indefinite" />
-            <animate attributeName="cy" values={WAVE_CY} dur="3s" repeatCount="indefinite" />
-            <animate
-              attributeName="opacity"
+          {/* Traveling sample dot — matches .wsys-pulse-dot / .wdat-pulse-dot */}
+          <circle className="wbk-wave-sample" r="1.1">
+            <animate attributeName="cx" values={WAVE_CX}
+              dur="3s" repeatCount="indefinite" />
+            <animate attributeName="cy" values={WAVE_CY}
+              dur="3s" repeatCount="indefinite" />
+            <animate attributeName="opacity"
               values="0;1;1;1;1;0"
               keyTimes="0;0.08;0.3;0.7;0.92;1"
-              dur="3s"
-              repeatCount="indefinite"
-            />
+              dur="3s" repeatCount="indefinite" />
           </circle>
         </svg>
 
-        {/* ── Rail labels ─────────────────────────────────────────────────── */}
-        {RAILS.map((rail, i) => (
-          <span
-            key={rail.id}
-            className={`wbk-rail-label${rail.id === 'cache' ? ' wbk-rail-label--cache' : ''}`}
-            style={{ top: `${rail.y}%`, left: '8px', '--i': rail.rank * 0.25 }}
+        {/* ── Station nodes (HTML — crisp over non-uniform SVG) ─────────────
+            Positioned at left:SPINE_X%, top:{y}% to register with SVG spine.
+            transform:translate(0,-50%) centers each node on its y.
+            Opacity driven by --enter + --i CSS calc (assembles top→bottom). */}
+        {STATIONS.map((s, i) => (
+          <div
+            key={s.id}
+            ref={el => { stationRefs.current[i] = el }}
+            className={`wbk-station wbk-station--${s.id}`}
+            style={{
+              left: `${SPINE_X}%`,
+              top:  `${s.y}%`,
+              '--i': STATION_I(s.rank),
+            }}
           >
-            {DATA.layers[i]}
-            {rail.id === 'cache' && (
-              <span className="wbk-rail-tag">{DATA.cacheTag}</span>
-            )}
-          </span>
+            <span className="wbk-station-dot" />
+            <span className="wbk-station-label">{DATA.stations[i].label}</span>
+            <span className="wbk-station-tag">{DATA.stations[i].tag}</span>
+          </div>
         ))}
 
-        {/* ── Focal probe ─────────────────────────────────────────────────── */}
+        {/* ── Request token — lime ◆ diamond ────────────────────────────────
+            Hidden in frozen/reduced mode; wall clock animates top% via
+            tokenTopMV → tokenTop (same pattern as VizSystems heal-pulse). */}
         {!isFinal && (
           <motion.div
-            className="wbk-probe"
-            style={{ opacity: probeOpMV, left: probeLeft, top: probeTop }}
+            className="wbk-token"
+            style={{ top: tokenTop, left: `${SPINE_X}%`, opacity: tokenOpMV }}
           />
         )}
 
-        {/* ── Waveform latency meta ────────────────────────────────────────── */}
-        <motion.div
-          className="wbk-pmeta"
-          style={{ opacity: isFinal ? 1 : readoutOp, top: '62%' }}
+        {/* ── HIT / MISS status tag — appears near CACHE station ────────────
+            JS sets textContent and opacity imperatively (no React state needed). */}
+        <span
+          ref={statusRef}
+          className="wbk-status"
+          style={{
+            top:     `${STATIONS[2].y}%`,
+            left:    `${SPINE_X + 12}%`,
+            opacity: 0,
+          }}
         >
-          <span>{DATA.p50}</span>&nbsp;&nbsp;<span>{DATA.p99}</span>
+          {isFinal ? `${DATA.hitLabel} · ${DATA.hitMs}` : ''}
+        </span>
+
+        {/* ── Centered readout cluster (below pipeline, above caption) ───────
+            Numbers are centered in the field, not pinned to a corner.
+            readoutOp fades them in after the pipeline assembles. */}
+        <motion.div
+          className="wbk-readout"
+          style={{ top: READOUT_TOP, opacity: isFinal ? 1 : readoutOp }}
+        >
+          <span className="wbk-readout-lat-label">{DATA.latencyLabel}</span>
+          <span className="wbk-readout-lat">
+            <span className="p50">{DATA.p50}</span>
+            {'   '}
+            <span className="p99">{DATA.p99}</span>
+          </span>
+          <span className="wbk-readout-req">
+            {DATA.reqLabel}{' '}
+            <b ref={counterEl}>{isFinal ? '1,130,574' : '0'}</b>
+          </span>
+          <span className="wbk-readout-rps">{DATA.rpsLabel}</span>
         </motion.div>
 
-        {/* ── Corner readouts ──────────────────────────────────────────────── */}
-        <motion.div
-          className="wbk-counter"
-          style={{ opacity: isFinal ? 1 : readoutOp }}
-        >
-          {DATA.reqLabel} <b ref={counterEl}>{isFinal ? '9,418,002' : '0'}</b>
-        </motion.div>
-        <motion.div
-          className="wbk-rps"
-          style={{ opacity: isFinal ? 1 : readoutOp }}
-        >
-          {DATA.rpsLabel}
-        </motion.div>
       </motion.div>
     </motion.div>
   )
