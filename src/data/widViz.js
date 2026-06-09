@@ -88,6 +88,7 @@ export const WID_VIZ = {
     p99: 'p99 · 28ms',
     reqLabel: 'REQ',
     rpsLabel: '10M req/day',
+    cacheTag: 'REDIS',
   },
 
   data: {
