@@ -285,8 +285,8 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           ref={statusRef}
           className="wbk-status"
           style={{
-            top:     `${STATIONS[2].y}%`,
-            left:    `${SPINE_X + 12}%`,
+            top:     `${STATIONS[2].y + 7}%`,
+            left:    `${SPINE_X + 4}%`,
             opacity: 0,
           }}
         >
