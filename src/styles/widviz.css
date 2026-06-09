@@ -298,75 +298,118 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: DATA
+   VIZ: DATA — naive query-plan DAG
+   6 nodes (2 SEQ SCANs → HASH JOIN → FILTER → AGGREGATE → EMIT) laid out over
+   the full-height field. Assembly driven by --enter CSS custom prop (same
+   pattern as VizSystems). Edges draw via stroke-dashoffset; nodes fade in.
+   SMIL pulse dots travel each edge as flowing rows.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-data {
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  /* position:absolute + inset:0 inherited from .widviz-layer.
+     Do NOT add position:relative — would collapse height and break absolute children. */
 }
 
-.wdat-tree {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
+/* --enter subscriber container — all children inherit the CSS custom prop */
+.wdat-field {
+  position: absolute;
+  inset: 0;
 }
 
+/* SVG layer: edges + pulse dots — stretched viewBox matches VizSystems convention */
+.wdat-mesh-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Edge draw-in via CSS stroke-dashoffset.
+   pathLength="1" normalizes dash math to 0–1.
+   Draws fully as --enter passes the edge's --i stagger band (window = 0.2). */
+.wdat-edge {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 0.5;
+  stroke-dasharray: 1;
+  stroke-dashoffset: clamp(0, calc(1 - (var(--enter, 1) - var(--i, 0)) * 5), 1);
+}
+
+/* Flowing-row pulse dot — bright lime, matches .wsys-pulse-dot */
+.wdat-pulse-dot {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.8));
+}
+
+/* Plan node: dot + label flex row, centered on (naiveX%, naiveY%) */
 .wdat-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0)) * 5), 1);
+  will-change: opacity;
+  pointer-events: none;
 }
 
-.wdat-node-bullet {
-  width: 8px;
-  height: 8px;
+/* Hollow lime ring; emit gets a solid fill */
+.wdat-node-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--fg);
+  background: var(--bg);
+  border: 1.5px solid var(--accent);
   flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(201, 245, 88, 0.4);
 }
 
-.wdat-node--emit .wdat-node-bullet {
+.wdat-node--emit .wdat-node-dot {
   background: var(--accent);
+  box-shadow: 0 0 8px rgba(201, 245, 88, 0.6);
 }
 
 .wdat-node-label {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   color: var(--fg-2);
+  white-space: nowrap;
 }
 
-.wdat-edge {
-  width: 2px;
-  height: 12px;
-  background: var(--line-2);
-  margin-left: 3px;
-  flex-shrink: 0;
-}
-
-.wdat-footer {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 6px;
-  border-top: 1px solid var(--line);
+/* Corner readouts — unboxed, no border (mirrors .wsys-status pattern) */
+.wdat-readout {
+  position: absolute;
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
 }
 
 .wdat-counter {
-  font-family: var(--mono);
-  font-size: 9px;
+  left: 16px;
+  bottom: 28px;
   color: var(--accent-2);
-  letter-spacing: 0.1em;
+}
+
+/* Counter value in lime (b used as styled span inside aria-hidden context) */
+.wdat-counter b {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.wdat-table {
+  left: 16px;
+  bottom: 14px;
+  color: var(--muted);
 }
 
 .wdat-cost {
-  font-family: var(--mono);
-  font-size: 9px;
+  right: 16px;
+  bottom: 14px;
   color: var(--accent);
-  letter-spacing: 0.1em;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -572,6 +615,13 @@
 
 /* Frozen BACKEND: field needs explicit height for absolute positioned children */
 .widviz-panel--frozen .wbk-field {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+}
+
+/* Frozen DATA: same fix — absolute nodes need a sized containing block */
+.widviz-panel--frozen .wdat-field {
   position: relative;
   height: 140px;
   overflow: hidden;

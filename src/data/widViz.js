@@ -94,24 +94,29 @@ export const WID_VIZ = {
   data: {
     kicker: '// 03·03',
     mode:   'DATA',
-    // Query-plan nodes in topological order (parent → children)
-    planNodes: [
-      { id: 'scan',      label: 'SEQ SCAN',    depth: 0 },
-      { id: 'filter',    label: 'FILTER',       depth: 1 },
-      { id: 'hashgroup', label: 'HASH GROUP',   depth: 2 },
-      { id: 'project',   label: 'PROJECT',      depth: 3 },
-      { id: 'emit',      label: 'EMIT',         depth: 4 },
-    ],
-    // Edges: [fromId, toId]
-    planEdges: [
-      ['scan', 'filter'],
-      ['filter', 'hashgroup'],
-      ['hashgroup', 'project'],
-      ['project', 'emit'],
-    ],
     rowCounterLabel: 'ROWS',
     costLabel:       '−60% p99',
     tableLabel:      'SNOWFLAKE',
+    // x/y as % of the field (0–100).
+    // naiveX/naiveY = Phase 2 naive plan layout (branched DAG with join).
+    // optX/optY/folds = Phase 3b optimized layout (join-free); authored now, not yet consumed.
+    planNodes: [
+      { id: 'scan-a',    label: 'SEQ SCAN A', naiveX: 10, naiveY: 32, optX: 10, optY: 50, folds: false },
+      { id: 'scan-b',    label: 'SEQ SCAN B', naiveX: 10, naiveY: 68, optX: 10, optY: 68, folds: true  },
+      { id: 'hash-join', label: 'HASH JOIN',  naiveX: 34, naiveY: 50, optX: 34, optY: 50, folds: true  },
+      { id: 'filter',    label: 'FILTER',     naiveX: 55, naiveY: 50, optX: 40, optY: 50, folds: false },
+      { id: 'aggregate', label: 'AGGREGATE',  naiveX: 74, naiveY: 50, optX: 65, optY: 50, folds: false },
+      { id: 'emit',      label: 'EMIT',       naiveX: 92, naiveY: 50, optX: 90, optY: 50, folds: false },
+    ],
+    // d strings authored as matching M x y L x y sequences so Phase 3b can
+    // lerp coordinate-for-coordinate via lerpPath(). Phase 2 renders naiveD only.
+    planEdges: [
+      { from: 'scan-a',    to: 'hash-join', naiveD: 'M10 32 L34 50', optD: 'M10 50 L40 50' },
+      { from: 'scan-b',    to: 'hash-join', naiveD: 'M10 68 L34 50', optD: 'M10 68 L34 50' },
+      { from: 'hash-join', to: 'filter',    naiveD: 'M34 50 L55 50', optD: 'M34 50 L40 50' },
+      { from: 'filter',    to: 'aggregate', naiveD: 'M55 50 L74 50', optD: 'M40 50 L65 50' },
+      { from: 'aggregate', to: 'emit',      naiveD: 'M74 50 L92 50', optD: 'M65 50 L90 50' },
+    ],
   },
 
   interface: {

@@ -143,6 +143,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
                 key={`${rail.id}-${k}`}
                 className={`wbk-flow-dot${rail.id === 'cache' ? ' wbk-flow-dot--cache' : ''}`}
                 r="0.9"
+                cy={rail.y}
               >
                 <animate
                   attributeName="cx"
@@ -220,7 +221,12 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         >
           {DATA.reqLabel} <b ref={counterEl}>{isFinal ? '9,418,002' : '0'}</b>
         </motion.div>
-        <div className="wbk-rps">{DATA.rpsLabel}</div>
+        <motion.div
+          className="wbk-rps"
+          style={{ opacity: isFinal ? 1 : readoutOp }}
+        >
+          {DATA.rpsLabel}
+        </motion.div>
       </motion.div>
     </motion.div>
   )
