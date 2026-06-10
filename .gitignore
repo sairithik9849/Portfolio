@@ -25,5 +25,7 @@ dist-ssr
 
 # Claude Code local settings
 .claude/
+.codex/
 package-lock.json
 .playwright-mcp/
+docs/
