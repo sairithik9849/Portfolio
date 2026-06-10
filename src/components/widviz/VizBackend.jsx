@@ -1,37 +1,89 @@
 import { useEffect, useRef } from 'react'
-import { motion, useTransform, useMotionValue, animate } from 'framer-motion'
+import { motion, useTransform, useMotionValue, useMotionValueEvent, animate } from 'framer-motion'
 import { widSlice } from '../../utils/widSlice'
 import { WID_VIZ } from '../../data/widViz'
 
 const DATA = WID_VIZ.backend
 const N    = 5
 
-// ── Layout constants (% of the 0–100 SVG / HTML field) ───────────────────────
-// Pipeline band shifted up (y 18–57) so there is more breathing room between
-// the readout cluster and the bottom caption text.
-// Panel's top-fade covers ~20% — EDGE at y18 sits just inside the fade boundary.
-const SPINE_X = 26   // x% of the spine line and token travel
+// ── Graph layout constants ────────────────────────────────────────────────────
+// Positions are stored in DATA.nodes as % of the 0–100 field.
+// Convenience map keyed by id for position lookups in path helpers.
+const NODE_POS = Object.fromEntries(DATA.nodes.map(n => [n.id, { x: n.x, y: n.y }]))
 
-const STATIONS = [
-  { id: 'edge',  y: 18, rank: 0 },
-  { id: 'api',   y: 31, rank: 1 },
-  { id: 'cache', y: 44, rank: 2 },
-  { id: 'db',    y: 57, rank: 3 },
+// ── Sparkline constants (same scale as before) ────────────────────────────────
+const GW       = 230   // SVG element width and viewBox width (px)
+const PAD_L    = 6
+const PAD_R    = 14
+const PLOT_T   = 8
+const PLOT_B   = 36
+const P50_MS   = 4     // baseline for calm trace
+const P99_MS   = 28    // ceiling for stressed trace
+const MAX_MS   = 34    // y-scale max
+
+
+// ── Pure sparkline helpers ────────────────────────────────────────────────────
+
+const msToY = ms => {
+  const clamped = Math.min(Math.max(ms, 0), MAX_MS)
+  return PLOT_B - (clamped / MAX_MS) * (PLOT_B - PLOT_T)
+}
+
+const xAt = (i, n) => PAD_L + (i / Math.max(n - 1, 1)) * (GW - PAD_L - PAD_R)
+
+// Catmull-Rom cubic bezier spline. TENSION 0.4 = natural S-curves.
+const TENSION = 0.4
+const buildTrace = samples => {
+  const n = samples.length
+  if (n < 2) {
+    const x = xAt(0, Math.max(n, 1))
+    const y = msToY(samples[0] ?? P50_MS)
+    return { d: `M${x.toFixed(1)} ${y.toFixed(1)}`, lastX: x, lastY: y }
+  }
+  const pts = samples.map((ms, i) => [xAt(i, n), msToY(ms)])
+  let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = pts[Math.max(i - 1, 0)]
+    const [x1, y1] = pts[i]
+    const [x2, y2] = pts[i + 1]
+    const [x3, y3] = pts[Math.min(i + 2, n - 1)]
+    const cp1x = x1 + (x2 - x0) * TENSION / 2
+    const cp1y = y1 + (y2 - y0) * TENSION / 2
+    const cp2x = x2 - (x3 - x1) * TENSION / 2
+    const cp2y = y2 - (y3 - y1) * TENSION / 2
+    d += ` C${cp1x.toFixed(1)} ${cp1y.toFixed(1)},${cp2x.toFixed(1)} ${cp2y.toFixed(1)},${x2.toFixed(1)} ${y2.toFixed(1)}`
+  }
+  return { d, lastX: pts[n - 1][0], lastY: pts[n - 1][1] }
+}
+
+// Linearly interpolate two equal-length sample arrays element-by-element.
+// t=0 → stressed, t=1 → calm.
+const lerpSamples = (stressed, calm, t) =>
+  stressed.map((s, i) => s + (calm[i] - s) * t)
+
+// ── Layout constants for the EKG graph ───────────────────────────────────────
+const GRAPH_TOP   = '62%'
+const READOUT_TOP = '78%'
+
+// ── Stagger depth helper — node assembles at rank * 0.18 ─────────────────────
+const NODE_I = rank => rank * 0.18
+
+// Pre-compute the initial trace for the JSX render pass so we don't read refs
+// during render. The feed's setAttribute calls overwrite these on the first tick.
+const INITIAL_CALM_TRACE  = buildTrace(DATA.traceCalm)
+const INITIAL_STRESS_TRACE = buildTrace(DATA.traceStressed)
+
+// ── SMIL path IDs for ambient request dots ───────────────────────────────────
+// Each dot animates along the EDGE→API path; offset by 1/NUM_DOTS fraction.
+const NUM_AMBIENT_DOTS = 7
+
+// ── Queue dot positions near DB node (% of field) ────────────────────────────
+// Three small dots in a queue before DB, visible when stressed (phase ≈ 0).
+const QUEUE_DOTS = [
+  { cx: 64, cy: 55 },
+  { cx: 68, cy: 57 },
+  { cx: 60, cy: 57 },
 ]
-
-// Stagger bands: each station assembles 0.22 after the previous.
-// rank 0 → --i 0, rank 3 → --i 0.66; all fully visible by enter = 1.
-const STATION_I = rank => rank * 0.22
-
-// Waveform: mostly flat, one pre-authored spike. Shifted up 6 units with the pipeline.
-const WAVE_POINTS = '26,67 32,67 38,67 42,66 48,68 52,67 58,67 64,66 70,67'
-const WAVE_CX     = '26;32;38;42;48;52;58;64;70'
-const WAVE_CY     = '67;67;67;66;68;67;67;66;67'
-// Readout cluster sits below the waveform with clear breathing room above the caption.
-const READOUT_TOP = '72%'
-
-// Hit : miss cycling — 4 hits then 1 miss, repeating.
-const HIT_CYCLE = 4
 
 export default function VizBackend({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
@@ -41,133 +93,165 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   // ── Scroll clock — all hooks called unconditionally ──────────────────────
   const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
   const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
-  const enter     = useTransform(progress, enterIn,   [0, 1],     { clamp: true })
-  // Readout cluster fades in after the pipeline is fully assembled — mirrors
-  // VizSystems statusOp / VizData costOp.
-  const readoutOp = useTransform(enter, [0.8, 1], [0, 1], { clamp: true })
+  const enter     = useTransform(progress, enterIn, [0, 1], { clamp: true })
+  const graphOp   = useTransform(enter, [0.55, 0.82], [0, 1], { clamp: true })
+  const readoutOp = useTransform(enter, [0.80, 1.0],  [0, 1], { clamp: true })
 
-  // Token position (top %) and opacity — JS-driven MotionValues, same pattern
-  // as VizSystems heal-pulse (pulseXMV/pulseYMV).
-  const tokenTopMV = useMotionValue(STATIONS[0].y)
-  const tokenOpMV  = useMotionValue(0)
-  const tokenTop   = useTransform(tokenTopMV, v => `${v}%`)
+  // ── phase MotionValue — 0 = STRESSED, 1 = RESOLVED ───────────────────────
+  // isFinal: fixed at 1 (resolved static frame).
+  // Live: narrative clock drives 0→1→0 in the isActive useEffect below.
+  const phase = useMotionValue(isFinal ? 1 : 0)
 
-  // DOM refs for classList flash (same pattern as wsys-node--healing / railRefs)
-  const stationRefs = useRef([null, null, null, null])
-  const statusRef   = useRef(null)
-  const waveRef     = useRef(null)
-  const counterEl   = useRef(null)
-  const loopRef     = useRef(null)
-  const cycleRef    = useRef(0)  // tracks position in HIT_CYCLE
+  // DB strobe opacity — oscillates 1↔0.3 while stressed, settled at 0 when resolved.
+  const dbStrobeMV = useMotionValue(1)
 
-  // ── Wall clock #1 — request lifecycle ────────────────────────────────────
-  // Each cycle: token descends EDGE→API→CACHE; on HIT it returns; on MISS it
-  // continues to DB, blips the latency line, then rises back through CACHE.
-  // Cancel-flag pattern + loopRef cleanup mirrors VizSystems heal-pulse exactly.
+  // Hero packet opacity and position along its route (0 = API, 1 = destination).
+  // packetRoute: 'db' while stressed, 'cache' while resolved.
+  const packetOpMV   = useMotionValue(0)
+  const packetT      = useMotionValue(0)        // 0 = at API, 1 = at destination
+
+  // ── DOM refs — imperatively updated to avoid React re-renders ────────────
+  const lineRef      = useRef(null)    // sparkline <path>
+  const dotRef       = useRef(null)    // sparkline sweep <circle>
+  const graphRef     = useRef(null)    // graph root — spike class toggled here
+  const stateTagRef  = useRef(null)    // state caption ("DB SATURATING" / "CACHE WARM")
+  const breakerRef   = useRef(null)    // BREAKER status value span
+  const breakerRowRef = useRef(null)   // BREAKER row for gold flash class
+  const latValRef    = useRef(null)    // latency value span
+  const hitValRef    = useRef(null)    // cache-hit % span
+  const counterEl    = useRef(null)    // REQ counter
+  const dbNodeRef    = useRef(null)    // DB node HTML div — strobe class toggled here
+
+  // packetRoute ref avoids stale closure in the narrative useEffect.
+  const packetRouteRef = useRef('db')  // 'db' = stressed route, 'cache' = calm route
+
+  // ── Narrative clock — wall clock #1 ──────────────────────────────────────
+  // Resets to STRESSED on every isActive false→true transition (correctness req).
+  // Teardown via cancelled flag + loopRef, identical pattern to the old probe loop.
+  const loopRef = useRef(null)
+
   useEffect(() => {
     if (!isActive || isFinal) {
-      animate(tokenOpMV, 0, { duration: 0.3 })
+      animate(packetOpMV, 0, { duration: 0.25 })
       loopRef.current?.()
       return
     }
 
     let cancelled = false
 
-    const setStatus = (text, visible) => {
-      if (statusRef.current) {
-        statusRef.current.textContent = text
-        statusRef.current.style.opacity = visible ? '1' : '0'
+    // Helpers for imperative DOM updates — no React re-renders.
+    const setStateTag = text => {
+      if (stateTagRef.current) stateTagRef.current.textContent = text
+    }
+    const setBreaker = (text, isOpen) => {
+      if (breakerRef.current) breakerRef.current.textContent = text
+      if (breakerRowRef.current) {
+        if (isOpen) breakerRowRef.current.classList.add('wbk-breaker--open')
+        else        breakerRowRef.current.classList.remove('wbk-breaker--open')
       }
     }
-
-    const flashStation = (idx, className, durationMs) => {
-      stationRefs.current[idx]?.classList.add(className)
-      return new Promise(r => setTimeout(() => {
-        stationRefs.current[idx]?.classList.remove(className)
-        r()
-      }, durationMs))
+    const setLatency = text => {
+      if (latValRef.current) latValRef.current.textContent = text
+    }
+    const setHitRate = text => {
+      if (hitValRef.current) hitValRef.current.textContent = text
     }
 
+    // Wait for a promise-wrapped delay, respecting cancellation.
+    const wait = ms => new Promise(r => { const t = setTimeout(r, ms); if (cancelled) clearTimeout(t) })
+
     const runLoop = async () => {
-      await animate(tokenOpMV, 1, { duration: 0.2 })
+      await animate(packetOpMV, 1, { duration: 0.2 })
 
       while (!cancelled) {
-        const isHit = (cycleRef.current % (HIT_CYCLE + 1)) < HIT_CYCLE
-        cycleRef.current++
+        // ── Phase 0: STRESSED ─────────────────────────────────────────────
+        phase.set(0)
+        packetRouteRef.current = 'db'
+        setStateTag(DATA.stressState)
+        setBreaker(DATA.breakerClosed, false)
+        setLatency(DATA.latencyHi)
+        setHitRate(DATA.hitRateLo)
+        dbNodeRef.current?.classList.add('wbk-node--stressed')
 
-        // Reset token to EDGE
-        tokenTopMV.set(STATIONS[0].y)
-        setStatus('', false)
+        // Start DB strobe animation — runs until we cancel it below.
+        const strobeCtrl = animate(dbStrobeMV, 0.25, {
+          duration: 0.6,
+          repeat: Infinity,
+          repeatType: 'mirror',
+          ease: 'easeInOut',
+        })
 
-        // ── Descend to CACHE ─────────────────────────────────────────────
-        for (let i = 0; i <= 2; i++) {
-          if (cancelled) break
-          await animate(tokenTopMV, STATIONS[i].y, { duration: 0.18, ease: 'easeInOut' })
+        // Animate hero packet along API→DB route.
+        packetT.set(0)
+        if (!cancelled) {
+          await animate(packetT, 1, { duration: 0.65, ease: 'easeInOut' })
+        }
+        if (cancelled) { strobeCtrl.stop(); break }
+        await wait(200)
+        if (!cancelled) {
+          packetT.set(0)
+          await animate(packetT, 1, { duration: 0.65, ease: 'easeInOut' })
+        }
+        if (cancelled) { strobeCtrl.stop(); break }
+
+        // Hold STRESSED for ~1.5s (packet travels twice then we pause).
+        await wait(1500)
+        if (cancelled) { strobeCtrl.stop(); break }
+
+        // ── Transition beat: BREAKER OPEN ─────────────────────────────────
+        setBreaker(DATA.breakerOpen, true)
+        dbNodeRef.current?.classList.remove('wbk-node--stressed')
+        strobeCtrl.stop()
+        dbStrobeMV.set(1)
+
+        await wait(500)
+        if (cancelled) break
+
+        // ── Phase 1: RESOLVED — animate phase 0→1 ─────────────────────────
+        packetRouteRef.current = 'cache'
+        setStateTag(DATA.calmState)
+        setBreaker(DATA.breakerClosed, false)
+        setLatency(DATA.latencyLo)
+        setHitRate(DATA.hitRateHi)
+
+        await animate(phase, 1, { duration: 0.9, ease: [0.22, 1, 0.36, 1] })
+        if (cancelled) break
+
+        // Animate hero packet along API→CACHE route.
+        packetT.set(0)
+        await animate(packetT, 1, { duration: 0.4, ease: 'easeOut' })
+        if (cancelled) break
+        await wait(300)
+        if (!cancelled) {
+          packetT.set(0)
+          await animate(packetT, 1, { duration: 0.4, ease: 'easeOut' })
         }
         if (cancelled) break
 
-        if (isHit) {
-          // ── HIT: flash CACHE, show HIT · 4ms, ascend ─────────────────
-          setStatus(`${DATA.hitLabel} · ${DATA.hitMs}`, true)
-          await flashStation(2, 'wbk-station--hit', 500)
-          setStatus('', false)
-          if (cancelled) break
+        // Hold RESOLVED for ~2s.
+        await wait(2000)
+        if (cancelled) break
 
-          // Ascend CACHE → EDGE
-          for (let i = 1; i >= 0; i--) {
-            if (cancelled) break
-            await animate(tokenTopMV, STATIONS[i].y, { duration: 0.18, ease: 'easeInOut' })
-          }
-        } else {
-          // ── MISS: brief CACHE miss-flash, descend to DB ───────────────
-          setStatus(DATA.missLabel, true)
-          stationRefs.current[2]?.classList.add('wbk-station--miss')
-          await new Promise(r => setTimeout(r, 220))
-          stationRefs.current[2]?.classList.remove('wbk-station--miss')
-          if (cancelled) break
+        // ── Reset to STRESSED ─────────────────────────────────────────────
+        // Snap phase back instantly (not animated — scroll-in always opens on stressed).
+        await animate(phase, 0, { duration: 0.4, ease: 'easeIn' })
+        if (cancelled) break
 
-          // Descend CACHE → DB
-          await animate(tokenTopMV, STATIONS[3].y, { duration: 0.28, ease: 'easeInOut' })
-          if (cancelled) break
-
-          // Flash DB + show MISS · 28ms + blip the latency line
-          setStatus(`${DATA.missLabel} · ${DATA.missMs}`, true)
-          waveRef.current?.classList.add('wbk-wave--spike')
-          await flashStation(3, 'wbk-station--hit', 700)
-          waveRef.current?.classList.remove('wbk-wave--spike')
-          if (cancelled) break
-
-          // Ascend DB → CACHE (re-flash CACHE = cache fill) → EDGE
-          await animate(tokenTopMV, STATIONS[2].y, { duration: 0.28, ease: 'easeInOut' })
-          if (cancelled) break
-          stationRefs.current[2]?.classList.add('wbk-station--hit')
-          await new Promise(r => setTimeout(r, 300))
-          stationRefs.current[2]?.classList.remove('wbk-station--hit')
-          setStatus('', false)
-          if (cancelled) break
-
-          await animate(tokenTopMV, STATIONS[1].y, { duration: 0.18, ease: 'easeInOut' })
-          if (cancelled) break
-          await animate(tokenTopMV, STATIONS[0].y, { duration: 0.18, ease: 'easeInOut' })
-        }
-
-        if (!cancelled) {
-          await animate(tokenOpMV, 0, { duration: 0.15 })
-          await new Promise(r => setTimeout(r, isHit ? 500 : 900))
-          await animate(tokenOpMV, 1, { duration: 0.15 })
-        }
+        // Short gap before the next stressed cycle.
+        await wait(400)
       }
+
+      animate(packetOpMV, 0, { duration: 0.2 })
     }
 
     runLoop()
     loopRef.current = () => { cancelled = true }
     return () => { cancelled = true }
-    // tokenTopMV and tokenOpMV are stable MotionValue refs — intentionally omitted.
+    // phase, packetT, packetOpMV, dbStrobeMV are stable MotionValue refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isFinal])
 
-  // ── Wall clock #2 — REQ counter ──────────────────────────────────────────
-  // Verbatim from VizData — reuse identical pattern.
+  // ── REQ counter clock — wall clock #2 ────────────────────────────────────
   useEffect(() => {
     if (!isActive || isFinal) return
     let cancelled = false
@@ -177,140 +261,274 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
       if (cancelled) return
       val = (val + Math.floor(Math.random() * 2400 + 800)) % 9_999_999
       if (counterEl.current) counterEl.current.textContent = val.toLocaleString()
-      setTimeout(tick, 180 + Math.random() * 120)
+      setTimeout(tick, 150 + Math.random() * 130)
     }
+
     tick()
     return () => { cancelled = true }
   }, [isActive, isFinal])
+
+  // ── Sparkline morph — driven imperatively from phase changes ─────────────
+  // useMotionValueEvent (no React render on each phase update).
+  useMotionValueEvent(phase, 'change', t => {
+    const samples = lerpSamples(DATA.traceStressed, DATA.traceCalm, t)
+    const { d, lastX, lastY } = buildTrace(samples)
+    lineRef.current?.setAttribute('d', d)
+    if (dotRef.current) {
+      dotRef.current.setAttribute('cx', lastX.toFixed(1))
+      dotRef.current.setAttribute('cy', lastY.toFixed(1))
+    }
+    // Trace color: gold (stressed, t<0.5) → lime (resolved, t>0.5).
+    const stressed = t < 0.5
+    if (graphRef.current) {
+      if (stressed) graphRef.current.classList.add('wbk-graph--stressed')
+      else          graphRef.current.classList.remove('wbk-graph--stressed')
+    }
+  })
+
+  // ── Compute hero packet screen position from packetT ─────────────────────
+  // packetRoute: 'db' → API→DB path; 'cache' → API→CACHE path.
+  // Returns CSS top/left % strings for the motion.div.
+  const packetX = useTransform(packetT, t => {
+    const from = NODE_POS.api
+    const to   = packetRouteRef.current === 'cache' ? NODE_POS.cache : NODE_POS.db
+    return `${(from.x + (to.x - from.x) * t).toFixed(1)}%`
+  })
+  const packetY = useTransform(packetT, t => {
+    const from = NODE_POS.api
+    const to   = packetRouteRef.current === 'cache' ? NODE_POS.cache : NODE_POS.db
+    return `${(from.y + (to.y - from.y) * t).toFixed(1)}%`
+  })
+
+  // ── DB strobe CSS opacity (attached to db node via style.opacity) ─────────
+  // In isFinal, dbStrobeMV stays at 1 — no effect.
+  const dbNodeOpacity = useTransform(
+    [phase, dbStrobeMV],
+    ([p, strobe]) => {
+      // During stressed (p < 0.5): use strobe value (0.25–1).
+      // During resolved (p ≥ 0.5): fade from strobe to 1 as p→1.
+      const strobeContrib = strobe * (1 - Math.min(p * 2, 1))
+      return strobeContrib + Math.min(p * 2, 1)
+    }
+  )
+
+  // Cache node glow opacity: ramps from 0 (stressed) to 1 (resolved) via phase.
+  const cacheGlowOp = useTransform(phase, [0, 1], [0, 1])
+
+  // Queue dot cluster opacity: 1 when stressed, 0 when resolved.
+  const queueOp = useTransform(phase, [0, 0.5], [0.85, 0])
+
+  // Initial trace for JSX — frozen uses calm, live starts at stressed.
+  const initialTrace = isFinal ? INITIAL_CALM_TRACE : INITIAL_STRESS_TRACE
 
   return (
     <motion.div
       className="widviz-layer widviz-backend"
       style={{ opacity: isFinal ? 1 : dissolve, scale: isFinal ? 1 : scale }}
     >
-      {/* Single --enter subscriber — all CSS assembly inherits from here.
+      {/* Single --enter subscriber — all CSS assembly stagger inherits from here.
           Pattern identical to VizSystems (.wsys-field) and VizData (.wdat-field). */}
       <motion.div
         className="wbk-field"
         style={{ '--enter': isFinal ? 1 : enter }}
       >
 
-        {/* ── SVG layer: spine + ticks + waveform ───────────────────────────
-            preserveAspectRatio="none" stretches the 0 0 100 100 viewBox to fill
-            the full-height panel — matches VizSystems / VizData convention.
-            Only lines live here; nodes and token are HTML (crisp text/shapes). */}
+        {/* ── SVG layer: edges ────────────────────────────────────────────────
+            Structural lines in the stretched preserveAspectRatio="none" SVG.
+            The sparkline gets its own 1:1 SVG (below). */}
         <svg
           className="wbk-mesh-svg"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          {/* Vertical spine connecting EDGE to DB */}
-          <path
-            className="wbk-spine"
-            pathLength="1"
-            d={`M${SPINE_X},${STATIONS[0].y} L${SPINE_X},${STATIONS[3].y}`}
-            style={{ '--i': 0 }}
-          />
-
-          {/* Short horizontal tick per station — draws with its node */}
-          {STATIONS.map(s => (
+          {DATA.edges.map((edge, i) => (
             <path
-              key={s.id}
-              className="wbk-tick"
+              key={edge.id}
+              className="wbk-edge"
               pathLength="1"
-              d={`M${SPINE_X},${s.y} L${SPINE_X + 5},${s.y}`}
-              style={{ '--i': STATION_I(s.rank) }}
+              d={edge.d}
+              style={{ '--i': i * 0.12 }}
             />
           ))}
 
-          {/* Latency waveform — mostly flat, one pre-authored spike at mid-right.
-              Draws last (--i 0.85); SMIL sample dot travels its points.
-              JS adds .wbk-wave--spike on MISS cycles. */}
-          <polyline
-            ref={waveRef}
-            className="wbk-wave"
-            pathLength="1"
-            points={WAVE_POINTS}
-            style={{ '--i': 0.85 }}
-          />
+          {/* Queue dots near DB — visible (gold) when stressed */}
+          {QUEUE_DOTS.map((dot, i) => (
+            <motion.circle
+              key={i}
+              className="wbk-queue-dot"
+              cx={dot.cx}
+              cy={dot.cy}
+              r="1.5"
+              style={{ opacity: queueOp }}
+            />
+          ))}
 
-          {/* Traveling sample dot — matches .wsys-pulse-dot / .wdat-pulse-dot */}
-          <circle className="wbk-wave-sample" r="1.1">
-            <animate attributeName="cx" values={WAVE_CX}
-              dur="3s" repeatCount="indefinite" />
-            <animate attributeName="cy" values={WAVE_CY}
-              dur="3s" repeatCount="indefinite" />
-            <animate attributeName="opacity"
-              values="0;1;1;1;1;0"
-              keyTimes="0;0.08;0.3;0.7;0.92;1"
-              dur="3s" repeatCount="indefinite" />
-          </circle>
+          {/* Ambient SMIL request dots flowing along EDGE→API */}
+          {Array.from({ length: NUM_AMBIENT_DOTS }, (_, i) => {
+            const offset = (i / NUM_AMBIENT_DOTS) * 100
+            return (
+              <circle key={`ambient-${i}`} className="wbk-ambient-dot" r="1.8">
+                <animateMotion
+                  dur="2.4s"
+                  repeatCount="indefinite"
+                  begin={`${-offset * 0.024}s`}
+                  path={`M${NODE_POS.edge.x},${NODE_POS.edge.y} L${NODE_POS.api.x},${NODE_POS.api.y}`}
+                />
+              </circle>
+            )
+          })}
         </svg>
 
-        {/* ── Station nodes (HTML — crisp over non-uniform SVG) ─────────────
-            Positioned at left:SPINE_X%, top:{y}% to register with SVG spine.
-            transform:translate(0,-50%) centers each node on its y.
-            Opacity driven by --enter + --i CSS calc (assembles top→bottom). */}
-        {STATIONS.map((s, i) => (
+        {/* ── Node chips (HTML — crisp over non-uniform SVG) ──────────────────
+            Positioned at left:{x}%, top:{y}% to register with SVG edges.
+            Opacity driven by --enter + --i CSS calc (assembles in-order). */}
+        {DATA.nodes.map((node, i) => (
           <div
-            key={s.id}
-            ref={el => { stationRefs.current[i] = el }}
-            className={`wbk-station wbk-station--${s.id}`}
+            key={node.id}
+            ref={node.id === 'db' ? dbNodeRef : null}
+            className={`wbk-node wbk-node--${node.id}`}
             style={{
-              left: `${SPINE_X}%`,
-              top:  `${s.y}%`,
-              '--i': STATION_I(s.rank),
+              left: `${node.x}%`,
+              top:  `${node.y}%`,
+              '--i': NODE_I(i),
             }}
           >
-            <span className="wbk-station-dot" />
-            <span className="wbk-station-label">{DATA.stations[i].label}</span>
-            <span className="wbk-station-tag">{DATA.stations[i].tag}</span>
+            <motion.span
+              className="wbk-node-dot"
+              // DB node: opacity strobes when stressed (handled via dbNodeOpacity below).
+              // CACHE node: separate glow MotionValue.
+              style={
+                node.id === 'db'    ? { opacity: isFinal ? 1 : dbNodeOpacity } :
+                node.id === 'cache' ? {} : {}
+              }
+            />
+            <span className="wbk-node-label">{node.label}</span>
+            <span className="wbk-node-tag">{node.tag}</span>
           </div>
         ))}
 
-        {/* ── Request token — lime ◆ diamond ────────────────────────────────
-            Hidden in frozen/reduced mode; wall clock animates top% via
-            tokenTopMV → tokenTop (same pattern as VizSystems heal-pulse). */}
+        {/* CACHE lit glow — separate element so it cross-fades independently */}
+        <motion.div
+          className="wbk-cache-glow"
+          style={{
+            left:    `${NODE_POS.cache.x}%`,
+            top:     `${NODE_POS.cache.y}%`,
+            opacity: isFinal ? 1 : cacheGlowOp,
+          }}
+        />
+
+        {/* ── BREAKER tag — mid-point of api→db edge ──────────────────────────
+            Flips OPEN (gold flash) at stress peak, back to CLOSED on resolve. */}
+        <div
+          ref={breakerRowRef}
+          className="wbk-breaker"
+          style={{
+            left: `${DATA.breakerX}%`,
+            top:  `${DATA.breakerY}%`,
+            '--i': 0.3,
+          }}
+        >
+          <span className="wbk-breaker-label">{DATA.breakerLabel}</span>
+          <span ref={breakerRef} className="wbk-breaker-val">
+            {isFinal ? DATA.breakerClosed : DATA.breakerClosed}
+          </span>
+        </div>
+
+        {/* ── Hero request packet — Framer MotionValue position ───────────────
+            Hidden in frozen/reduced mode. Route: API→DB (stressed) or API→CACHE
+            (resolved), driven by narrative clock via packetT + packetRouteRef. */}
         {!isFinal && (
           <motion.div
-            className="wbk-token"
-            style={{ top: tokenTop, left: `${SPINE_X}%`, opacity: tokenOpMV }}
+            className="wbk-packet"
+            style={{ left: packetX, top: packetY, opacity: packetOpMV }}
           />
         )}
 
-        {/* ── HIT / MISS status tag — appears near CACHE station ────────────
-            JS sets textContent and opacity imperatively (no React state needed). */}
-        <span
-          ref={statusRef}
-          className="wbk-status"
+        {/* ── EKG latency graph — 1:1 viewBox SVG (no distortion) ────────────
+            Identical outer centering wrapper as the current component. */}
+        <div
           style={{
-            top:     `${STATIONS[2].y + 7}%`,
-            left:    `${SPINE_X + 4}%`,
-            opacity: 0,
+            position:      'absolute',
+            top:           GRAPH_TOP,
+            left:          0,
+            right:         0,
+            display:       'flex',
+            justifyContent:'center',
+            pointerEvents: 'none',
           }}
         >
-          {isFinal ? `${DATA.hitLabel} · ${DATA.hitMs}` : ''}
-        </span>
+          <motion.div
+            ref={graphRef}
+            className="wbk-graph"
+            style={{ opacity: isFinal ? 1 : graphOp }}
+          >
+            <div className="wbk-graph-head">
+              <span className="wbk-graph-title">{DATA.latencyLabel}</span>
+              <span ref={latValRef} className="wbk-graph-val">
+                {isFinal ? DATA.latencyLo : DATA.latencyHi}
+              </span>
+            </div>
 
-        {/* ── Centered readout cluster (below pipeline, above caption) ───────
-            Numbers are centered in the field, not pinned to a corner.
-            readoutOp fades them in after the pipeline assembles. */}
+            <svg
+              className="wbk-graph-svg"
+              viewBox={`0 0 ${GW} 44`}
+              aria-hidden="true"
+            >
+              {/* p99 ceiling — dashed gold reference line */}
+              <line
+                className="wbk-graph-ceil"
+                x1={PAD_L} x2={GW - PAD_R}
+                y1={msToY(P99_MS)} y2={msToY(P99_MS)}
+              />
+              {/* p50 baseline — faint lime floor */}
+              <line
+                className="wbk-graph-base"
+                x1={PAD_L} x2={GW - PAD_R}
+                y1={msToY(P50_MS)} y2={msToY(P50_MS)}
+              />
+              {/* Latency trace — redrawn by sparkline morph handler */}
+              <path
+                ref={lineRef}
+                className="wbk-graph-line"
+                d={initialTrace.d}
+              />
+              {/* Round sweep dot at the leading edge */}
+              <circle
+                ref={dotRef}
+                className="wbk-graph-dot"
+                r="2.4"
+                cx={initialTrace.lastX.toFixed(1)}
+                cy={initialTrace.lastY.toFixed(1)}
+              />
+            </svg>
+
+            <div className="wbk-graph-legend">
+              <span ref={hitValRef} className="wbk-hit-val">
+                {isFinal ? DATA.hitRateHi : DATA.hitRateLo}
+              </span>
+              <span className="wbk-hit-label">{DATA.hitRateLabel}</span>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ── Readout cluster — below graph ────────────────────────────────────
+            REQ counter + rps label + delta headline. */}
         <motion.div
           className="wbk-readout"
           style={{ top: READOUT_TOP, opacity: isFinal ? 1 : readoutOp }}
         >
-          <span className="wbk-readout-lat-label">{DATA.latencyLabel}</span>
-          <span className="wbk-readout-lat">
-            <span className="p50">{DATA.p50}</span>
-            {'   '}
-            <span className="p99">{DATA.p99}</span>
-          </span>
           <span className="wbk-readout-req">
             {DATA.reqLabel}{' '}
             <b ref={counterEl}>{isFinal ? '1,130,574' : '0'}</b>
           </span>
           <span className="wbk-readout-rps">{DATA.rpsLabel}</span>
+          <span className="wbk-readout-delta">{DATA.deltaLabel}</span>
+
+          {/* State caption — imperative textContent from narrative clock */}
+          <span ref={stateTagRef} className="wbk-state-tag">
+            {isFinal ? DATA.calmState : DATA.stressState}
+          </span>
         </motion.div>
 
       </motion.div>
