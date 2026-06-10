@@ -9,7 +9,7 @@ export const WHAT_I_DO = [
     id: 'backend',
     word: 'BACKEND',
     blurb:
-      "Node services that shrug off 10M requests a day. Here, 'boring' is the highest compliment.",
+      "Node services that shrug off 10M requests a day. When the database buckles, a Redis cache and a circuit breaker hold p95 latency 60% lower — boring on purpose.",
   },
   {
     id: 'data',

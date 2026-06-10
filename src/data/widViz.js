@@ -79,22 +79,67 @@ export const WID_VIZ = {
   backend: {
     kicker: '// 03·02',
     mode:   'BACKEND',
-    // top → bottom of the request stack; tag = engine shown in gold
-    stations: [
-      { id: 'edge',  label: 'EDGE',  tag: 'TLS'      },
-      { id: 'api',   label: 'API',   tag: 'NODE'      },
-      { id: 'cache', label: 'CACHE', tag: 'REDIS'     },
-      { id: 'db',    label: 'DB',    tag: 'POSTGRES'  },
+
+    // ── Node graph — positions as % of the 0–100 field SVG / field div.
+    // Layout: EDGE (ingress, left) → API (dispatcher, center) → forks to
+    // CACHE (Redis, bottom-left) and DB (Postgres, bottom-right).
+    nodes: [
+      { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 22, y: 20 },
+      { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 38 },
+      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 28, y: 62 },
+      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 72, y: 62 },
     ],
-    hitLabel:     'HIT',
-    missLabel:    'MISS',
-    hitMs:        '4ms',
-    missMs:       '28ms',
-    latencyLabel: 'LATENCY',
-    p50:          'p50 · 4ms',
-    p99:          'p99 · 28ms',
-    reqLabel:     'REQ',
-    rpsLabel:     '10M req / day',
+
+    // ── Edges — d-strings for the stretched preserveAspectRatio="none" field SVG.
+    edges: [
+      { id: 'edge-api',   d: 'M22,20 L50,38' },
+      { id: 'api-cache',  d: 'M50,38 L28,62' },
+      { id: 'api-db',     d: 'M50,38 L72,62' },
+    ],
+
+    // ── BREAKER label — positioned between API and DB (midpoint of that edge).
+    breakerLabel:  'BREAKER',
+    breakerOpen:   'OPEN',
+    breakerClosed: 'CLOSED',
+    // Midpoint of api→db edge, offset slightly to avoid the line.
+    breakerX: 64,
+    breakerY: 50,
+
+    // ── State captions
+    stressState: 'DB SATURATING',
+    calmState:   'CACHE WARM',
+
+    // ── Readout labels (résumé-tied headline + illustrative set-dressing)
+    latencyLabel: 'p95 LATENCY',
+    latencyHi:    '180ms',   // STRESSED display value
+    latencyLo:    '72ms',    // RESOLVED display value (−60%)
+    deltaLabel:   'p95 −60%',
+
+    hitRateLabel: 'CACHE HIT',
+    hitRateLo:    '0%',      // STRESSED (cold cache)
+    hitRateHi:    '96%',     // RESOLVED
+
+    reqLabel:  'REQ',
+    rpsLabel:  '10M req / day',
+
+    // ── Sparkline sample arrays — 44 points each (must stay equal-length).
+    // STRESSED: starts low, climbs toward the p99 ceiling with erratic spikes.
+    // CALM:     flat-low around p50 with gentle heartbeat bumps.
+    // Scale: 0–34ms, matching existing MAX_MS = 34.
+    traceStressed: [
+       4,  4,  5,  5,  6,  7,  8,  9, 11, 13,
+      15, 17, 20, 22, 25, 26, 27, 28, 28, 27,
+      26, 28, 29, 30, 28, 26, 28, 30, 28, 27,
+      26, 24, 25, 27, 28, 28, 27, 26, 25, 24,
+      26, 27, 28, 28,
+    ],
+    traceCalm: [
+       4,  4,  4,  4,  4,  5,  4,  4,  4,  4,
+       4,  4,  4,  5,  5,  8, 10,  8,  5,  4,
+       4,  4,  4,  4,  4,  4,  4,  4,  5,  5,
+       8, 10,  8,  5,  4,  4,  4,  4,  4,  4,
+       4,  4,  5,  4,
+    ],
   },
 
   data: {
