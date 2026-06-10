@@ -11,12 +11,12 @@ const N    = 5
 // Convenience map keyed by id for position lookups in path helpers.
 const NODE_POS = Object.fromEntries(DATA.nodes.map(n => [n.id, { x: n.x, y: n.y }]))
 
-// ── Sparkline constants (same scale as before) ────────────────────────────────
+// ── Sparkline constants ───────────────────────────────────────────────────────
 const GW       = 230   // SVG element width and viewBox width (px)
 const PAD_L    = 6
 const PAD_R    = 14
 const PLOT_T   = 8
-const PLOT_B   = 36
+const PLOT_B   = 42    // taller plot area for breathing room (was 36)
 const P50_MS   = 4     // baseline for calm trace
 const P99_MS   = 28    // ceiling for stressed trace
 const MAX_MS   = 34    // y-scale max
@@ -62,8 +62,10 @@ const lerpSamples = (stressed, calm, t) =>
   stressed.map((s, i) => s + (calm[i] - s) * t)
 
 // ── Layout constants for the EKG graph ───────────────────────────────────────
-// GRAPH_TOP must sit below the CACHE/DB nodes (y:52%) with clear breathing room.
-const GRAPH_TOP = '59%'
+// GRAPH_TOP sits below the CACHE/DB nodes (y:60%).
+// 65% gives ~40px gap on a 800px viewport, and enough bottom clearance in the
+// frozen 295px panel (graph ends at ~265px, 30px below the field bottom).
+const GRAPH_TOP = '65%'
 
 // ── Stagger depth helper — node assembles at rank * 0.18 ─────────────────────
 const NODE_I = rank => rank * 0.18
@@ -73,17 +75,48 @@ const NODE_I = rank => rank * 0.18
 const INITIAL_CALM_TRACE  = buildTrace(DATA.traceCalm)
 const INITIAL_STRESS_TRACE = buildTrace(DATA.traceStressed)
 
-// ── SMIL path IDs for ambient request dots ───────────────────────────────────
-// Each dot animates along the EDGE→API path; offset by 1/NUM_DOTS fraction.
-const NUM_AMBIENT_DOTS = 7
+// ── Request flow dots along the trunk (EDGE→API) ─────────────────────────────
+// HTML motion.div dots driven by a shared clock MotionValue so they stay round
+// (unlike SMIL circles in the distorted preserveAspectRatio="none" mesh SVG).
+const NUM_FLOW_DOTS  = 5
+const FLOW_DURATION  = 2.4   // seconds per full cycle
 
 // ── Queue dot positions near DB node (% of field) ────────────────────────────
-// Three small dots queued just above DB (y:52), visible when stressed (phase ≈ 0).
+// Three small dots queued just above DB (now at x:70, y:60), visible when stressed.
 const QUEUE_DOTS = [
-  { cx: 65, cy: 45 },
-  { cx: 68, cy: 47 },
-  { cx: 62, cy: 47 },
+  { cx: 66, cy: 53 },
+  { cx: 70, cy: 52 },
+  { cx: 68, cy: 50 },
 ]
+
+// ── Subcomponent: flow dot — one round dot along the EDGE→API trunk ──────────
+// Receives the shared clock MotionValue (0→NUM_FLOW_DOTS loop) and its index.
+// t = (clock + offset) % 1 gives each dot an evenly-spaced phase; at t=0 and t=1
+// opacity is 0, so the jump is invisible.
+function FlowDot({ clock, dotIndex, total, from, to }) {
+  const offset = dotIndex / total
+  const t      = useTransform(clock, v => (v + offset) % 1)
+  const top    = useTransform(t, [0, 1], [`${from.y}%`, `${to.y}%`])
+  const left   = useTransform(t, [0, 1], [`${from.x}%`, `${to.x}%`])
+  const opacity = useTransform(t, [0, 0.12, 0.85, 1], [0, 0.55, 0.55, 0])
+  return <motion.div className="wbk-flow-dot" style={{ top, left, opacity }} />
+}
+
+// ── Subcomponent: queue dot — drains into DB node on resolve ─────────────────
+// cx/cy animate from the congestion position to the DB node as phase 0→1 with a
+// per-dot stagger; opacity fades out over the back half of the travel so it
+// visibly flushes into the node rather than vanishing in place.
+function QueueDot({ fromX, fromY, phase, staggerStart, staggerEnd }) {
+  const DB   = NODE_POS.db
+  const left = useTransform(phase, [staggerStart, staggerEnd], [`${fromX}%`, `${DB.x}%`])
+  const top  = useTransform(phase, [staggerStart, staggerEnd], [`${fromY}%`, `${DB.y}%`])
+  const opacity = useTransform(
+    phase,
+    [0, Math.max(staggerEnd - 0.15, 0), Math.min(staggerEnd + 0.1, 1)],
+    [0.85, 0.7, 0],
+  )
+  return <motion.div className="wbk-queue-dot-html" style={{ left, top, opacity }} />
+}
 
 export default function VizBackend({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
@@ -95,6 +128,21 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
   const enter     = useTransform(progress, enterIn, [0, 1], { clamp: true })
   const graphOp   = useTransform(enter, [0.55, 0.82], [0, 1], { clamp: true })
+
+  // ── Flow clock — drives the EDGE→API request-stream dots ─────────────────
+  // Runs continuously while live; each FlowDot derives its phase from (clock + offset) % 1.
+  const flowClock = useMotionValue(0)
+  useEffect(() => {
+    if (isFinal) return
+    const ctrl = animate(flowClock, NUM_FLOW_DOTS, {
+      duration: NUM_FLOW_DOTS * FLOW_DURATION,
+      ease: 'linear',
+      repeat: Infinity,
+    })
+    return () => ctrl.stop()
+    // flowClock is a stable MotionValue ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFinal])
 
   // ── phase MotionValue — 0 = STRESSED, 1 = RESOLVED ───────────────────────
   // isFinal: fixed at 1 (resolved static frame).
@@ -290,8 +338,15 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   // Cache node glow opacity: ramps from 0 (stressed) to 1 (resolved) via phase.
   const cacheGlowOp = useTransform(phase, [0, 1], [0, 1])
 
-  // Queue dot cluster opacity: 1 when stressed, 0 when resolved.
-  const queueOp = useTransform(phase, [0, 0.5], [0.85, 0])
+  // ── Active path weighting — visual hierarchy shifts as cache takes load ───
+  // api→cache: thickens and glows lime as system resolves.
+  // api→db: dims as traffic is diverted to the cache.
+  // edge→api trunk: stays constant (ingress is always live).
+  const LINE_2 = 'rgba(237,237,223,0.16)'  // var(--line-2) resolved value
+  const LIME   = '#c9f558'                  // var(--accent)
+  const activeCacheStroke  = useTransform(phase, [0, 1], [LINE_2, LIME])
+  const activeCacheWidth   = useTransform(phase, [0, 1], [0.6, 1.2])
+  const dimDbOpacity       = useTransform(phase, [0, 1], [1.0, 0.18])
 
   // Initial trace for JSX — frozen uses calm, live starts at stressed.
   const initialTrace = isFinal ? INITIAL_CALM_TRACE : INITIAL_STRESS_TRACE
@@ -310,54 +365,75 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
 
         {/* ── SVG layer: edges ────────────────────────────────────────────────
             Structural lines in the stretched preserveAspectRatio="none" SVG.
-            The sparkline gets its own 1:1 SVG (below). */}
+            Edge api→cache thickens/glows lime on resolve; api→db dims (traffic
+            rerouted). edge→api trunk stays constant (ingress always live).
+            Dashoffset draw-in via CSS --enter/--i and Framer stroke/strokeWidth
+            compose cleanly (different properties). */}
         <svg
           className="wbk-mesh-svg"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          {DATA.edges.map((edge, i) => (
-            <path
-              key={edge.id}
-              className="wbk-edge"
-              pathLength="1"
-              d={edge.d}
-              style={{ '--i': i * 0.12 }}
-            />
-          ))}
-
-          {/* Queue dots near DB — visible (gold) when stressed */}
-          {QUEUE_DOTS.map((dot, i) => (
-            <motion.circle
-              key={i}
-              className="wbk-queue-dot"
-              cx={dot.cx}
-              cy={dot.cy}
-              r="1.5"
-              style={{ opacity: queueOp }}
-            />
-          ))}
-
-          {/* Ambient SMIL request dots flowing along EDGE→API */}
-          {Array.from({ length: NUM_AMBIENT_DOTS }, (_, i) => {
-            const offset = (i / NUM_AMBIENT_DOTS) * 100
+          {DATA.edges.map((edge, i) => {
+            const isActiveCache = edge.id === 'api-cache'
+            const isDimmedDb    = edge.id === 'api-db'
+            const dynamicStyle  = isActiveCache
+              ? {
+                  stroke:      isFinal ? LIME  : activeCacheStroke,
+                  strokeWidth: isFinal ? 1.2   : activeCacheWidth,
+                }
+              : isDimmedDb
+              ? { strokeOpacity: isFinal ? 0.18 : dimDbOpacity }
+              : {}
             return (
-              <circle key={`ambient-${i}`} className="wbk-ambient-dot" r="1.8">
-                <animateMotion
-                  dur="2.4s"
-                  repeatCount="indefinite"
-                  begin={`${-offset * 0.024}s`}
-                  path={`M${NODE_POS.edge.x},${NODE_POS.edge.y} L${NODE_POS.api.x},${NODE_POS.api.y}`}
-                />
-              </circle>
+              <motion.path
+                key={edge.id}
+                className="wbk-edge"
+                pathLength="1"
+                d={edge.d}
+                style={{ '--i': i * 0.12, ...dynamicStyle }}
+              />
             )
           })}
         </svg>
 
+        {/* ── Queue dots — drain into DB node as circuit breaker trips ─────────
+            HTML divs (not SVG circles) so they stay round.
+            Each dot's left/top animate from its congestion coord to DB(70%,52%)
+            with a small per-dot stagger on the phase 0→1 range. */}
+        {QUEUE_DOTS.map((dot, i) => (
+          <QueueDot
+            key={`queue-${i}`}
+            fromX={dot.cx}
+            fromY={dot.cy}
+            phase={phase}
+            staggerStart={i * 0.08}
+            staggerEnd={0.45 + i * 0.08}
+          />
+        ))}
+
+        {/* ── Request flow trail — round Framer dots flowing along EDGE→API ───
+            A shared flowClock (0→NUM_FLOW_DOTS loop) drives all dots evenly.
+            Rendered as HTML divs — not SVG circles — so they stay geometrically
+            round regardless of the mesh SVG's non-uniform scaling.
+            Hidden in frozen/reduced mode (no clock = no motion). */}
+        {!isFinal && Array.from({ length: NUM_FLOW_DOTS }, (_, i) => (
+          <FlowDot
+            key={`flow-${i}`}
+            clock={flowClock}
+            dotIndex={i}
+            total={NUM_FLOW_DOTS}
+            from={NODE_POS.edge}
+            to={NODE_POS.api}
+          />
+        ))}
+
         {/* ── Node chips (HTML — crisp over non-uniform SVG) ──────────────────
-            Positioned at left:{x}%, top:{y}% to register with SVG edges.
-            Opacity driven by --enter + --i CSS calc (assembles in-order). */}
+            Each node is a zero-size anchor at its coordinate.
+            The dot is absolutely centered on the anchor so SVG edges terminate
+            at the circle. Labels sit in a separate group that splays outward:
+            EDGE/API/DB labels to the right, CACHE label to the left. */}
         {DATA.nodes.map((node, i) => (
           <div
             key={node.id}
@@ -371,15 +447,14 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           >
             <motion.span
               className="wbk-node-dot"
-              // DB node: opacity strobes when stressed (handled via dbNodeOpacity below).
-              // CACHE node: separate glow MotionValue.
               style={
-                node.id === 'db'    ? { opacity: isFinal ? 1 : dbNodeOpacity } :
-                node.id === 'cache' ? {} : {}
+                node.id === 'db' ? { opacity: isFinal ? 1 : dbNodeOpacity } : {}
               }
             />
-            <span className="wbk-node-label">{node.label}</span>
-            <span className="wbk-node-tag">{node.tag}</span>
+            <span className="wbk-node-labels">
+              <span className="wbk-node-label">{node.label}</span>
+              <span className="wbk-node-tag">{node.tag}</span>
+            </span>
           </div>
         ))}
 
@@ -447,7 +522,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
 
             <svg
               className="wbk-graph-svg"
-              viewBox={`0 0 ${GW} 44`}
+              viewBox={`0 0 ${GW} 50`}
               aria-hidden="true"
             >
               {/* p99 ceiling — dashed gold reference line */}

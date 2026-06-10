@@ -5,8 +5,15 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import SectionHead from './SectionHead'
 import WidVisual from './WidVisual'
 import { WHAT_I_DO } from '../data/whatIDo'
-
 const N = WHAT_I_DO.length // 5
+
+// ── Scroll tuning constants ───────────────────────────────────────────────────
+const SCROLL_PER_WORD        = 780   // px of scroll range budgeted per word
+const SETTLE_MS              = 140   // ms of scroll inactivity before settle fires
+const CLICK_SCROLL_DURATION  = 1.0   // Lenis duration (s) for click/keyboard nav
+const SETTLE_SCROLL_DURATION = 0.5   // Lenis duration (s) for auto-settle snap
+const SETTLE_VELOCITY_MAX    = 0.05  // Lenis velocity below this counts as "stopped"
+const SNAP_EPSILON_PX        = 4     // skip snap when already within this many px of target
 
 // Splits blurb text on numeric tokens (e.g. "50+", "10M", "60fps") and wraps
 // them in gold so metrics stand out without hardcoding per-blurb markup.
@@ -18,31 +25,33 @@ const highlightNums = text =>
   )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Desktop media query — pin/scrub/snap is created ONLY inside this condition.
+// Desktop media query — pin/scrub/settle is created ONLY inside this condition.
 // gsap.matchMedia handles teardown when the viewport exits this range.
 // ─────────────────────────────────────────────────────────────────────────────
 const DESKTOP_QUERY =
   '(min-width: 981px) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
 
 export default function WhatIDo() {
-  const sectionRef  = useRef(null)
-  const stageRef    = useRef(null)
-  const leftRef     = useRef(null)     // .wid-left — word column
-  const stackBaseRef = useRef(null)    // cream word stack
-  const bandRef     = useRef(null)     // accent band (overflow:hidden clip)
-  const stackKoRef  = useRef(null)     // dark knockout stack inside band
-  const activeRef   = useRef(0)
+  const sectionRef       = useRef(null)
+  const stageRef         = useRef(null)
+  const leftRef          = useRef(null)      // .wid-left — word column
+  const stackBaseRef     = useRef(null)      // cream word stack
+  const bandRef          = useRef(null)      // accent band (overflow:hidden clip)
+  const stackKoRef       = useRef(null)      // dark knockout stack inside band
+  const activeRef        = useRef(0)
+  // Exposed to JSX click handlers; populated inside setup(), cleared on teardown.
+  const scrollToIndexRef = useRef(null)
   const [active, setActive] = useState(0)
 
-  // Scroll-progress MotionValue — set in the existing onUpdate callback below.
+  // Scroll-progress MotionValue — set in the onUpdate callback below.
   // useMotionValue gives automatic subscriber cleanup on unmount (vs module-level
   // motionValue() which needs manual teardown). .set() never triggers re-renders.
   const progress = useMotionValue(0)
   const reduced  = useReducedMotion()
 
   useEffect(() => {
-    const section  = sectionRef.current
-    const left     = leftRef.current
+    const section   = sectionRef.current
+    const left      = leftRef.current
     const stackBase = stackBaseRef.current
     const band      = bandRef.current
     const stackKo   = stackKoRef.current
@@ -94,43 +103,112 @@ export default function WhatIDo() {
         stackKo.style.top  = `${bleed}px`
         stackKo.style.left = '0px'
 
+        // ── Settle-snap state ──────────────────────────────────────────────
+        // All local to setup() — never cross React's render boundary.
+        // Guards against oscillation when a programmatic scroll is in flight.
+        let settleTimer     = null
+        let isSnapping      = false
+        let isSnappingTimer = null
+
+        const clearSnapState = () => {
+          clearTimeout(settleTimer)
+          clearTimeout(isSnappingTimer)
+          isSnapping = false
+        }
+
         // ── ScrollTrigger ──────────────────────────────────────────────────
         const st = ScrollTrigger.create({
           trigger: section,
           start:   'top top',
-          // Give each word ~1.6× its height of scroll range → comfortable to
-          // scrub through. Minimum 1 600 px so tiny words aren't too brief.
-          end: `+=${Math.max(travel * 1.6, 1600)}`,
+          // Per-word scroll budget, longer than before so each word has room
+          // to breathe. widDwell flattens DWELL_HOLD of each segment, so
+          // each word's effective dwell ≈ SCROLL_PER_WORD × DWELL_HOLD px.
+          end: `+=${Math.max(SCROLL_PER_WORD * (N - 1), travel + 800)}`,
           pin:   true,
-          scrub: true,  // immediate 1:1 — required for snap to work cleanly
-          snap: {
-            snapTo:   1 / (N - 1),
-            duration: { min: 0.15, max: 0.4 },
-            ease:     'power2.inOut',
-            // NOTE: if snap feels rubbery (scroll + Lenis fighting), the fix
-            // is to remove this snap block and instead call
-            //   window.__lenis?.scrollTo(target)
-            // from a debounced onUpdate or an onScrubComplete callback.
-          },
+          // scrub:true = immediate 1:1 mapping. Lenis provides the smoothing
+          // layer — no second GSAP lerp needed, and the Lenis settle snap
+          // won't fight a competing interpolation track.
+          scrub: true,
+          // GSAP snap removed: it conflicts with Lenis smooth-scroll
+          // ("rubbery" — the two interpolation loops fight each other).
+          // Settle snap is now handled by Lenis below.
           onUpdate: (self) => {
-            // Both stacks share the same y — glyphs register pixel-perfectly.
-            const y = -self.progress * travel
-            gsap.set([stackBase, stackKo], { y })
+            gsap.set([stackBase, stackKo], { y: -self.progress * travel })
 
             // Feed the right-side viz without triggering a React re-render.
             progress.set(self.progress)
 
             // Guard against redundant state sets (React bailout only fires
-            // after reconciliation; this avoids even scheduling it).
+            // after reconciliation; this skips scheduling it entirely).
             const i = Math.round(self.progress * (N - 1))
             if (i !== activeRef.current) {
               activeRef.current = i
               setActive(i)
             }
+
+            // Lenis-driven settle snap — fires only once scroll has genuinely stopped.
+            // Snapping mid-momentum would reverse the in-flight scroll and produce the
+            // edge wiggle, so we re-check Lenis velocity and reschedule until momentum
+            // has decayed to near-zero.
+            // Skipped while a programmatic scroll (click or prior settle) is
+            // in flight to prevent oscillation.
+            if (!isSnapping) {
+              clearTimeout(settleTimer)
+              const attemptSettle = () => {
+                if (isSnapping) return  // another snap already in flight
+
+                const lenis = window.__lenis
+                // Still moving? Defer until Lenis momentum decays.
+                if (lenis && Math.abs(lenis.velocity) > SETTLE_VELOCITY_MAX) {
+                  settleTimer = setTimeout(attemptSettle, SETTLE_MS)
+                  return
+                }
+
+                const nearest  = Math.round(st.progress * (N - 1))
+                const targetY  = st.start + (nearest / (N - 1)) * (st.end - st.start)
+                const currentY = window.scrollY ?? window.pageYOffset
+                if (Math.abs(currentY - targetY) > SNAP_EPSILON_PX) {
+                  isSnapping = true
+                  isSnappingTimer = setTimeout(
+                    () => { isSnapping = false },
+                    SETTLE_SCROLL_DURATION * 1000 + 100,
+                  )
+                  if (lenis) {
+                    lenis.scrollTo(targetY, { duration: SETTLE_SCROLL_DURATION })
+                  } else {
+                    window.scrollTo({ top: targetY, behavior: 'smooth' })
+                  }
+                }
+              }
+              settleTimer = setTimeout(attemptSettle, SETTLE_MS)
+            }
           },
         })
 
+        // ── Click / keyboard navigation ────────────────────────────────────
+        // Smooth-scrolls to the scroll position that centers word `targetIdx`
+        // in the lime band. Cancels any in-flight settle to prevent fighting.
+        // Snap points are fixed points of widDwell so targetIdx/(N-1) is the
+        // correct raw progress target without any inverse transform needed.
+        const scrollToIndex = (targetIdx) => {
+          clearSnapState()
+          const targetY = st.start + (targetIdx / (N - 1)) * (st.end - st.start)
+          isSnapping = true
+          isSnappingTimer = setTimeout(
+            () => { isSnapping = false },
+            CLICK_SCROLL_DURATION * 1000 + 100
+          )
+          if (window.__lenis) {
+            window.__lenis.scrollTo(targetY, { duration: CLICK_SCROLL_DURATION })
+          } else {
+            window.scrollTo({ top: targetY, behavior: 'smooth' })
+          }
+        }
+        scrollToIndexRef.current = scrollToIndex
+
         stKiller = () => {
+          clearSnapState()
+          scrollToIndexRef.current = null
           st.kill()
           // Clear transforms and JS-set geometry so the mobile static layout
           // takes over cleanly if the viewport shrinks below 981 px.
@@ -166,6 +244,7 @@ export default function WhatIDo() {
         alive = false
         window.removeEventListener('resize', onResize)
         stKiller?.()
+        scrollToIndexRef.current = null
         // Reset active to word 0 so the mobile fallback starts clean.
         activeRef.current = 0
         setActive(0)
@@ -181,6 +260,25 @@ export default function WhatIDo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Smooth-scroll to word `i`. On desktop, uses the ScrollTrigger-aware Lenis
+  // target so the pinned progress lands exactly on that word's snap point.
+  // Mobile / reduced-motion fallback: scrolls the matching blurb into view.
+  const handleWordClick = (i) => {
+    if (scrollToIndexRef.current) {
+      scrollToIndexRef.current(i)
+    } else {
+      document.querySelectorAll('.wid-mobile-blurb-item')[i]
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  const handleWordKeyDown = (e, i) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleWordClick(i)
+    }
+  }
+
   return (
     <section ref={sectionRef} id="what-i-do" className="what-i-do">
       <SectionHead idx="03" title="What I" em="Do." right="" />
@@ -191,8 +289,9 @@ export default function WhatIDo() {
         {/* LEFT — word column; height set to 1 word by JS so flex centers it */}
         <div className="wid-left" ref={leftRef}>
 
-          {/* Accent band — clips the knockout stack via overflow:hidden. */}
-          {/* position/height set by JS to match measured word line-box.   */}
+          {/* Accent band — clips the knockout stack via overflow:hidden.    */}
+          {/* position/height set by JS to match measured word line-box.     */}
+          {/* pointer-events:none (CSS) so clicks fall through to base words */}
           <div className="wid-band" ref={bandRef}>
             {/*
               Knockout stack: identical words in --bg color.
@@ -212,10 +311,24 @@ export default function WhatIDo() {
             </div>
           </div>
 
-          {/* Base stack — cream words, visible above and below the band */}
+          {/* Base stack — cream words, visible above and below the band.
+              Each word is role=button: clicking smooth-scrolls to that word's
+              position in the pinned section (or its mobile blurb).
+              Geometry (position/size) must stay identical to the ko stack
+              above so glyphs register pixel-perfectly — never add padding,
+              margin, or font overrides here. */}
           <div className="wid-stack wid-stack--base" ref={stackBaseRef}>
-            {WHAT_I_DO.map((c) => (
-              <div key={c.id} className="wid-word">
+            {WHAT_I_DO.map((c, i) => (
+              <div
+                key={c.id}
+                className="wid-word"
+                role="button"
+                tabIndex={0}
+                data-cursor="hover"
+                aria-label={`Go to ${c.word}`}
+                onClick={() => handleWordClick(i)}
+                onKeyDown={(e) => handleWordKeyDown(e, i)}
+              >
                 {c.word}
               </div>
             ))}

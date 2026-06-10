@@ -81,29 +81,30 @@ export const WID_VIZ = {
     mode:   'BACKEND',
 
     // ── Node graph — positions as % of the 0–100 field SVG / field div.
-    // Layout: EDGE (ingress, left) → API (dispatcher, center) → forks to
-    // CACHE (Redis, bottom-left) and DB (Postgres, bottom-right).
+    // Layout: vertical trunk EDGE(top-center) → API(center) → symmetric Y-fork
+    // to CACHE(lower-left) and DB(lower-right). Fork angles are mirrored (Δx=±20, Δy=+18).
+    // Dots anchor on the coordinate; labels splay outward (EDGE/API/DB right, CACHE left).
     nodes: [
-      { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 22, y: 20 },
-      { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 38 },
-      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 28, y: 52 },
-      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 72, y: 52 },
+      { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 50, y: 24 },
+      { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 42 },
+      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 30, y: 60 },
+      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 70, y: 60 },
     ],
 
     // ── Edges — d-strings for the stretched preserveAspectRatio="none" field SVG.
+    // Trunk is a pure vertical (x=50). Fork is symmetric about x=50.
     edges: [
-      { id: 'edge-api',   d: 'M22,20 L50,38' },
-      { id: 'api-cache',  d: 'M50,38 L28,52' },
-      { id: 'api-db',     d: 'M50,38 L72,52' },
+      { id: 'edge-api',   d: 'M50,24 L50,42' },
+      { id: 'api-cache',  d: 'M50,42 L30,60' },
+      { id: 'api-db',     d: 'M50,42 L70,60' },
     ],
 
-    // ── BREAKER label — positioned between API and DB (midpoint of that edge).
-    // Midpoint of api(50,38)→db(72,52): x=61, y=45. Offset right to clear the line.
+    // ── BREAKER chip — exactly on the midpoint of the api→db edge (60,51).
     breakerLabel:  'BREAKER',
     breakerOpen:   'OPEN',
     breakerClosed: 'CLOSED',
-    breakerX: 63,
-    breakerY: 43,
+    breakerX: 60,
+    breakerY: 51,
 
     // ── State captions
     stressState: 'DB SATURATING',
@@ -116,7 +117,7 @@ export const WID_VIZ = {
     deltaLabel:   'p95 −60%',
 
     hitRateLabel: 'CACHE HIT',
-    hitRateLo:    '0%',      // STRESSED (cold cache)
+    hitRateLo:    '31%',     // STRESSED (cold cache, realistic floor)
     hitRateHi:    '96%',     // RESOLVED
 
     reqLabel:  'REQ',

@@ -81,7 +81,8 @@
 /* Accent band — the "window" that reveals the knockout words.
    width:var(--band-w) gives the fixed-width strip that ends at the same x
    for every word. The word layers stay full-width (they overflow the band to
-   the right in cream on dark), so band width is decoupled from glyph width. */
+   the right in cream on dark), so band width is decoupled from glyph width.
+   pointer-events:none lets clicks fall through to the base-stack words below. */
 .wid-band {
   position: absolute;
   left: 0;
@@ -90,12 +91,15 @@
   overflow: hidden;
   background: var(--accent);
   z-index: 2;
+  pointer-events: none;
 }
 
 /* Knockout stack: lives INSIDE .wid-band (clipped by overflow:hidden).
-   Same y transform as base stack → glyphs land exactly on top of cream words. */
+   Same y transform as base stack → glyphs land exactly on top of cream words.
+   pointer-events:none: purely decorative; base stack handles all interactions. */
 .wid-stack--ko {
   position: absolute;
+  pointer-events: none;
   /* top and left set by JS after measuring */
 }
 
@@ -119,6 +123,33 @@
 .wid-word--ko {
   /* Override to --bg inside the accent band — this is the knockout effect */
   color: var(--bg);
+}
+
+/* ── word navigation: interactive affordance ─────────────────────────────── */
+/* Base-stack words are role=button — they need pointer events and a cursor.   */
+/* The band + ko stack have pointer-events:none so clicks reach these words.   */
+.wid-word {
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wid-word:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* Desktop: hover nudges neighbour words right to signal interactivity.
+   Opacity stays at the natural inherited value (full cream) — no ghost dimming.
+   Animates transform only — 60fps floor. */
+@media (min-width: 981px) and (pointer: fine) {
+  .wid-stack--base .wid-word {
+    transition: transform 0.25s ease;
+  }
+  .wid-stack--base .wid-word:hover {
+    transform: translateX(6px);
+  }
 }
 
 /* ── field-anchored blurb caption (lower-left of the viz field) ──────────── */
@@ -222,6 +253,7 @@
 
   .wid-word {
     font-size: clamp(32px, 9vw, 60px);
+    cursor: pointer;  /* still clickable to scroll to the matching blurb */
   }
 
   /* Hide the desktop caption and live viz panel; show mobile blurbs */
@@ -239,7 +271,7 @@
   .wid-mobile-blurb-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 20px;
     border-top: 1px solid var(--line);
     padding-top: 16px;
   }
