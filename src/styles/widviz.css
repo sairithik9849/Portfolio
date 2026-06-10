@@ -350,14 +350,6 @@
   opacity: 0.9;
 }
 
-/* State caption — "DB SATURATING" / "CACHE WARM" */
-.wbk-state-tag {
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: SYSTEMS — Fibonacci sphere field
    50 nodes on a projected sphere + rotating mesh + data pulses + spring physics.
@@ -832,7 +824,7 @@
 /* Frozen BACKEND: field needs explicit height for absolute positioned children */
 .widviz-panel--frozen .wbk-field {
   position: relative;
-  height: 220px;
+  height: 200px;
   overflow: hidden;
 }
 

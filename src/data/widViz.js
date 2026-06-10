@@ -86,24 +86,24 @@ export const WID_VIZ = {
     nodes: [
       { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 22, y: 20 },
       { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 38 },
-      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 28, y: 62 },
-      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 72, y: 62 },
+      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 28, y: 52 },
+      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 72, y: 52 },
     ],
 
     // ── Edges — d-strings for the stretched preserveAspectRatio="none" field SVG.
     edges: [
       { id: 'edge-api',   d: 'M22,20 L50,38' },
-      { id: 'api-cache',  d: 'M50,38 L28,62' },
-      { id: 'api-db',     d: 'M50,38 L72,62' },
+      { id: 'api-cache',  d: 'M50,38 L28,52' },
+      { id: 'api-db',     d: 'M50,38 L72,52' },
     ],
 
     // ── BREAKER label — positioned between API and DB (midpoint of that edge).
+    // Midpoint of api(50,38)→db(72,52): x=61, y=45. Offset right to clear the line.
     breakerLabel:  'BREAKER',
     breakerOpen:   'OPEN',
     breakerClosed: 'CLOSED',
-    // Midpoint of api→db edge, offset slightly to avoid the line.
-    breakerX: 64,
-    breakerY: 50,
+    breakerX: 63,
+    breakerY: 43,
 
     // ── State captions
     stressState: 'DB SATURATING',

@@ -62,8 +62,9 @@ const lerpSamples = (stressed, calm, t) =>
   stressed.map((s, i) => s + (calm[i] - s) * t)
 
 // ── Layout constants for the EKG graph ───────────────────────────────────────
-const GRAPH_TOP   = '62%'
-const READOUT_TOP = '78%'
+// GRAPH_TOP must sit below the CACHE/DB nodes (y:52%) with clear breathing room.
+const GRAPH_TOP   = '59%'
+const READOUT_TOP = '74%'
 
 // ── Stagger depth helper — node assembles at rank * 0.18 ─────────────────────
 const NODE_I = rank => rank * 0.18
@@ -78,11 +79,11 @@ const INITIAL_STRESS_TRACE = buildTrace(DATA.traceStressed)
 const NUM_AMBIENT_DOTS = 7
 
 // ── Queue dot positions near DB node (% of field) ────────────────────────────
-// Three small dots in a queue before DB, visible when stressed (phase ≈ 0).
+// Three small dots queued just above DB (y:52), visible when stressed (phase ≈ 0).
 const QUEUE_DOTS = [
-  { cx: 64, cy: 55 },
-  { cx: 68, cy: 57 },
-  { cx: 60, cy: 57 },
+  { cx: 65, cy: 45 },
+  { cx: 68, cy: 47 },
+  { cx: 62, cy: 47 },
 ]
 
 export default function VizBackend({ progress, index, isActive, reduced, frozen }) {
@@ -114,7 +115,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   const lineRef      = useRef(null)    // sparkline <path>
   const dotRef       = useRef(null)    // sparkline sweep <circle>
   const graphRef     = useRef(null)    // graph root — spike class toggled here
-  const stateTagRef  = useRef(null)    // state caption ("DB SATURATING" / "CACHE WARM")
   const breakerRef   = useRef(null)    // BREAKER status value span
   const breakerRowRef = useRef(null)   // BREAKER row for gold flash class
   const latValRef    = useRef(null)    // latency value span
@@ -140,9 +140,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     let cancelled = false
 
     // Helpers for imperative DOM updates — no React re-renders.
-    const setStateTag = text => {
-      if (stateTagRef.current) stateTagRef.current.textContent = text
-    }
     const setBreaker = (text, isOpen) => {
       if (breakerRef.current) breakerRef.current.textContent = text
       if (breakerRowRef.current) {
@@ -167,7 +164,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         // ── Phase 0: STRESSED ─────────────────────────────────────────────
         phase.set(0)
         packetRouteRef.current = 'db'
-        setStateTag(DATA.stressState)
         setBreaker(DATA.breakerClosed, false)
         setLatency(DATA.latencyHi)
         setHitRate(DATA.hitRateLo)
@@ -209,7 +205,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
 
         // ── Phase 1: RESOLVED — animate phase 0→1 ─────────────────────────
         packetRouteRef.current = 'cache'
-        setStateTag(DATA.calmState)
         setBreaker(DATA.breakerClosed, false)
         setLatency(DATA.latencyLo)
         setHitRate(DATA.hitRateHi)
@@ -513,7 +508,8 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         </div>
 
         {/* ── Readout cluster — below graph ────────────────────────────────────
-            REQ counter + rps label + delta headline. */}
+            REQ counter + rps label + résumé-tied delta.
+            Three items only — state is communicated by BREAKER tag + sparkline color. */}
         <motion.div
           className="wbk-readout"
           style={{ top: READOUT_TOP, opacity: isFinal ? 1 : readoutOp }}
@@ -524,11 +520,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           </span>
           <span className="wbk-readout-rps">{DATA.rpsLabel}</span>
           <span className="wbk-readout-delta">{DATA.deltaLabel}</span>
-
-          {/* State caption — imperative textContent from narrative clock */}
-          <span ref={stateTagRef} className="wbk-state-tag">
-            {isFinal ? DATA.calmState : DATA.stressState}
-          </span>
         </motion.div>
 
       </motion.div>
