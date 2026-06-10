@@ -63,8 +63,7 @@ const lerpSamples = (stressed, calm, t) =>
 
 // ── Layout constants for the EKG graph ───────────────────────────────────────
 // GRAPH_TOP must sit below the CACHE/DB nodes (y:52%) with clear breathing room.
-const GRAPH_TOP   = '59%'
-const READOUT_TOP = '74%'
+const GRAPH_TOP = '59%'
 
 // ── Stagger depth helper — node assembles at rank * 0.18 ─────────────────────
 const NODE_I = rank => rank * 0.18
@@ -96,7 +95,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
   const enter     = useTransform(progress, enterIn, [0, 1], { clamp: true })
   const graphOp   = useTransform(enter, [0.55, 0.82], [0, 1], { clamp: true })
-  const readoutOp = useTransform(enter, [0.80, 1.0],  [0, 1], { clamp: true })
 
   // ── phase MotionValue — 0 = STRESSED, 1 = RESOLVED ───────────────────────
   // isFinal: fixed at 1 (resolved static frame).
@@ -119,7 +117,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   const breakerRowRef = useRef(null)   // BREAKER row for gold flash class
   const latValRef    = useRef(null)    // latency value span
   const hitValRef    = useRef(null)    // cache-hit % span
-  const counterEl    = useRef(null)    // REQ counter
   const dbNodeRef    = useRef(null)    // DB node HTML div — strobe class toggled here
 
   // packetRoute ref avoids stale closure in the narrative useEffect.
@@ -244,23 +241,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     return () => { cancelled = true }
     // phase, packetT, packetOpMV, dbStrobeMV are stable MotionValue refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, isFinal])
-
-  // ── REQ counter clock — wall clock #2 ────────────────────────────────────
-  useEffect(() => {
-    if (!isActive || isFinal) return
-    let cancelled = false
-    let val = 0
-
-    const tick = () => {
-      if (cancelled) return
-      val = (val + Math.floor(Math.random() * 2400 + 800)) % 9_999_999
-      if (counterEl.current) counterEl.current.textContent = val.toLocaleString()
-      setTimeout(tick, 150 + Math.random() * 130)
-    }
-
-    tick()
-    return () => { cancelled = true }
   }, [isActive, isFinal])
 
   // ── Sparkline morph — driven imperatively from phase changes ─────────────
@@ -507,20 +487,6 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           </motion.div>
         </div>
 
-        {/* ── Readout cluster — below graph ────────────────────────────────────
-            REQ counter + rps label + résumé-tied delta.
-            Three items only — state is communicated by BREAKER tag + sparkline color. */}
-        <motion.div
-          className="wbk-readout"
-          style={{ top: READOUT_TOP, opacity: isFinal ? 1 : readoutOp }}
-        >
-          <span className="wbk-readout-req">
-            {DATA.reqLabel}{' '}
-            <b ref={counterEl}>{isFinal ? '1,130,574' : '0'}</b>
-          </span>
-          <span className="wbk-readout-rps">{DATA.rpsLabel}</span>
-          <span className="wbk-readout-delta">{DATA.deltaLabel}</span>
-        </motion.div>
 
       </motion.div>
     </motion.div>
