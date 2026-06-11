@@ -15,7 +15,8 @@ export const WHAT_I_DO = [
     id: 'data',
     word: 'DATA',
     blurb:
-      "Postgres, Redis, Snowflake. My actual job is making the slow query stop being slow.",
+      "Postgres, Redis, Snowflake, and millions of raw rows a day of noise. I can roll it up into the one signal a human can read.",
+    blurbMarks: ['millions', 'one signal'],
   },
   {
     id: 'interface',
