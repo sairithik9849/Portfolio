@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion, useTransform } from 'framer-motion'
 import { widSlice } from '../../utils/widSlice'
 import { WID_VIZ } from '../../data/widViz'
@@ -6,31 +6,57 @@ import { WID_VIZ } from '../../data/widViz'
 const DATA = WID_VIZ.data
 const N    = 5
 
-// Left-to-right stagger buckets: sort unique naiveX values → normalized rank.
-// 5 distinct X bands → ranks 0–4 → mapped to [0, 0.8] so emit (rank 4) reaches
-// full opacity exactly when enter = 1 (CSS opacity multiplier = 5, window = 0.2).
-const _uniqueXs = [...new Set(DATA.planNodes.map(n => n.naiveX))].sort((a, b) => a - b)
-const NODE_STAGGER = Object.fromEntries(
-  DATA.planNodes.map(n => [
-    n.id,
-    +(_uniqueXs.indexOf(n.naiveX) / (_uniqueXs.length - 1) * 0.8).toFixed(2),
-  ])
-)
+// ── Wall-clock phase timeline (ms after the DATA snap activates) ────────────
+// NOISE: pure static so the mess registers. SWEEP: front travels X0→X1 and
+// resolves dots onto the curve. SIGNAL: locked, holds until deactivation.
+const NOISE_HOLD_MS = 900
+const SWEEP_MS      = 1800
+const LOCK_MS       = NOISE_HOLD_MS + SWEEP_MS
 
-// Precompute edge render data: SVG endpoints parsed from naiveD + stagger band.
-// Edge stagger = destination node's stagger (edge draws as its target fades in).
-// Pulse begins are staggered so all 5 edges carry data simultaneously at steady state.
-const EDGE_DATA = DATA.planEdges.map((e, k) => {
-  const nums = e.naiveD.match(/-?[\d.]+/g).map(Number)
-  return {
-    key:     `${e.from}-${e.to}`,
-    d:       e.naiveD,
-    x1:      nums[0], y1: nums[1],
-    x2:      nums[2], y2: nums[3],
-    stagger: NODE_STAGGER[e.to],
-    begin:   `${(k * 0.38).toFixed(2)}s`,
-  }
-})
+// ── Field-space tuning constants (0–100 panel units) ────────────────────────
+const RESOLVE_BAND = 8     // trailing band behind the front where a dot lerps onto the curve
+const FLARE_BAND   = 5     // half-width of the flare pulse around the sweep line
+const FLARE_SCALE  = 0.9   // extra dot scale at flare peak (1 → 1.9)
+const DRIFT_AMP    = 3.2   // ambient noise drift radius
+const JITTER_AMP   = 0.9   // unresolved static jitter amplitude
+const BREATH_AMP   = 0.7   // resolved on-curve breathing amplitude
+const RESOLVE_LAG  = 160   // ms easing constant — dots trail the front like a wake
+
+// Counter scramble: update interval stretches as the lock approaches —
+// the deceleration IS the radio lock-on feel.
+const COUNTER_FAST_MS = 140
+const COUNTER_SLOW_MS = 420
+const COUNTER_SPREAD  = 3_500_000  // scramble amplitude around lockValue at sweep start
+
+// Loop: hold the SIGNAL state for this long before restarting from NOISE.
+const SIGNAL_HOLD_MS = 1400
+
+// Dot colour LUT — 16 precomputed steps muted → accent so the rAF never
+// interpolates colour strings. Hex values mirror the --muted / --accent
+// tokens in tokens.css (CSS vars are not readable from the rAF without
+// a getComputedStyle round-trip).
+const MUTED_HEX  = '#6e6e66'
+const ACCENT_HEX = '#c9f558'
+const LUT_STEPS  = 16
+const hexToRgb = h => [
+  parseInt(h.slice(1, 3), 16),
+  parseInt(h.slice(3, 5), 16),
+  parseInt(h.slice(5, 7), 16),
+]
+const COLOR_LUT = (() => {
+  const a = hexToRgb(MUTED_HEX)
+  const b = hexToRgb(ACCENT_HEX)
+  return Array.from({ length: LUT_STEPS }, (_, i) => {
+    const t = i / (LUT_STEPS - 1)
+    const [r, g, bl] = a.map((v, k) => Math.round(v + (b[k] - v) * t))
+    return `rgb(${r},${g},${bl})`
+  })
+})()
+const LUT_MAX = LUT_STEPS - 1
+
+const smooth = t => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t))
+const lerp   = (a, b, t) => a + (b - a) * t
+const clamp  = (v, a, b) => (v < a ? a : v > b ? b : v)
 
 export default function VizData({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
@@ -38,137 +64,291 @@ export default function VizData({ progress, index, isActive, reduced, frozen }) 
   const { dissolveIn, enterIn } = widSlice(index, N)
 
   // ── scroll clock — all hooks called unconditionally ───────────────────────
-  const dissolve = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
-  const scale    = useTransform(dissolve, [0, 1], [0.985, 1])
-  const enter    = useTransform(progress, enterIn,  [0, 1],    { clamp: true })
-  // Readouts fade in once the DAG is fully assembled — mirrors VizSystems' statusOp.
-  const costOp   = useTransform(enter, [0.8, 1], [0, 1], { clamp: true })
+  const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
+  const enter     = useTransform(progress, enterIn,  [0, 1],    { clamp: true })
+  // Readouts fade in as the snap lands — mirrors VizSystems' statusOp.
+  const readoutOp = useTransform(enter, [0.8, 1], [0, 1], { clamp: true })
 
-  // ── wall clock (row counter) ──────────────────────────────────────────────
-  const counterEl = useRef(null)
-  const loopRef   = useRef(null)
+  // ── refs for direct-DOM rAF writes (zero React re-renders on the wall clock)
+  const fieldRef   = useRef(null)
+  const dotElsRef  = useRef([])
+  const curveRef   = useRef(null)
+  const sweepRef   = useRef(null)
+  const stageRef   = useRef(null)
+  const counterRef = useRef(null)
+
+  // Activation clock + counter state shared between the isActive effect and
+  // the rAF closure (the rAF runs for the full component lifetime).
+  const isActiveRef = useRef(isActive)
+  const t0Ref       = useRef(null)
+  const counterSt   = useRef({ locked: false, nextAt: 0 })
 
   useEffect(() => {
-    if (!isActive || isFinal) {
-      loopRef.current?.()
-      return
+    isActiveRef.current = isActive
+    if (isActive) {
+      if (t0Ref.current === null) t0Ref.current = performance.now()
+    } else {
+      // Reset so the next activation replays the full noise → sweep → lock arc.
+      t0Ref.current = null
+      counterSt.current.locked = false
+      counterSt.current.nextAt = 0
     }
-    let cancelled = false
-    let val = 0
+  }, [isActive])
 
-    const tick = () => {
-      if (cancelled) return
-      val = (val + Math.floor(Math.random() * 2400 + 800)) % 9_999_999
-      if (counterEl.current) counterEl.current.textContent = val.toLocaleString()
-      setTimeout(tick, 180 + Math.random() * 120)
+  // ── Wall clock — single rAF, VizSystems pattern ───────────────────────────
+  // Runs for the component lifetime; skips all frame work while the layer is
+  // dissolved out (dissolve == 0) so mid-section scrolling costs nothing.
+  useEffect(() => {
+    if (isFinal) return
+
+    const P = DATA.particles
+    const n = P.length
+
+    // Per-dot eased resolve factor — eases toward the front-derived target so
+    // the convergence trails the sweep like a wake (and de-res on deactivation
+    // is a fade, not a jump cut).
+    const rfCur = new Float32Array(n)
+
+    let panelRect = null
+    let rectAge   = Infinity   // force a bounds query on the first frame
+    let lastT     = performance.now()
+    let lastStage = null
+    let raf       = null
+
+    const tick = t => {
+      raf = requestAnimationFrame(tick)
+      const dt = Math.min(t - lastT, 50)  // cap to absorb tab-blur spikes
+      lastT = t
+
+      if (dissolve.get() <= 0.001) return  // invisible — skip everything
+
+      // Re-query field bounds periodically — handles pin reflow and resize.
+      // Must use the field (not the panel) so px offset math matches the
+      // left/top % positions which are relative to the field, not the panel.
+      rectAge += dt
+      if (!panelRect || rectAge > 4000) {
+        panelRect = fieldRef.current?.getBoundingClientRect() ?? null
+        rectAge = 0
+      }
+      const pw = panelRect?.width  ?? 400
+      const ph = panelRect?.height ?? 400
+
+      // ── phase clock ──────────────────────────────────────────────────────
+      const t0 = t0Ref.current
+      let tt = t0 === null ? 0 : t - t0
+
+      // Loop: after the full cycle (noise + sweep + signal hold), restart.
+      if (t0 !== null && tt >= LOCK_MS + SIGNAL_HOLD_MS) {
+        t0Ref.current = t
+        tt = 0
+        counterSt.current.locked = false
+        counterSt.current.nextAt = 0
+      }
+
+      let frontK, stage
+      if (t0 === null || tt < NOISE_HOLD_MS) {
+        frontK = 0
+        stage  = 'noise'
+      } else if (tt < LOCK_MS) {
+        frontK = smooth((tt - NOISE_HOLD_MS) / SWEEP_MS)
+        stage  = 'resolving'
+      } else {
+        frontK = 1
+        stage  = 'signal'
+      }
+      // Front overshoots both bounds so edge dots fully flare and resolve.
+      const front  = lerp(DATA.sweepX0 - FLARE_BAND,
+                          DATA.sweepX1 + RESOLVE_BAND + FLARE_BAND, frontK)
+      const sweepX = clamp(front, DATA.sweepX0, DATA.sweepX1)
+      const rfEase = Math.min(1, dt / RESOLVE_LAG)
+
+      // ── dots ─────────────────────────────────────────────────────────────
+      for (let i = 0; i < n; i++) {
+        const p  = P[i]
+        const el = dotElsRef.current[i]
+        if (!el) continue
+
+        const target = t0 === null ? 0 : smooth(clamp((front - p.sx) / RESOLVE_BAND, 0, 1))
+        rfCur[i] += (target - rfCur[i]) * rfEase
+        const rf = rfCur[i]
+
+        // Flare — pulse in a band around the visible sweep line.
+        const fl = stage === 'resolving'
+          ? Math.max(0, 1 - Math.abs(sweepX - p.sx) / FLARE_BAND)
+          : 0
+
+        const driftX = DRIFT_AMP * Math.sin(t * 0.0011 + p.ph)
+        const driftY = DRIFT_AMP * Math.cos(t * 0.0013 + p.ph2)
+        const jit    = (1 - rf) * (JITTER_AMP * Math.sin(t * 0.02 + p.ph)
+                                 + 0.6 * Math.cos(t * 0.017 + p.ph2))
+        const breath = rf * BREATH_AMP * Math.sin(t * 0.004 + p.sx * 0.08)
+
+        const x = lerp(p.nx + driftX, p.sx, rf)
+        const y = lerp(p.ny + driftY, p.sy, rf) + jit + breath
+
+        // Base position is left/top %; transform adds the px offset (GPU-only).
+        const offX = ((x - p.nx) / 100) * pw
+        const offY = ((y - p.ny) / 100) * ph
+        const s    = 1 + FLARE_SCALE * smooth(fl)
+        el.style.transform =
+          `translate(calc(-50% + ${offX.toFixed(1)}px), calc(-50% + ${offY.toFixed(1)}px)) scale(${s.toFixed(2)})`
+
+        const noiseOp = 0.3 + 0.2 * Math.abs(Math.sin(t * 0.01 + p.ph))
+        el.style.opacity = clamp(lerp(noiseOp, 0.95, rf) + fl * 0.3, 0, 1).toFixed(2)
+
+        // Brightness overshoot at the flare peak via LUT index boost.
+        const lutIdx = Math.min(LUT_MAX, Math.round(rf * LUT_MAX + fl * 6))
+        el.style.background = COLOR_LUT[lutIdx]
+      }
+
+      // ── curve draw — front-synced with the sweep line ────────────────────
+      if (curveRef.current) {
+        const cprog = clamp((front - DATA.sweepX0) / (DATA.sweepX1 - DATA.sweepX0), 0, 1)
+        curveRef.current.style.strokeDashoffset = (1 - cprog).toFixed(3)
+        curveRef.current.style.opacity = (cprog * 0.9).toFixed(2)
+      }
+
+      // ── sweep line ───────────────────────────────────────────────────────
+      if (sweepRef.current) {
+        const op = stage === 'resolving' ? 0.85 * Math.sin(Math.PI * frontK) : 0
+        sweepRef.current.style.opacity   = clamp(op, 0, 0.85).toFixed(2)
+        sweepRef.current.style.transform = `translateX(${((sweepX / 100) * pw).toFixed(1)}px)`
+      }
+
+      // ── stage label + phase gate (area glow / spark via CSS) ─────────────
+      if (stage !== lastStage) {
+        lastStage = stage
+        if (stageRef.current) {
+          stageRef.current.dataset.stage = stage
+          stageRef.current.textContent   = DATA.stageLabels[stage]
+        }
+        if (fieldRef.current) fieldRef.current.dataset.phase = stage
+      }
+
+      // ── lock-on counter ──────────────────────────────────────────────────
+      const cs = counterSt.current
+      if (!cs.locked && t >= cs.nextAt && counterRef.current) {
+        let val
+        if (stage === 'noise') {
+          val = Math.floor(Math.random() * 9_999_999)
+          cs.nextAt = t + COUNTER_FAST_MS + Math.random() * 60
+        } else if (stage === 'resolving') {
+          const spread = (1 - frontK) * COUNTER_SPREAD
+          val = Math.max(0, Math.round(DATA.lockValue + (Math.random() * 2 - 1) * spread))
+          cs.nextAt = t + lerp(COUNTER_FAST_MS, COUNTER_SLOW_MS, frontK)
+        } else {
+          val = DATA.lockValue
+          cs.locked = true
+        }
+        counterRef.current.textContent = val.toLocaleString()
+      }
     }
-    tick()
-    loopRef.current = () => { cancelled = true }
-    return () => { cancelled = true }
-  }, [isActive, isFinal])
+
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // dissolve is a stable useTransform MotionValue — intentionally omitted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFinal])
+
+  const lockedText = DATA.lockValue.toLocaleString()
 
   return (
     <motion.div
       className="widviz-layer widviz-data"
       style={{ opacity: isFinal ? 1 : dissolve, scale: isFinal ? 1 : scale }}
     >
-      {/* Single --enter subscriber drives all CSS assembly via custom prop inheritance.
-          Pattern mirrors VizSystems: one MotionValue subscriber, per-element
-          variation via CSS calc(). */}
-      <motion.div className="wdat-field" style={{ '--enter': isFinal ? 1 : enter }}>
+      <div className="wdat-layout">
 
-        {/* ── SVG layer: edges + flowing-row pulse dots ─────────────────────────
-            preserveAspectRatio="none" stretches the 0 0 100 100 viewBox to fill
-            the full-height panel — same technique as VizSystems. Node HTML elements
-            use matching left/top% so dots register with SVG edge endpoints. */}
-        <svg
-          className="wdat-mesh-svg"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
+        {/* data-phase gates the area glow + spark in CSS; the rAF flips it
+            noise → resolving → signal. Final frames pin it at signal. */}
+        <div
+          ref={fieldRef}
+          className="wdat-field"
+          data-phase={isFinal ? 'signal' : 'noise'}
         >
-          {EDGE_DATA.map(e => (
-            <g key={e.key}>
-              {/* Edge draws in via CSS stroke-dashoffset keyed to --enter + --i.
-                  pathLength="1" normalizes dash math to 0–1 range. */}
-              <path
-                className="wdat-edge"
-                d={e.d}
-                pathLength="1"
-                style={{ '--i': e.stagger }}
-              />
-              {/* Flowing-row pulse — SMIL, matches .wsys-pulse-dot precedent.
-                  Runs continuously; the dissolve opacity hides it when off-snap. */}
-              <circle className="wdat-pulse-dot" r="1.2">
-                <animate
-                  attributeName="cx"
-                  from={e.x1} to={e.x2}
-                  dur="0.65s"
-                  begin={e.begin}
-                  repeatCount="indefinite"
-                />
-                <animate
-                  attributeName="cy"
-                  from={e.y1} to={e.y2}
-                  dur="0.65s"
-                  begin={e.begin}
-                  repeatCount="indefinite"
-                />
-                <animate
-                  attributeName="opacity"
-                  values="0;1;1;0"
-                  keyTimes="0;0.12;0.88;1"
-                  dur="0.65s"
-                  begin={e.begin}
-                  repeatCount="indefinite"
-                />
-              </circle>
-            </g>
-          ))}
-        </svg>
 
-        {/* ── HTML layer: plan nodes (dot + label) ─────────────────────────────
-            Positioned in the same % coordinate space as the SVG viewBox so dot
-            centers register with edge endpoints. Opacity driven by --enter + --i. */}
-        {DATA.planNodes.map(node => (
-          <div
-            key={node.id}
-            className={`wdat-node${node.id === 'emit' ? ' wdat-node--emit' : ''}`}
-            style={{
-              left:  `${node.naiveX}%`,
-              top:   `${node.naiveY}%`,
-              '--i': NODE_STAGGER[node.id],
-            }}
+          {/* ── SVG layer: signal curve, area glow, traveling spark ──────────
+              preserveAspectRatio="none" stretches the 0–100 viewBox to the
+              field; non-scaling-stroke keeps line weights uniform.
+              Dots are HTML spans — circles in a stretched SVG distort into
+              ellipses (same split as VizSystems). */}
+          <svg
+            className="wdat-mesh-svg"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
           >
-            <span className="wdat-node-dot" />
-            <span className="wdat-node-label">{node.label}</span>
-          </div>
-        ))}
+            <defs>
+              <linearGradient id="wdat-area-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={ACCENT_HEX} stopOpacity="0.14" />
+                <stop offset="100%" stopColor={ACCENT_HEX} stopOpacity="0" />
+              </linearGradient>
+            </defs>
 
-        {/* ── Corner readouts — unboxed, no border (mirrors .wsys-status) ─────── */}
-        <motion.span
-          className="wdat-readout wdat-counter"
-          style={{ opacity: isFinal ? 1 : costOp }}
-        >
-          {DATA.rowCounterLabel}{' '}
-          <b ref={counterEl}>{isFinal ? '4,821,094' : '0'}</b>
-        </motion.span>
+            <path className="wdat-area" d={DATA.curveAreaD} />
 
-        <motion.span
-          className="wdat-readout wdat-table"
-          style={{ opacity: isFinal ? 1 : costOp }}
-        >
-          {DATA.tableLabel}
-        </motion.span>
+            <path
+              ref={curveRef}
+              className="wdat-curve"
+              d={DATA.curveD}
+              pathLength="1"
+              vectorEffect="non-scaling-stroke"
+              style={isFinal ? { strokeDashoffset: 0, opacity: 0.9 } : undefined}
+            />
 
-        <motion.span
-          className="wdat-readout wdat-cost"
-          style={{ opacity: isFinal ? 1 : costOp }}
-        >
-          {DATA.costLabel}
-        </motion.span>
+            {/* Spark comet — CSS dashoffset keyframe (no SMIL: distorts in
+                stretched viewBox). Post-lock only; omitted from final frame. */}
+            {!isFinal && (
+              <path
+                className="wdat-spark"
+                d={DATA.curveD}
+                pathLength="1"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+          </svg>
 
-      </motion.div>
+          {/* ── HTML layer: noise dots ───────────────────────────────────────
+              Base position via left/top %; rAF writes transform/opacity/colour.
+              Final frames settle on the curve in lime. */}
+          {DATA.particles.map((p, i) => (
+            <span
+              key={i}
+              ref={el => { dotElsRef.current[i] = el }}
+              className="wdat-dot"
+              style={isFinal
+                ? { left: `${p.sx}%`, top: `${p.sy}%` }
+                : { left: `${p.nx}%`, top: `${p.ny}%` }}
+            />
+          ))}
+
+          {/* Sweep line — translateX driven by rAF, hidden outside sweep phase */}
+          {!isFinal && <div ref={sweepRef} className="wdat-sweep" />}
+
+        </div>
+
+        {/* ── Readouts — below the field, in flow (not absolute corners) ───── */}
+        <div className="wdat-meta">
+          <motion.span
+            className="wdat-readout wdat-counter"
+            style={{ opacity: isFinal ? 1 : readoutOp }}
+          >
+            {DATA.rowCounterLabel}{' '}
+            <b ref={counterRef}>{isFinal ? lockedText : '0'}</b>
+          </motion.span>
+
+          <motion.span
+            ref={stageRef}
+            className="wdat-readout wdat-stage"
+            data-stage={isFinal ? 'signal' : 'noise'}
+            style={{ opacity: isFinal ? 1 : readoutOp }}
+          >
+            {isFinal ? DATA.stageLabels.signal : DATA.stageLabels.noise}
+          </motion.span>
+        </div>
+
+      </div>
     </motion.div>
   )
 }

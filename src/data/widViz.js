@@ -63,6 +63,56 @@ const _sysPulseEdges = [..._sysEdges]
   })
   .slice(0, 10)
 
+// ── DATA geometry — noise→signal field, computed once at module load.
+//    Dedicated Mulberry32 PRNG (separate seed from _sysRand) so the particle
+//    field is deterministic across renders — the frozen/reduced final frame
+//    must show the same settled constellation every time.
+const _datRand = (() => {
+  let s = 0x5161A157
+  return () => {
+    s = (s + 0x6D2B79F5) | 0
+    let t = Math.imul(s ^ (s >>> 15), 1 | s)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+})()
+
+// Signal curve in 0–100 field space: clean smoothstep rise left→right.
+// Pure smoothstep — no sine wobble: a multi-cycle frequency in a tall
+// stretched-viewBox SVG produces two visual humps that look like a broken
+// curve. t = (x − X0) / (X1 − X0).
+const _DAT_X0 = 8
+const _DAT_X1 = 94
+const _datSmooth = t => t * t * (3 - 2 * t)
+const _datCurveY = x => {
+  const t = (x - _DAT_X0) / (_DAT_X1 - _DAT_X0)
+  // y=71 (lower-center) → y=43 (upper-center); midpoint y≈57 aligns with
+  // the center of the visible band (mask fades top 20%, bottom 6% → center≈57%).
+  return 71 - 28 * _datSmooth(t)
+}
+
+// Sampled polyline for the SVG curve (step 2 units → 44 points).
+const _datCurvePts = []
+for (let x = _DAT_X0; x <= _DAT_X1; x += 2)
+  _datCurvePts.push(`${x} ${_datCurveY(x).toFixed(1)}`)
+const _datCurveD = `M${_datCurvePts.join(' L')}`
+const _datAreaD  = `${_datCurveD} L${_DAT_X1} 100 L${_DAT_X0} 100 Z`
+
+// 110 particles: sx stratified along the curve (each dot owns a horizontal
+// slot so the resolved curve is evenly populated), sy on the curve ± jitter;
+// nx/ny scattered over the full field for the noise state.
+const _datParticles = Array.from({ length: 110 }, (_, i) => {
+  const sx = _DAT_X0 + (_DAT_X1 - _DAT_X0) * ((i + _datRand() * 0.8) / 110)
+  return {
+    sx:  +sx.toFixed(1),
+    sy:  +(_datCurveY(sx) + (_datRand() * 2 - 1) * 4).toFixed(1),
+    nx:  +(6 + _datRand() * 88).toFixed(1),
+    ny:  +(18 + _datRand() * 70).toFixed(1),
+    ph:  +(_datRand() * 6.283).toFixed(2),
+    ph2: +(_datRand() * 6.283).toFixed(2),
+  }
+})
+
 export const WID_VIZ = {
   systems: {
     kicker:      '// 03·01',
@@ -147,28 +197,16 @@ export const WID_VIZ = {
     kicker: '// 03·03',
     mode:   'DATA',
     rowCounterLabel: 'ROWS',
-    costLabel:       '−60% p99',
     tableLabel:      'SNOWFLAKE',
-    // x/y as % of the field (0–100).
-    // naiveX/naiveY = Phase 2 naive plan layout (branched DAG with join).
-    // optX/optY/folds = Phase 3b optimized layout (join-free); authored now, not yet consumed.
-    planNodes: [
-      { id: 'scan-a',    label: 'SEQ SCAN A', naiveX: 10, naiveY: 32, optX: 10, optY: 50, folds: false },
-      { id: 'scan-b',    label: 'SEQ SCAN B', naiveX: 10, naiveY: 68, optX: 10, optY: 68, folds: true  },
-      { id: 'hash-join', label: 'HASH JOIN',  naiveX: 34, naiveY: 50, optX: 34, optY: 50, folds: true  },
-      { id: 'filter',    label: 'FILTER',     naiveX: 55, naiveY: 50, optX: 40, optY: 50, folds: false },
-      { id: 'aggregate', label: 'AGGREGATE',  naiveX: 74, naiveY: 50, optX: 65, optY: 50, folds: false },
-      { id: 'emit',      label: 'EMIT',       naiveX: 92, naiveY: 50, optX: 90, optY: 50, folds: false },
-    ],
-    // d strings authored as matching M x y L x y sequences so Phase 3b can
-    // lerp coordinate-for-coordinate via lerpPath(). Phase 2 renders naiveD only.
-    planEdges: [
-      { from: 'scan-a',    to: 'hash-join', naiveD: 'M10 32 L34 50', optD: 'M10 50 L40 50' },
-      { from: 'scan-b',    to: 'hash-join', naiveD: 'M10 68 L34 50', optD: 'M10 68 L34 50' },
-      { from: 'hash-join', to: 'filter',    naiveD: 'M34 50 L55 50', optD: 'M34 50 L40 50' },
-      { from: 'filter',    to: 'aggregate', naiveD: 'M55 50 L74 50', optD: 'M40 50 L65 50' },
-      { from: 'aggregate', to: 'emit',      naiveD: 'M74 50 L92 50', optD: 'M65 50 L90 50' },
-    ],
+    // Counter value the scramble decelerates onto when the signal locks.
+    lockValue: 4821094,
+    stageLabels: { noise: 'NOISE', resolving: 'RESOLVING', signal: 'SIGNAL' },
+    // Sweep travel bounds in 0–100 field space (match the curve sample range).
+    sweepX0: _DAT_X0,
+    sweepX1: _DAT_X1,
+    curveD:     _datCurveD,
+    curveAreaD: _datAreaD,
+    particles:  _datParticles,
   },
 
   interface: {

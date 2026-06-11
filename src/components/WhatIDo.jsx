@@ -15,14 +15,19 @@ const SETTLE_SCROLL_DURATION = 0.5   // Lenis duration (s) for auto-settle snap
 const SETTLE_VELOCITY_MAX    = 0.05  // Lenis velocity below this counts as "stopped"
 const SNAP_EPSILON_PX        = 4     // skip snap when already within this many px of target
 
-// Splits blurb text on numeric tokens (e.g. "50+", "10M", "60fps") and wraps
-// them in gold so metrics stand out without hardcoding per-blurb markup.
-const highlightNums = text =>
-  text.split(/(\d[\w+]*)/).map((part, i) =>
-    /^\d/.test(part)
+// Splits blurb text on numeric tokens (e.g. "50+", "10M") and optional
+// explicit word phrases, wrapping matches in gold via .wid-caption-num.
+const highlightText = (text, words = []) => {
+  const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const pat = escaped.length
+    ? new RegExp(`(\\d[\\w+]*|${escaped.join('|')})`)
+    : /(\d[\w+]*)/
+  return text.split(pat).map((part, i) =>
+    /^\d/.test(part) || words.includes(part)
       ? <span key={i} className="wid-caption-num">{part}</span>
       : part
   )
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Desktop media query — pin/scrub/settle is created ONLY inside this condition.
@@ -357,7 +362,7 @@ export default function WhatIDo() {
               <div className="wid-mobile-viz">
                 <WidVisual frozen index={i} />
               </div>
-              <p className="wid-readout-blurb">{c.blurb}</p>
+              <p className="wid-readout-blurb">{highlightText(c.blurb, c.blurbMarks ?? [])}</p>
             </div>
           ))}
         </div>
@@ -383,7 +388,7 @@ export default function WhatIDo() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {highlightNums(WHAT_I_DO[active]?.blurb ?? '')}
+            {highlightText(WHAT_I_DO[active]?.blurb ?? '', WHAT_I_DO[active]?.blurbMarks ?? [])}
           </motion.p>
         </AnimatePresence>
       </div>
