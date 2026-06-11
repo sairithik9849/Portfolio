@@ -181,7 +181,7 @@ function FluidMesh({ mouseRef }) {
 
 /* ---- exported wrapper ---- */
 
-export default function HeroFluid({ mouseRef }) {
+export default function HeroFluid({ mouseRef, active = true }) {
   return (
     <div
       style={{
@@ -193,8 +193,13 @@ export default function HeroFluid({ mouseRef }) {
         overflow: 'hidden',
       }}
     >
+      {/* frameloop pauses mid-page (canvas holds its last frame): the cursor
+          glow only activates over #top/#contact, and the ambient drift is
+          slow enough (uTime * 0.05) that the freeze is imperceptible. uTime
+          reads the still-running clock, so motion resumes without a jump. */}
       <Canvas
         dpr={[1, 1.5]}
+        frameloop={active ? 'always' : 'never'}
         gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
         style={{ width: '100%', height: '100%' }}
       >

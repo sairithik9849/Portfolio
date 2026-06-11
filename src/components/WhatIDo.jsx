@@ -129,6 +129,11 @@ export default function WhatIDo() {
           // layer — no second GSAP lerp needed, and the Lenis settle snap
           // won't fight a competing interpolation track.
           scrub: true,
+          // Kill any pending settle timers the instant the user exits the
+          // pin range — a chain armed at the boundary must never survive
+          // into the neighboring sections and yank the page back here.
+          onLeave:     clearSnapState,
+          onLeaveBack: clearSnapState,
           // GSAP snap removed: it conflicts with Lenis smooth-scroll
           // ("rubbery" — the two interpolation loops fight each other).
           // Settle snap is now handled by Lenis below.
@@ -152,10 +157,17 @@ export default function WhatIDo() {
             // has decayed to near-zero.
             // Skipped while a programmatic scroll (click or prior settle) is
             // in flight to prevent oscillation.
-            if (!isSnapping) {
+            // Only armed strictly inside the pin range: progress 0/1 means the
+            // scroll position sits exactly on an edge snap target, and arming
+            // there (boundary crossings, ScrollTrigger.refresh from outside)
+            // is what left stale chains alive to ghost-scroll the user back.
+            if (!isSnapping && self.progress > 0 && self.progress < 1) {
               clearTimeout(settleTimer)
               const attemptSettle = () => {
                 if (isSnapping) return  // another snap already in flight
+                // User has momentum-scrolled out of the pinned range while
+                // this chain was deferring — never yank them back in.
+                if (!st.isActive) return
 
                 const lenis = window.__lenis
                 // Still moving? Defer until Lenis momentum decays.

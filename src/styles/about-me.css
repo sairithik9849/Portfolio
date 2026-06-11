@@ -40,6 +40,12 @@
 
 .about-me-word__fg {
   position: relative;
+  /* Compositor-layer promotion: the scroll reveal writes opacity on every
+     scrolled frame across all words; without a layer each write repaints
+     the large glowing text. inline-block is layout-neutral here because
+     each span holds a single word inside an inline-block wrapper. */
+  display: inline-block;
+  will-change: opacity;
 }
 
 .about-me-word--hl {

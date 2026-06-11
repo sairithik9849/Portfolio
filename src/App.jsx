@@ -25,6 +25,7 @@ const HeroFluid = lazy(() => import('./components/HeroFluid'))
 export default function App() {
   const [aiOpen, setAiOpen] = useState(false)
   const [heroVisible,  setHeroVisible]  = useState(true)
+  const [footerVisible, setFooterVisible] = useState(false)
   const [whatIdoVisible, setWhatIdoVisible] = useState(false)
   const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
@@ -110,6 +111,25 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
 
+  // Footer visibility gates the HeroFluid render loop (with heroVisible below):
+  // the fluid's glow is confined to #top/#contact, so mid-page frames are
+  // wasted GPU work — frameloop pauses when neither section is on screen.
+  useEffect(() => {
+    const footer = document.getElementById('contact')
+
+    if (!footer || !('IntersectionObserver' in window)) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setFooterVisible(entry.isIntersecting),
+      { threshold: 0 },
+    )
+
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
   useEffect(() => {
     const section = document.getElementById('what-i-do')
 
@@ -130,7 +150,7 @@ export default function App() {
     <>
       {/* Fixed background layers — painted in z-order: fluid (0) < noise (2) */}
       <Suspense fallback={null}>
-        <HeroFluid mouseRef={globalMouseRef} />
+        <HeroFluid mouseRef={globalMouseRef} active={heroVisible || footerVisible} />
       </Suspense>
       <div className="noise" />
 
