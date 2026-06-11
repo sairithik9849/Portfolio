@@ -6,7 +6,6 @@ import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
 import WhatIDo from './components/WhatIDo'
-import About      from './components/About'
 import Experience   from './components/Experience'
 import Education    from './components/Education'
 import Projects     from './components/Projects'
@@ -160,7 +159,6 @@ export default function App() {
         <Hero         onOpenAI={() => setAiOpen(true)} />
         <AboutMe />
         <WhatIDo />
-        <About />
         <Experience />
         <Education />
         <Projects />
