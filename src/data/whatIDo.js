@@ -21,13 +21,11 @@ export const WHAT_I_DO = [
   {
     id: 'interface',
     word: 'INTERFACE',
-    blurb:
-      "React that feels physical instead of generated. This page is the receipt.",
+    blurb: '',
   },
   {
     id: 'agents',
     word: 'AGENTS',
-    blurb:
-      "I wire LLMs into real systems as instruments, not magic. The slop stays out.",
+    blurb: '',
   },
 ]
