@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -109,13 +109,26 @@ const frag = /* glsl */`
   }
 `
 
+/* ---- constants ---- */
+
+/* Cap per-frame time advance so a hidden/frozen tab can never teleport
+   the noise field on resume. 0.05 s = one 20fps frame — safe upper bound. */
+const MAX_FRAME_DELTA = 0.05
+
 /* ---- inner R3F mesh ---- */
 
-function FluidMesh({ mouseRef }) {
+function FluidMesh({ mouseRef, onReady }) {
   const { viewport, size } = useThree()
   const meshRef = useRef()
   const matRef  = useRef()
-  const targetMouse = useRef(new THREE.Vector2(0.5, 0.5))
+  const targetMouse   = useRef(new THREE.Vector2(0.5, 0.5))
+  /* Accumulated shader time — clamped per-frame so no pause can teleport the
+     noise field. Wall-clock clock.getElapsedTime() is intentionally NOT used. */
+  const timeRef       = useRef(0)
+  // Fire onReady exactly once after the first successful uniform update —
+  // that's the precise moment the WebGL program is compiled/linked and the
+  // first frame has drawn, which is when the sharp compile hitch is behind us.
+  const readyFiredRef = useRef(false)
 
   const initialUniforms = useMemo(() => ({
     uTime:       { value: 0.0 },
@@ -149,11 +162,14 @@ function FluidMesh({ mouseRef }) {
 
   /* R3F shader uniforms are Three-owned mutable objects updated outside React render. */
   /* eslint-disable react-hooks/immutability */
-  useFrame(({ clock, size: s }) => {
+  useFrame(({ size: s }, delta) => {
     const materialUniforms = matRef.current?.uniforms
     if (!materialUniforms) return
 
-    materialUniforms.uTime.value = clock.getElapsedTime()
+    /* Clamp delta so returning from a hidden/frozen tab never jumps the noise
+       field forward by the full idle duration (which would flash green). */
+    timeRef.current += Math.min(delta, MAX_FRAME_DELTA)
+    materialUniforms.uTime.value = timeRef.current
     const idleMs = performance.now() - mouseRef.current.lastMove
     const cursorTarget = idleMs < 250 ? 1 : Math.max(0, 1 - ((idleMs - 250) / 1500))
     materialUniforms.uCursorActive.value += (cursorTarget - materialUniforms.uCursorActive.value) * 0.08
@@ -162,6 +178,11 @@ function FluidMesh({ mouseRef }) {
     /* lerp for smooth, lag-free tracking at 60fps */
     materialUniforms.uMouse.value.lerp(targetMouse.current, 0.055)
     materialUniforms.uResolution.value.set(s.width, s.height)
+
+    if (!readyFiredRef.current) {
+      readyFiredRef.current = true
+      onReady?.()
+    }
   })
   /* eslint-enable react-hooks/immutability */
 
@@ -181,7 +202,18 @@ function FluidMesh({ mouseRef }) {
 
 /* ---- exported wrapper ---- */
 
-export default function HeroFluid({ mouseRef, active = true }) {
+export default function HeroFluid({ mouseRef, active = true, onReady }) {
+  /* Pause the render loop entirely while the tab is backgrounded — prevents
+     both wasted GPU work and the stale/throttled frames that can land on a
+     bright-green noise frame on return. */
+  const [docHidden, setDocHidden] = useState(document.hidden)
+
+  useEffect(() => {
+    const onVisibilityChange = () => setDocHidden(document.hidden)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
   return (
     <div
       style={{
@@ -199,11 +231,11 @@ export default function HeroFluid({ mouseRef, active = true }) {
           reads the still-running clock, so motion resumes without a jump. */}
       <Canvas
         dpr={[1, 1.5]}
-        frameloop={active ? 'always' : 'never'}
+        frameloop={active && !docHidden ? 'always' : 'never'}
         gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
         style={{ width: '100%', height: '100%' }}
       >
-        <FluidMesh mouseRef={mouseRef} />
+        <FluidMesh mouseRef={mouseRef} onReady={onReady} />
       </Canvas>
     </div>
   )

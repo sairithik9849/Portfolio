@@ -7,6 +7,12 @@
     <title>
       Sairithik Komuravelly — Software Engineer & Systems Administrator
     </title>
+    <!-- Zero-flash boot frame: paints --bg before React hydrates so there
+         is no white-to-black flicker between HTML load and the preloader mount. -->
+    <style>
+      html, body { margin: 0; background: #070707; }
+      #root { background: #070707; }
+    </style>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

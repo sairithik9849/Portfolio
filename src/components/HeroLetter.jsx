@@ -1,12 +1,10 @@
 import { motion } from 'framer-motion'
-import { HERO_LETTER } from '../animations/variants'
 
 export default function HeroLetter({ char, className = '' }) {
   return (
     <motion.span
       className={`char${className ? ` ${className}` : ''}`}
       data-cursor="hover"
-      variants={HERO_LETTER.variants}
       whileHover={{ y: -14, color: '#c9f558' }}
       transition={{ type: 'spring', stiffness: 380, damping: 14 }}
     >

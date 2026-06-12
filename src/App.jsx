@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react'
 import Lenis        from 'lenis'
 import { gsap }    from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+// eslint-disable-next-line no-unused-vars
 import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
@@ -13,6 +14,7 @@ import Footer       from './components/Footer'
 import AIDrawer     from './components/AIDrawer'
 import AIOrb        from './components/AIOrb'
 import Cursor       from './components/Cursor'
+import Preloader    from './components/Preloader'
 import { useHotkey } from './hooks/useHotkey'
 
 // Register ScrollTrigger once at module level.
@@ -21,7 +23,38 @@ gsap.registerPlugin(ScrollTrigger)
 // Three.js is ~600 KB — lazy-load so it doesn't block initial paint
 const HeroFluid = lazy(() => import('./components/HeroFluid'))
 
+// Maximum ms to wait for HeroFluid's first frame before forcing the reveal.
+// Covers slow machines and fallback scenarios (e.g. Spline domain blocked).
+const READY_CAP_MS = 1200
+
 export default function App() {
+  // Two-phase preloader handoff:
+  //
+  //   mountContent: true  → content tree mounts behind the still-opaque overlay.
+  //                         Heavy work (HeroFluid WebGL compile, Spline scene init)
+  //                         runs here with the monolith frozen so the GPU is free.
+  //
+  //   revealed: true      → overlay wipe fires and HERO_SEQUENCE cascade starts.
+  //                         Triggered by HeroFluid's first rendered frame (or the
+  //                         READY_CAP_MS safety timeout — whichever comes first).
+  //
+  // This replaces the previous single `ready` flag that mounted content and
+  // started the wipe in the same tick, causing a triple-whammy frame spike
+  // (two WebGL contexts + Spline init + framer entrance contending with the wipe).
+  const [mountContent, setMountContent] = useState(false)
+  const [revealed,     setRevealed]     = useState(false)
+
+  const handlePreloaderMount = useCallback(() => setMountContent(true), [])
+  const handleFluidReady     = useCallback(() => setRevealed(true),     [])
+
+  // Safety cap: if HeroFluid never fires onReady (slow machine, WebGL fallback),
+  // force the reveal after READY_CAP_MS so the site is never permanently hidden.
+  useEffect(() => {
+    if (!mountContent) return undefined
+    const timer = setTimeout(() => setRevealed(true), READY_CAP_MS)
+    return () => clearTimeout(timer)
+  }, [mountContent])
+
   const [aiOpen, setAiOpen] = useState(false)
   const [heroVisible,  setHeroVisible]  = useState(true)
   const [footerVisible, setFooterVisible] = useState(false)
@@ -87,6 +120,13 @@ export default function App() {
     }
   }, [])
 
+  // Lock native scroll until the reveal fires so no wheel input leaks to the
+  // page during warm-up (content is mounted but hidden under the overlay).
+  useEffect(() => {
+    document.body.style.overflow = revealed ? '' : 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [revealed])
+
   // Pause Lenis while the AI drawer is open so wheel events don't leak to the page.
   useEffect(() => {
     if (!window.__lenis) return
@@ -94,7 +134,13 @@ export default function App() {
     else window.__lenis.start()
   }, [aiOpen])
 
+  // IntersectionObservers depend on mountContent so they re-run once the DOM
+  // nodes (#top, #contact, #what-i-do) actually exist. Previously the empty dep
+  // array caused them to run at App mount when those ids weren't in the tree yet,
+  // silently no-op'ing — heroVisible would stay true forever, HeroFluid's
+  // frameloop would never pause mid-page.
   useEffect(() => {
+    if (!mountContent) return undefined
     const hero = document.getElementById('top')
 
     if (!hero || !('IntersectionObserver' in window)) {
@@ -108,12 +154,13 @@ export default function App() {
 
     observer.observe(hero)
     return () => observer.disconnect()
-  }, [])
+  }, [mountContent])
 
   // Footer visibility gates the HeroFluid render loop (with heroVisible below):
   // the fluid's glow is confined to #top/#contact, so mid-page frames are
   // wasted GPU work — frameloop pauses when neither section is on screen.
   useEffect(() => {
+    if (!mountContent) return undefined
     const footer = document.getElementById('contact')
 
     if (!footer || !('IntersectionObserver' in window)) {
@@ -127,9 +174,10 @@ export default function App() {
 
     observer.observe(footer)
     return () => observer.disconnect()
-  }, [])
+  }, [mountContent])
 
   useEffect(() => {
+    if (!mountContent) return undefined
     const section = document.getElementById('what-i-do')
 
     if (!section || !('IntersectionObserver' in window)) {
@@ -143,30 +191,51 @@ export default function App() {
 
     observer.observe(section)
     return () => observer.disconnect()
-  }, [])
+  }, [mountContent])
 
   return (
     <>
-      {/* Fixed background layers — painted in z-order: fluid (0) < noise (2) */}
-      <Suspense fallback={null}>
-        <HeroFluid mouseRef={globalMouseRef} active={heroVisible || footerVisible} />
-      </Suspense>
-      <div className="noise" />
+      {/* Preloader — mounts immediately, exits when the reveal fires.
+          onMount: App mounts content under the opaque overlay (heavy init here).
+          beginExit: App sends true once HeroFluid's first frame is ready →
+            overlay clip-path wipe plays, HERO_SEQUENCE cascade starts.
+          Cursor stays outside this gate so CURSOR_X/Y update during preload
+          and the monolith can track the pointer. */}
+      <Preloader onMount={handlePreloaderMount} beginExit={revealed} />
 
-      {/* Page content — onPointerMove feeds globalMouseRef for the shader attractor */}
-      <div onPointerMove={handleGlobalPointerMove}>
-        {/* <Nav /> */}
-        <Hero         onOpenAI={() => setAiOpen(true)} />
-        <AboutMe />
-        <WhatIDo />
-        <Experience />
-        <Education />
-        <Projects />
-        <Footer       onOpenAI={() => setAiOpen(true)} />
-      </div>
+      {/* Content tree — mounts behind the opaque overlay during warm-up so
+          the WebGL compile + Spline scene init happen before the wipe reveals
+          the page. Hero holds all elements at opacity:0 until started=true. */}
+      {mountContent && (
+        <>
+          {/* Fixed background layers — painted in z-order: fluid (0) < noise (2) */}
+          <Suspense fallback={null}>
+            <HeroFluid
+              mouseRef={globalMouseRef}
+              active={heroVisible || footerVisible}
+              onReady={handleFluidReady}
+            />
+          </Suspense>
+          <div className="noise" />
 
-      <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible} />
-      <AIDrawer open={aiOpen} onClose={closeAI} />
+          {/* Page content — onPointerMove feeds globalMouseRef for the shader attractor */}
+          <div onPointerMove={handleGlobalPointerMove}>
+            {/* <Nav /> */}
+            <Hero         onOpenAI={() => setAiOpen(true)} started={revealed} />
+            <AboutMe />
+            <WhatIDo />
+            <Experience />
+            <Education />
+            <Projects />
+            <Footer       onOpenAI={() => setAiOpen(true)} />
+          </div>
+
+          <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible} />
+          <AIDrawer open={aiOpen} onClose={closeAI} />
+        </>
+      )}
+
+      {/* Cursor always mounted — provides CURSOR_X/Y for the preloader monolith */}
       <Cursor />
     </>
   )

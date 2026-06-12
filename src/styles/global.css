@@ -4,6 +4,7 @@
    in visual/section order, then update the Styling section in CLAUDE.md. */
 
 @import './tokens.css';
+@import './preloader.css';
 @import './cursor.css';
 @import './layout.css';
 @import './nav.css';

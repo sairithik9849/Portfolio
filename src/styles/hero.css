@@ -111,6 +111,7 @@
   margin: 0 0 0 -0.05em;   /* optical kerning — pulls serif "S" left side-bearing flush to x=0 */
 }
 
+.hero h1 .hero-name-line { display: inline-block; will-change: transform; }
 .hero h1 .char { display: inline-block; vertical-align: baseline; will-change: transform; }
 .hero h1 .char--last { color: var(--accent-2); }
 .hero h1 .it { font-style: italic; color: var(--fg-2); }

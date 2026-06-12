@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react'
 import { motion, useMotionValue, useReducedMotion } from 'framer-motion'
 import {
   HERO_PARENT,
-  HERO_LETTER,
   HERO_SEQUENCE,
   HERO_SEQUENCE_INSTANT,
   fadeUp,
@@ -31,7 +30,7 @@ const EMAIL = 'sairithik8639@gmail.com'
 
 const PASSTHROUGH = { hidden: {}, show: {} }
 
-export default function Hero({ onOpenAI }) {
+export default function Hero({ onOpenAI, started = false }) {
   const splineRef = useRef(null)
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef(null)
@@ -96,25 +95,27 @@ export default function Hero({ onOpenAI }) {
   // Builds a fadeUp variant with the correct delay and optional duration override.
   const fade = (key, duration) => fadeUp(T[key], dur ?? duration ?? 0.9)
 
-  // Letter cascade parent — delay comes from T.name so it starts in its phase.
-  const nameLineParent = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.025, delayChildren: T.name } },
-  }
+  // Per-word slide delays — first name at T.name, last name 120 ms after.
+  const firstNameDelay = T.name
+  const lastNameDelay  = T.name + (prefersReducedMotion ? 0 : 0.12)
 
   return (
     <motion.section
       className="hero shell"
       id="top"
       {...HERO_PARENT}
+      animate={started ? 'show' : 'hidden'}
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
-      {/* Phase 1 — InfiniteGrid fades in; wrapper is absolute so it doesn't consume a flex slot */}
+      {/* Phase 1 — InfiniteGrid fades in; wrapper uses variants so it holds
+           hidden until the parent `started` gate opens (same as all other phases).
+           direct initial/animate was bypassing the parent animate state. */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: T.grid, duration: dur ?? 0.7, ease: 'easeOut' }}
+        variants={{
+          hidden: { opacity: 0 },
+          show:   { opacity: 1, transition: { delay: T.grid, duration: dur ?? 0.7, ease: 'easeOut' } },
+        }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       >
         <InfiniteGrid />
@@ -156,22 +157,25 @@ export default function Hero({ onOpenAI }) {
       </motion.div>
 
       {/*
-        Phase 2b — name letter cascade.
-        Entrance wrapper is a transparent cascade slot — visible entrance is
-        driven by per-letter HERO_LETTER variants on each HeroLetter.
-        Inner motion.h1 carries MotionValue x/y for parallax; separated so
-        springs don't conflict with letter entrance variants.
+        Phase 2b — name slide+fade.
+        Each word is a single motion.span using fadeUp — SAIRITHIK at T.name,
+        KOMURAVELLY at T.name+0.12s. Individual HeroLetter spans carry only
+        whileHover (no entrance variant); the wrapper owns the entrance.
       */}
       <motion.div
         style={{ position: 'relative', zIndex: 2 }}
         variants={PASSTHROUGH}
       >
-        <motion.h1 variants={nameLineParent}>
-          {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
+        <motion.h1 variants={PASSTHROUGH}>
+          <motion.span className="hero-name-line" variants={fadeUp(firstNameDelay, dur ?? 0.7)}>
+            {'SAIRITHIK'.split('').map((c, i) => <HeroLetter key={`s${i}`} char={c} />)}
+          </motion.span>
           <br />
-          {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} className="char--last" />)}
-          {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} className="char--last" />)}
-          <motion.span className="hero-dot" variants={HERO_LETTER.variants}>.</motion.span>
+          <motion.span className="hero-name-line" variants={fadeUp(lastNameDelay, dur ?? 0.7)}>
+            {'KOMURA'.split('').map((c, i) => <HeroLetter key={`k${i}`} char={c} className="char--last" />)}
+            {'VELLY'.split('').map((c, i) => <HeroLetter key={`v${i}`} char={c} className="char--last" />)}
+            <span className="hero-dot">.</span>
+          </motion.span>
         </motion.h1>
       </motion.div>
 

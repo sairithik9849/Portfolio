@@ -1,0 +1,258 @@
+/* Preloader overlay — full-screen, paints immediately, z above everything
+   except the custom cursor (9999).
+   Animate transform/opacity/clip-path only — no layout-thrashing properties. */
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  /* Glossy plain-black: deep black + a subtle cool radial sheen from the top */
+  background:
+    radial-gradient(120% 60% at 50% -5%, rgba(255, 255, 255, 0.045), transparent 55%),
+    radial-gradient(80% 50% at 50% 100%, rgba(201, 245, 88, 0.03), transparent 60%),
+    #050505;
+  overflow: hidden;
+}
+
+/* ── Corner meta labels ────────────────────────────────────────────────── */
+.preloader-meta {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.preloader-meta--tl {
+  top: 28px;
+  left: 28px;
+  color: var(--accent);   /* lime — brand identity */
+}
+
+/* ── Bottom-left HUD: status phrase + percentage ───────────────────────── */
+.preloader-hud {
+  position: absolute;
+  bottom: 28px;
+  left: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Status text: e.g. "LOADING ASSETS" */
+.preloader-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-2);   /* gold — metadata register */
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Blinking block cursor */
+.preloader-cur {
+  display: inline-block;
+  width: 7px;
+  height: 12px;
+  background: var(--accent-2);
+  animation: preloader-blink 1s steps(1) infinite;
+}
+
+@keyframes preloader-blink {
+  50% { opacity: 0; }
+}
+
+/* Percentage readout */
+.preloader-pct {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--accent-2);   /* gold */
+}
+
+/* ── Full-viewport-width progress line ─────────────────────────────────── */
+/* Track: full-width at very bottom of overlay */
+.preloader-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--muted-2);   /* subtle dark track */
+}
+
+/* Fill: lime bar that grows left → right with the progress counter.
+   At exit time (100%) the bar covers the full viewport width and rides
+   the bottom of the clip-path wipe as the overlay sweeps upward —
+   serving as the lime leading-edge scanline during the reveal. */
+.preloader-line-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  box-shadow: 0 0 18px var(--accent), 0 0 48px rgba(201, 245, 88, 0.35);
+  /* Width is driven inline from JS via the rAF lerp — no CSS transition
+     needed (avoids doubling with the rAF smoothing). */
+}
+
+/* ── CSS 3D box loader ─────────────────────────────────────────────────── */
+/* Wrapper: centers the loader in the full-screen overlay */
+.preloader-boxes-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.boxes {
+  --sz: 44px;
+  --dur: 800ms;
+  width: calc(var(--sz) * 3);
+  height: calc(var(--sz) * 2);
+  position: relative;
+  transform-style: preserve-3d;
+  /* Isometric view: tilt 60° back, rotate 45° */
+  transform: rotateX(60deg) rotateZ(45deg);
+  /* NOTE: do NOT add filter here — filter on a preserve-3d element collapses
+     the 3D context to flat. The floor shadow is handled by .face-back instead. */
+}
+
+/* Reduced-motion: cubes stay static (no spin) */
+.boxes--paused .box {
+  animation-play-state: paused !important;
+}
+
+.box {
+  width: var(--sz);
+  height: var(--sz);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-style: preserve-3d;
+}
+
+/* Initial Z-pattern positions + per-box animations */
+.box-1 {
+  transform: translate(100%, 0);
+  animation: box1 var(--dur) linear infinite;
+}
+.box-2 {
+  transform: translate(0, 100%);
+  animation: box2 var(--dur) linear infinite;
+}
+.box-3 {
+  transform: translate(100%, 100%);
+  animation: box3 var(--dur) linear infinite;
+}
+.box-4 {
+  transform: translate(200%, 0);
+  animation: box4 var(--dur) linear infinite;
+}
+
+/* ── Cube faces ─────────────────────────────────────────────────────────
+   Canonical geometry for the 21st.dev box-loader:
+   - transform-origin: 0 0  — rotations pivot around the face's own top-left corner
+   - face-top   : translateZ(sz)              — sits at z=+sz → the TOP diamond in iso
+   - face-front : rotateX(-90deg) translateY(sz) → the FRONT-RIGHT side in iso
+   - face-right : rotateY(90deg)  translateX(sz) → the FRONT-LEFT side in iso
+   - face-back  : translateZ(-4*sz)           → projects far below as the floor shadow
+
+   CSS order is applied right-to-left, so "rotateX(-90deg) translateY(sz)"
+   means: first translateY (translate in local space), then rotateX. */
+
+.face {
+  box-sizing: border-box;
+  position: absolute;
+  width: var(--sz);
+  height: var(--sz);
+  transform-origin: 0 0;
+}
+
+/* Top face — lightest lime; becomes the horizontal diamond on top of the cube */
+.face-top {
+  background: #d8ff78;
+  transform: translateZ(var(--sz));
+}
+
+/* Front face — translate to y=sz edge first, then hinge 90° down.
+   CSS transform order: rotateX applies to points first, then translateY.
+   Result: face at y=sz, z=[0,sz], normal +y.
+   Shares edge (0,sz,sz)-(sz,sz,sz) with face-top. */
+.face-front {
+  background: var(--accent);   /* #c9f558 */
+  transform: translateY(var(--sz)) rotateX(90deg);
+}
+
+/* Right face — translate to x=sz edge first, then hinge 90° inward.
+   Result: face at x=sz, y=[0,sz], z=[0,sz], normal +x.
+   Shares edge (sz,0,sz)-(sz,sz,sz) with face-top. */
+.face-right {
+  background: #7ab020;
+  transform: translateX(var(--sz)) rotateY(-90deg);
+}
+
+/* Back face — projected far below at z=-4*sz; appears as the 2D floor shadow
+   under each cube in the isometric view. Translucent lime so it reads softly. */
+.face-back {
+  background: rgba(201, 245, 88, 0.18);
+  transform: translateZ(calc(var(--sz) * -4));
+}
+
+/* ── Box keyframe animations ────────────────────────────────────────────
+   The four boxes form a Z-shape: . 1 4 / 2 3 .
+   Each cycle, the Z-shape rotates clockwise:
+   - Boxes 1 & 3 hold for 50%, then slide (box1 right, box3 left)
+   - Boxes 2 & 4 slide continuously through two waypoints
+   At 100% all four boxes occupy the same four grid cells as at 0%
+   (just swapped between boxes), so the loop is visually seamless.   */
+
+@keyframes box1 {
+  0%, 50% { transform: translate(100%, 0); }
+  100%    { transform: translate(200%, 0); }
+}
+
+@keyframes box2 {
+  0%   { transform: translate(0, 100%); }
+  50%  { transform: translate(0, 0); }
+  100% { transform: translate(100%, 0); }
+}
+
+@keyframes box3 {
+  0%, 50% { transform: translate(100%, 100%); }
+  100%    { transform: translate(0, 100%); }
+}
+
+@keyframes box4 {
+  0%   { transform: translate(200%, 0); }
+  50%  { transform: translate(200%, 100%); }
+  100% { transform: translate(100%, 100%); }
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .preloader-meta--tl {
+    top: 20px;
+    left: 20px;
+    font-size: 11px;
+  }
+
+  .preloader-hud {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .boxes {
+    --sz: 34px;
+  }
+}
