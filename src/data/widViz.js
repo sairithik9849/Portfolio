@@ -210,19 +210,29 @@ export const WID_VIZ = {
   },
 
   interface: {
-    kicker: '// 03·04',
-    mode:   'INTERFACE',
-    // Wireframe layout zone labels
-    zones: [
-      { id: 'header',  label: 'HEADER' },
-      { id: 'sidebar', label: 'NAV' },
-      { id: 'main',    label: 'CONTENT' },
-      { id: 'card-a',  label: 'CARD' },
-      { id: 'card-b',  label: 'CARD' },
-      { id: 'card-c',  label: 'CARD' },
+    kicker:     '// 03·04',
+    mode:       'INTERFACE',
+    // Dashboard base layer — mock layout block labels
+    baseBlocks: [
+      { id: 'header', label: 'HEADER',  w: '100%', h: '18%', t: '0%',   l: '0%' },
+      { id: 'sidebar',label: 'NAV',     w: '28%',  h: '74%', t: '22%',  l: '0%' },
+      { id: 'main',   label: 'CONTENT', w: '68%',  h: '34%', t: '22%',  l: '31%' },
+      { id: 'cards',  label: 'CARDS',   w: '68%',  h: '34%', t: '60%',  l: '31%' },
     ],
+    // Node layer — 4 floating UI elements with positions (% of layer)
+    nodes: [
+      { id: 'bar',      label: 'PERF',  x: '38%',  y: '28%' },
+      { id: 'ring',     label: 'UX',    x: '68%',  y: '38%' },
+      { id: 'coord-a',  label: '24ms',  x: '36%',  y: '62%' },
+      { id: 'coord-b',  label: '99.9%', x: '70%',  y: '66%' },
+    ],
+    // Bar chart sample data (8 bars, 0–100 normalized)
+    bars: [42, 67, 55, 88, 74, 91, 63, 78],
+    // Glass control-panel readouts
     stackLabel: 'REACT · VITE',
     fpsLabel:   '60fps',
+    renderLabel: 'RENDER',
+    fpsTarget:   '60',
   },
 
   agents: {

@@ -687,89 +687,359 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: INTERFACE
+   VIZ: INTERFACE — autonomous 3D breathing UI-card
+   Three layers (base dashboard / floating nodes / glassmorphic panel) that
+   separate on Z inside a preserve-3d card, rotated to isometric. Framer Motion
+   drives a single t MotionValue (0=flat, 1=peak); CSS handles decoration.
+   All animation via transform/opacity only. 60fps floor.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+/* Outer centering shell — establishes perspective for the 3D space */
 .widviz-interface {
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.wifc-wireframe {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  grid-template-rows: 28px 1fr 1fr;
-  gap: 4px;
-  flex: 1;
-}
-
-.wifc-zone {
-  border: 1px solid var(--line-2);
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(237, 237, 223, 0.02);
 }
 
-.wifc-zone--header {
-  grid-column: 1 / -1;
-  grid-row: 1;
+/* Perspective parent — fixed depth so the card reads authentically 3D */
+.wifc-stage {
+  position: relative;
+  width: 260px;
+  height: 200px;
+  perspective: 1000px;
+  perspective-origin: 50% 40%;
 }
 
-.wifc-zone--sidebar {
-  grid-column: 1;
-  grid-row: 2 / -1;
+/* Drifting ambient mesh gradient behind the 3D card.
+   Two radial blobs (lime + gold) over --bg; transform-only animation.
+   Layer 3's backdrop-filter samples this to demonstrate live refraction. */
+.wifc-ambient {
+  position: absolute;
+  inset: -60px;
+  background:
+    radial-gradient(circle at 30% 35%, rgba(201, 245, 88, 0.16), transparent 55%),
+    radial-gradient(circle at 72% 68%, rgba(232, 196, 122, 0.13), transparent 52%),
+    var(--bg-2);
+  border-radius: 50%;
+  animation: wifc-ambient-drift 14s ease-in-out infinite;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.wifc-zone--main {
-  grid-column: 2;
-  grid-row: 2;
+@keyframes wifc-ambient-drift {
+  0%, 100% { transform: scale(1)    rotate(0deg); }
+  33%       { transform: scale(1.08) rotate(6deg); }
+  66%       { transform: scale(0.94) rotate(-5deg); }
 }
 
-.wifc-zone--cards {
-  grid-column: 2;
-  grid-row: 3;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 3px;
-  padding: 3px;
-}
-
+/* 3D card — rotates as one unit (rotateX/rotateZ driven by Framer t).
+   transform-style:preserve-3d so child translateZ values stack in 3D space. */
 .wifc-card {
-  border: 1px solid var(--line);
-  background: rgba(237, 237, 223, 0.015);
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+  z-index: 1;
 }
 
-.wifc-zone-label {
-  font-family: var(--mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  opacity: 0.6;
+/* Shared layer — full-size planes stacked at z=0; each layer shifts its own
+   translateZ via Framer inline style to produce the Z-separation. */
+.wifc-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
-.wifc-footer {
+/* ── LAYER 1 — Base dashboard map ──────────────────────────────────────────── */
+.wifc-layer--base {
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  /* Wireframe grid overlay via repeating gradients — two directions */
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(237, 237, 223, 0.035) 0px, rgba(237, 237, 223, 0.035) 1px,
+      transparent 1px, transparent 26px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(237, 237, 223, 0.035) 0px, rgba(237, 237, 223, 0.035) 1px,
+      transparent 1px, transparent 20px
+    );
+}
+
+/* Mock layout blocks — each absolutely positioned via inline style in JSX */
+.wifc-block {
+  position: absolute;
+  border: 1px solid var(--line-2);
+  background: rgba(237, 237, 223, 0.025);
   display: flex;
-  justify-content: space-between;
-  padding-top: 6px;
-  border-top: 1px solid var(--line);
+  align-items: center;
+  justify-content: center;
 }
 
-.wifc-stack-label {
+.wifc-block-label {
   font-family: var(--mono);
-  font-size: 9px;
-  color: var(--accent-2);
-  letter-spacing: 0.1em;
+  font-size: 6px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  opacity: 0.7;
+  user-select: none;
 }
 
-.wifc-fps-label {
+/* ── Cast shadow — flat plane beneath Layer 3, above Layer 1 in Z ─────────── */
+/* Radial-gradient ellipse: soft and large to read as a real cast shadow.
+   Framer drives translateY (grows down), scaleX (grows wider), opacity.
+   No box-shadow animation — GPU transform only, zero layout cost. */
+.wifc-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 24px;
+  background: radial-gradient(ellipse at 50% 100%,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.18) 50%,
+    transparent 80%
+  );
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+/* ── LAYER 2 — Floating data nodes ─────────────────────────────────────────── */
+.wifc-layer--nodes {
+  /* opacity + --glow-t driven by Framer inline style */
+}
+
+/* Node — zero-size anchor; children are absolutely offset so transform-origin
+   sits exactly on the data point. inline left/top set from widViz.js */
+.wifc-node {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Mini bar chart */
+.wifc-node--bar {
+  transform: translate(-50%, -50%);
+}
+
+.wifc-bar-svg {
+  width: 68px;
+  height: 28px;
+  display: block;
+  overflow: visible;
+}
+
+.wifc-bar {
+  fill: var(--accent);
+  opacity: 0.72;
+  /* Glow scales with --glow-t via a drop-shadow filter defined in the node rule */
+  filter: drop-shadow(0 0 calc(2px + 4px * var(--glow-t, 0)) rgba(201, 245, 88, calc(0.3 + 0.5 * var(--glow-t, 0))));
+}
+
+.wifc-bar--peak {
+  fill: var(--accent);
+  opacity: 1;
+}
+
+.wifc-node-label {
+  display: block;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 7px;
+  letter-spacing: 0.16em;
   color: var(--accent);
-  letter-spacing: 0.1em;
+  text-align: center;
+  margin-top: 3px;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 4px rgba(201, 245, 88, 0.5));
 }
+
+/* Circular progress ring — 75% arc (gold) */
+.wifc-node--ring {
+  transform: translate(-50%, -50%);
+}
+
+.wifc-ring-svg {
+  width: 36px;
+  height: 36px;
+  display: block;
+  /* Rotate so the arc starts at the top (−90°) */
+  transform: rotate(-90deg);
+}
+
+.wifc-ring-track {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 2.5;
+}
+
+.wifc-ring-fill {
+  fill: none;
+  stroke: var(--accent-2);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  /* 75% of circumference (2π × 15 ≈ 94.25); dash covers 70.7, gap covers rest */
+  stroke-dasharray: 70.7 23.55;
+  filter: drop-shadow(0 0 calc(2px + 5px * var(--glow-t, 0)) rgba(232, 196, 122, calc(0.3 + 0.6 * var(--glow-t, 0))));
+}
+
+.wifc-node-label--ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);  /* undo parent SVG rotate */
+  margin-top: 0;
+  font-size: 6.5px;
+  color: var(--accent-2);
+  filter: drop-shadow(0 0 4px rgba(232, 196, 122, 0.5));
+}
+
+/* Coordinate markers */
+.wifc-node--coord {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+}
+
+.wifc-coord-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 calc(3px + 6px * var(--glow-t, 0)) rgba(201, 245, 88, calc(0.4 + 0.5 * var(--glow-t, 0)));
+  flex-shrink: 0;
+}
+
+.wifc-coord-dot--gold {
+  background: var(--accent-2);
+  box-shadow: 0 0 calc(3px + 6px * var(--glow-t, 0)) rgba(232, 196, 122, calc(0.4 + 0.5 * var(--glow-t, 0)));
+}
+
+.wifc-coord-val {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.wifc-coord-val--gold {
+  color: var(--accent-2);
+}
+
+/* ── LAYER 3 — Glassmorphic control panel ───────────────────────────────────── */
+/* backdrop-filter samples the drifting ambient behind Layer 1 to prove live
+   refraction. Fallback: if preserve-3d flattens backdrop-filter, the semi-
+   transparent cream background + inner border still read as glass — acceptable. */
+.wifc-layer--glass {
+  background: rgba(237, 237, 223, 0.05);
+  border: 1px solid var(--line-2);
+  /* Inner highlight on top edge — fakes a light source above */
+  box-shadow:
+    inset 0 1px 0 rgba(237, 237, 223, 0.12),
+    0 2px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.wifc-glass-inner {
+  padding: 10px 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wifc-glass-row {
+  display: flex;
+  align-items: center;
+}
+
+.wifc-glass-row--head {
+  justify-content: space-between;
+}
+
+.wifc-glass-kicker {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+.wifc-glass-mode {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(201, 245, 88, 0.5);
+}
+
+.wifc-glass-row--metrics {
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.wifc-glass-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.wifc-glass-val {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(201, 245, 88, 0.45);
+}
+
+.wifc-glass-val--gold {
+  font-size: 11px;
+  color: var(--accent-2);
+  text-shadow: 0 0 10px rgba(232, 196, 122, 0.45);
+}
+
+.wifc-glass-unit {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.wifc-glass-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--line-2);
+}
+
+/* Three slim status indicator lines at the bottom of the glass panel */
+.wifc-glass-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.wifc-glass-ind {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line-2);
+}
+
+.wifc-glass-ind--1 { width: 100%; background: rgba(201, 245, 88, 0.35); }
+.wifc-glass-ind--2 { width: 72%;  background: rgba(232, 196, 122, 0.25); }
+.wifc-glass-ind--3 { width: 44%;  background: var(--line-2); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: AGENTS
@@ -900,6 +1170,13 @@
 .widviz-panel--frozen .wdat-field {
   position: relative;
   height: 140px;
+  overflow: hidden;
+}
+
+/* Frozen INTERFACE: sized containing block for the 3D stage (preserve-3d still works) */
+.widviz-panel--frozen .wifc-stage {
+  position: relative;
+  height: 180px;
   overflow: hidden;
 }
 
