@@ -18,7 +18,7 @@ const VIZ = {
 
 const N = WHAT_I_DO.length
 
-export default function WidVisual({ progress, active = 0, reduced = false, frozen = false, index }) {
+export default function WidVisual({ progress, agentsProgress, active = 0, reduced = false, frozen = false, index }) {
   // Always call hooks unconditionally — rules of hooks.
   const frozenIdx      = index ?? 0
   const frozenSnap     = frozenIdx / (N - 1)
@@ -64,6 +64,7 @@ export default function WidVisual({ progress, active = 0, reduced = false, froze
               {Viz && (
                 <Viz
                   progress={progress}
+                  agentsProgress={agentsProgress}
                   index={i}
                   isActive={active === i}
                   reduced={reduced}

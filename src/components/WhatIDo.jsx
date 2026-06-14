@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { motion, AnimatePresence, useMotionValue, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, useReducedMotion } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import SectionHead from './SectionHead'
@@ -9,6 +9,7 @@ const N = WHAT_I_DO.length // 5
 
 // ── Scroll tuning constants ───────────────────────────────────────────────────
 const SCROLL_PER_WORD        = 780   // px of scroll range budgeted per word
+const AGENTS_DWELL_PX        = 800   // trailing runway so Agents can play before un-pin
 const SETTLE_MS              = 140   // ms of scroll inactivity before settle fires
 const CLICK_SCROLL_DURATION  = 1.0   // Lenis duration (s) for click/keyboard nav
 const SETTLE_SCROLL_DURATION = 0.5   // Lenis duration (s) for auto-settle snap
@@ -48,11 +49,17 @@ export default function WhatIDo() {
   const scrollToIndexRef = useRef(null)
   const [active, setActive] = useState(0)
 
-  // Scroll-progress MotionValue — set in the onUpdate callback below.
+  // Scroll-progress MotionValues — set in the onUpdate callback below.
   // useMotionValue gives automatic subscriber cleanup on unmount (vs module-level
   // motionValue() which needs manual teardown). .set() never triggers re-renders.
-  const progress = useMotionValue(0)
-  const reduced  = useReducedMotion()
+  const progress       = useMotionValue(0)  // 0→1 across the 5 words (clamped)
+  const agentsProgress = useMotionValue(0)  // 0→1 across the trailing Agents dwell
+  const reduced        = useReducedMotion()
+
+  // Fade the caption out over the last 10% of the Agents dwell so it disappears
+  // exactly as Execution Log snaps back. Only applied when Agents is active
+  // (active === N - 1); all other words keep opacity: 1.
+  const captionFade = useTransform(agentsProgress, [0.5, 1], [1, 0], { clamp: true })
 
   useEffect(() => {
     const section   = sectionRef.current
@@ -122,13 +129,17 @@ export default function WhatIDo() {
         }
 
         // ── ScrollTrigger ──────────────────────────────────────────────────
+        // Two-phase track:
+        //   [0, wordPortion) → word travel (5 words, same snap budget as before)
+        //   [wordPortion, 1] → Agents dwell runway (~800 px, scrubs VizAgents)
+        const wordEnd     = Math.max(SCROLL_PER_WORD * (N - 1), travel + 800)
+        const totalEnd    = wordEnd + AGENTS_DWELL_PX
+        const wordPortion = wordEnd / totalEnd  // raw-progress where words finish
+
         const st = ScrollTrigger.create({
           trigger: section,
           start:   'top top',
-          // Per-word scroll budget, longer than before so each word has room
-          // to breathe. widDwell flattens DWELL_HOLD of each segment, so
-          // each word's effective dwell ≈ SCROLL_PER_WORD × DWELL_HOLD px.
-          end: `+=${Math.max(SCROLL_PER_WORD * (N - 1), travel + 800)}`,
+          end: `+=${totalEnd}`,
           pin:   true,
           // scrub:true = immediate 1:1 mapping. Lenis provides the smoothing
           // layer — no second GSAP lerp needed, and the Lenis settle snap
@@ -143,14 +154,23 @@ export default function WhatIDo() {
           // ("rubbery" — the two interpolation loops fight each other).
           // Settle snap is now handled by Lenis below.
           onUpdate: (self) => {
-            gsap.set([stackBase, stackKo], { y: -self.progress * travel })
+            const raw      = self.progress
+            // wordProg: 0→1 across the word portion; clamped to 1 during dwell
+            const wordProg = Math.min(raw / wordPortion, 1)
+            // dwell: 0→1 across the Agents runway (0 while still in word portion)
+            const dwell    = raw > wordPortion
+              ? (raw - wordPortion) / (1 - wordPortion)
+              : 0
+
+            gsap.set([stackBase, stackKo], { y: -wordProg * travel })
 
             // Feed the right-side viz without triggering a React re-render.
-            progress.set(self.progress)
+            progress.set(wordProg)
+            agentsProgress.set(dwell)
 
             // Guard against redundant state sets (React bailout only fires
             // after reconciliation; this skips scheduling it entirely).
-            const i = Math.round(self.progress * (N - 1))
+            const i = Math.round(wordProg * (N - 1))
             if (i !== activeRef.current) {
               activeRef.current = i
               setActive(i)
@@ -181,9 +201,14 @@ export default function WhatIDo() {
                   return
                 }
 
-                const nearest  = Math.round(st.progress * (N - 1))
-                const targetY  = st.start + (nearest / (N - 1)) * (st.end - st.start)
-                const currentY = window.scrollY ?? window.pageYOffset
+                // Inside the Agents dwell — allow free scroll, no snap target.
+                if (st.progress >= wordPortion) return
+
+                // Map raw progress back to a word index snap.
+                const nearest    = Math.round((st.progress / wordPortion) * (N - 1))
+                const targetRaw  = (nearest / (N - 1)) * wordPortion
+                const targetY    = st.start + targetRaw * (st.end - st.start)
+                const currentY   = window.scrollY ?? window.pageYOffset
                 if (Math.abs(currentY - targetY) > SNAP_EPSILON_PX) {
                   isSnapping = true
                   isSnappingTimer = setTimeout(
@@ -209,7 +234,10 @@ export default function WhatIDo() {
         // correct raw progress target without any inverse transform needed.
         const scrollToIndex = (targetIdx) => {
           clearSnapState()
-          const targetY = st.start + (targetIdx / (N - 1)) * (st.end - st.start)
+          // Scale target by wordPortion so clicking a word lands on its snap
+          // point within the compressed word-travel portion of the track.
+          const targetRaw = (targetIdx / (N - 1)) * wordPortion
+          const targetY   = st.start + targetRaw * (st.end - st.start)
           isSnapping = true
           isSnappingTimer = setTimeout(
             () => { isSnapping = false },
@@ -373,12 +401,20 @@ export default function WhatIDo() {
           stage) so they are NOT clipped by the stage's clip-path:inset and can
           span the full 100vh. The section is position:relative and the
           containing block for these absolute elements. */}
-      <WidVisual progress={progress} active={active} reduced={reduced} />
+      <WidVisual progress={progress} agentsProgress={agentsProgress} active={active} reduced={reduced} />
 
       {/* Caption — real DOM text (active blurb) for screen readers.
           Mirrors the field's geometry (same left/right/height). z:5 paints it
           above the word stacks. The viz region is aria-hidden. */}
-      <div className="wid-caption" aria-live="polite">
+      {/* Caption opacity: when Agents is active, fade out over the last 10% of
+          the dwell so the blurb clears before Execution Log snaps back.
+          All other words (0–3) keep opacity 1 — captionFade is 1 whenever
+          agentsProgress < 0.9, which is the case for all non-Agents words. */}
+      <motion.div
+        className="wid-caption"
+        aria-live="polite"
+        style={{ opacity: active === N - 1 ? captionFade : 1 }}
+      >
         <AnimatePresence mode="wait">
           <motion.p
             key={active}
@@ -391,7 +427,7 @@ export default function WhatIDo() {
             {highlightText(WHAT_I_DO[active]?.blurb ?? '', WHAT_I_DO[active]?.blurbMarks ?? [])}
           </motion.p>
         </AnimatePresence>
-      </div>
+      </motion.div>
 
     </section>
   )

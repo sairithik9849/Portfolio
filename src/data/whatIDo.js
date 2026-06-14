@@ -28,6 +28,8 @@ export const WHAT_I_DO = [
   {
     id: 'agents',
     word: 'AGENTS',
-    blurb: '',
+    // Placeholder — replace with final copy when the real Agents viz is built.
+    blurb: 'Think. Act. Observe. Autonomous loops that reason over context, retrieve what matters, and emit only the signal worth keeping.',
+    blurbMarks: ['Think. Act. Observe.'],
   },
 ]

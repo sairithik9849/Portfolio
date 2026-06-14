@@ -1,6 +1,5 @@
 /* ---- experience (execution log) ---- */
 .exec-log {
-  border-top: 1px solid var(--line-2);
   border-bottom: 1px solid var(--line-2);
   font-family: var(--mono);
 }
