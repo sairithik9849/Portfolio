@@ -11,9 +11,9 @@
   gap: 24px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--muted);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
 }
 
@@ -34,16 +34,16 @@
 
 .exec-summary:hover { background: rgba(201, 245, 88, 0.025); }
 
-.exec-idx { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.14em; }
+.exec-idx { font-family: var(--mono); font-size: var(--text-sm); color: var(--muted); letter-spacing: var(--tracking-wider); }
 
 .exec-co { display: flex; flex-direction: column; gap: 4px; }
-.exec-co-name { font-family: var(--serif); font-size: 32px; letter-spacing: -0.01em; line-height: 1; color: var(--fg); }
-.exec-co-role { font-family: var(--mono); font-size: 11px; color: var(--accent-2); letter-spacing: 0.12em; text-transform: uppercase; }
+.exec-co-name { font-family: var(--serif); font-size: var(--text-display-md); letter-spacing: var(--tracking-tight); line-height: 1; color: var(--fg); }
+.exec-co-role { font-family: var(--mono); font-size: var(--text-sm); color: var(--accent-2); letter-spacing: var(--tracking-wider); text-transform: uppercase; }
 
 .exec-status {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-widest);
   color: var(--muted);
   display: inline-flex;
   align-items: center;
@@ -54,9 +54,9 @@
 
 .exec-status.live { color: var(--accent); border-color: var(--accent-dim); background: rgba(201, 245, 88, 0.04); }
 
-.exec-range { font-family: var(--mono); font-size: 11px; color: var(--fg-2); letter-spacing: 0.06em; }
-.exec-loc { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
-.exec-toggle { font-family: var(--serif); font-size: 24px; color: var(--muted); text-align: center; }
+.exec-range { font-family: var(--mono); font-size: var(--text-sm); color: var(--fg-2); letter-spacing: var(--tracking-open); }
+.exec-loc { font-family: var(--mono); font-size: var(--text-sm); color: var(--muted); letter-spacing: var(--tracking-open); }
+.exec-toggle { font-family: var(--serif); font-size: var(--text-display-xs); color: var(--muted); text-align: center; }
 .exec-row.open .exec-toggle { color: var(--accent); }
 
 .exec-detail { overflow: hidden; }
@@ -75,19 +75,19 @@
   display: grid;
   grid-template-columns: 32px 1fr;
   gap: 14px;
-  font-size: 14px;
+  font-size: var(--text-body);
   line-height: 1.55;
   color: var(--fg-2);
 }
 
-.exec-bullet-n { font-family: var(--mono); font-size: 10px; color: var(--accent-2); letter-spacing: 0.1em; padding-top: 4px; }
+.exec-bullet-n { font-family: var(--mono); font-size: var(--text-xs); color: var(--accent-2); letter-spacing: var(--tracking-wider); padding-top: 4px; }
 .exec-side .exec-stack { display: flex; flex-wrap: wrap; gap: 6px; }
 .exec-side .exec-stack span {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-xs);
   border: 1px solid var(--line-2);
   padding: 5px 8px;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   color: var(--fg-2);
   text-transform: uppercase;
 }

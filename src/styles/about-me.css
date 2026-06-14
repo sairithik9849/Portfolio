@@ -16,7 +16,7 @@
   font-family: var(--serif);
   font-size: clamp(30px, 3.2vw, 54px);
   line-height: 1.15;
-  letter-spacing: -0.018em;
+  letter-spacing: var(--tracking-tight);
   font-weight: 500;
   color: var(--fg);
   margin: clamp(24px, 3vh, 40px) 0 0;

@@ -1,211 +1,295 @@
 import { useEffect, useRef } from 'react'
-import { motion, useTransform, useMotionValue, animate } from 'framer-motion'
+import { motion, useTransform } from 'framer-motion'
 import { widSlice } from '../../utils/widSlice'
-import { WID_VIZ } from '../../data/widViz'
-import { CURSOR_X, CURSOR_Y } from '../../utils/cursor'
 
-const DATA = WID_VIZ.systems
-const N    = 5
+const N = 5
 
-// Assembly stagger bucket per node: distance from the 2D projection centre (50,50)
-// normalised to 0–1. Equatorial nodes appear first on scroll-in.
-const MAX_DIST = Math.hypot(50, 50)
-const NODE_I = DATA.nodes.map(n =>
-  +(Math.hypot(n.cx - 50, n.cy - 50) / MAX_DIST).toFixed(3)
-)
-
-// Physics constants — all in % units (0–100 panel space), applied per animation frame.
-const SPRING_K    = 0.08   // 8% of displacement corrected per frame
-const DAMPING     = 0.85   // velocity retention per frame
-const REPULSE_R   = 22     // repulsion radius in % units (~88px on a 400px panel)
-const REPULSE_STR = 3.5    // max force impulse in %/frame at zero distance (linear falloff)
-
-// One full yaw revolution in 20 000 ms
-const ROT_SPEED = (2 * Math.PI) / 20000
+// ── Arc helper for deploy donut ───────────────────────────────────────────────
+const arc = (cx, cy, r, a0, a1) => {
+  const r0 = a0 * Math.PI / 180
+  const r1 = a1 * Math.PI / 180
+  const x0 = cx + r * Math.cos(r0), y0 = cy + r * Math.sin(r0)
+  const x1 = cx + r * Math.cos(r1), y1 = cy + r * Math.sin(r1)
+  const large = a1 - a0 > 180 ? 1 : 0
+  return `M${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${large} 1 ${x1.toFixed(2)},${y1.toFixed(2)}`
+}
 
 export default function VizSystems({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
 
   const { dissolveIn, enterIn } = widSlice(index, N)
+  const dissolve = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const scale    = useTransform(dissolve, [0, 1], [0.985, 1])
+  const enter    = useTransform(progress, enterIn,  [0, 1],    { clamp: true })
 
-  // ── scroll clock — all hooks called unconditionally ───────────────────────
-  const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
-  const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
-  const enter     = useTransform(progress, enterIn,  [0, 1],    { clamp: true })
-  const statusOp     = useTransform(enter, [0.8, 1], [0, 1], { clamp: true })
-  const centerOpacity = useTransform(statusOp, v => v * 0.55)
-  // -18px shifts up so the SVG icon (not the text below) sits at sphere centre
-  const centerY = useTransform(statusOp, [0, 1], ['calc(-50% - 5px)', 'calc(-50% - 20px)'])
+  // ── Cell refs ──────────────────────────────────────────────────────────────
+  const dashRef = useRef(null)
 
-  // Heal-pulse MotionValues — position (%) and opacity
-  const pulseXMV  = useMotionValue(50)
-  const pulseYMV  = useMotionValue(50)
-  const pulseX    = useTransform(pulseXMV, v => `${v}%`)
-  const pulseY    = useTransform(pulseYMV, v => `${v}%`)
-  const pulseOpMV = useMotionValue(0)
+  // CPU
+  const cpuCellRef  = useRef(null)
+  const cpuBadgeRef = useRef(null)
+  const cpuValRef   = useRef(null)
+  const coreRefs    = useRef([])
 
-  const containerRef = useRef(null)   // .wsys-field — used by heal-pulse querySelector
-  const nodeElsRef   = useRef([])     // one entry per .wsys-node span (callback refs)
-  const meshPathRef  = useRef(null)   // single SVG <path> for the entire mesh
-  const loopRef      = useRef(null)   // heal-pulse cancel handle
+  // Memory
+  const memCellRef  = useRef(null)
+  const memBadgeRef = useRef(null)
+  const memFillRef  = useRef(null)
+  const memValRef   = useRef(null)
 
-  // isActive ref so the physics RAF closure always reads the current value without
-  // being in its dependency array (the RAF runs for the full component lifetime).
+  // Queue
+  const qCellRef  = useRef(null)
+  const qBadgeRef = useRef(null)
+  const qBarRefs  = useRef([])
+  const qValRef   = useRef(null)
+
+  // Error rate
+  const errCellRef  = useRef(null)
+  const errBadgeRef = useRef(null)
+  const errPolyRef  = useRef(null)
+  const errValRef   = useRef(null)
+
+  // Uptime
+  const upCellRef    = useRef(null)
+  const upBadgeRef   = useRef(null)
+  const upDisplayRef = useRef(null)
+
+  // Deploy
+  const depCellRef  = useRef(null)
+  const depBadgeRef = useRef(null)
+  const depArcV1Ref = useRef(null)
+  const depArcV2Ref = useRef(null)
+  const depValRef   = useRef(null)
+
+  // Status + log
+  const statusRef = useRef(null)
+  const logRef    = useRef(null)
+
+  // isActiveRef so the RAF closure always reads the latest value without
+  // being in its dependency array (would reset accumulated sim state).
   const isActiveRef = useRef(isActive)
   useEffect(() => { isActiveRef.current = isActive }, [isActive])
 
-  // ── Wall Clock #1 — heal-pulse (unchanged from Phase 1) ──────────────────
-  useEffect(() => {
-    if (!isActive || isFinal) {
-      animate(pulseOpMV, 0, { duration: 0.3 })
-      loopRef.current?.()
-      return
-    }
-
-    let cancelled = false
-
-    const runLoop = async () => {
-      await animate(pulseOpMV, 1, { duration: 0.2 })
-
-      while (!cancelled) {
-        for (const dotIdx of DATA.healTargets) {
-          if (cancelled) break
-          const target = DATA.nodes[dotIdx]
-
-          const nodeEls = containerRef.current?.querySelectorAll('.wsys-node')
-          nodeEls?.[dotIdx]?.classList.add('wsys-node--healing')
-
-          await Promise.all([
-            animate(pulseXMV, target.cx, { duration: 0.5, ease: 'easeInOut' }),
-            animate(pulseYMV, target.cy, { duration: 0.5, ease: 'easeInOut' }),
-          ])
-
-          if (!cancelled) await new Promise(r => setTimeout(r, 1200))
-
-          nodeEls?.[dotIdx]?.classList.remove('wsys-node--healing')
-        }
-      }
-    }
-
-    runLoop()
-    loopRef.current = () => { cancelled = true }
-    return () => { cancelled = true }
-    // pulseOpMV, pulseXMV, pulseYMV are stable MotionValue refs — intentionally omitted.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, isFinal])
-
-  // ── Wall Clock #2 — sphere rotation + mouse spring physics ───────────────
-  // Runs for the full component lifetime so the sphere is already rotating when
-  // the viz dissolves in (no jump-to-t0). Rotation is time-compensated; spring
-  // physics is per-frame (stable at 60fps target). Only repulsion is gated on
-  // isActiveRef.current — it only fires at the SYSTEMS scroll snap.
+  // ── Main animation RAF ────────────────────────────────────────────────────
   useEffect(() => {
     if (isFinal) return
 
-    const n   = DATA.nodes.length
-    const x3d = Float32Array.from(DATA.nodes, nd => nd.x3d)
-    const y3d = Float32Array.from(DATA.nodes, nd => nd.y3d)
-    const z3d = Float32Array.from(DATA.nodes, nd => nd.z3d)
-    const posX = Float32Array.from(DATA.nodes, nd => nd.cx)
-    const posY = Float32Array.from(DATA.nodes, nd => nd.cy)
-    const velX = new Float32Array(n)
-    const velY = new Float32Array(n)
+    let cancelled = false
 
-    // Capture DOM refs at effect-start (before any async unmount can clear them).
-    const nodeElsSnapshot = nodeElsRef.current.slice()
-    const meshPath        = meshPathRef.current
+    // ── CPU state ──
+    const CPU_TARGETS   = [52, 40, 65, 35]
+    const cpuCurrents   = [52, 40, 65, 35]
 
-    let angle     = 0
-    let lastT     = performance.now()
-    let panelRect = null
-    let rectAge   = 0
-    let raf       = null
+    // ── Memory state ──
+    let memFill    = 44
+    let memGC      = false
+
+    // ── Queue state ──
+    const Q_BARS   = 6
+    let qFills     = new Array(Q_BARS).fill(0)
+    let qFillIdx   = 0
+    let qTimer     = 0
+
+    // ── Error EKG state ──
+    const EKG_PTS  = 22
+    let ekgBuf     = new Array(EKG_PTS).fill(2)
+    let ekgTimer   = 0
+
+    // ── Uptime state ──
+    let upSec      = 8 * 3600 + 23 * 60 + 14
+    let upTimer    = 0
+
+    // ── Deploy state ──
+    let depV2      = 18    // % of traffic on v2 canary
+    let depTimer   = 0
+
+    // ── Incident state machine ──
+    let incTimer    = 0
+    let incDuration = 9000 + Math.random() * 4000
+    let incActive   = false
+    let incTarget   = -1
+
+    const INC_CELLS = [
+      { cell: cpuCellRef,  badge: cpuBadgeRef,  label: 'CPU'      },
+      { cell: memCellRef,  badge: memBadgeRef,  label: 'MEMORY'   },
+      { cell: qCellRef,    badge: qBadgeRef,    label: 'QUEUE'    },
+      { cell: errCellRef,  badge: errBadgeRef,  label: 'ERR RATE' },
+      { cell: depCellRef,  badge: depBadgeRef,  label: 'DEPLOY'   },
+    ]
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    const log = (msg, alert = false) => {
+      const el = logRef.current
+      if (!el) return
+      const row = document.createElement('div')
+      row.className = 'wsys-log-entry' + (alert ? ' wsys-log-entry--alert' : '')
+      row.textContent = msg
+      el.appendChild(row)
+      while (el.children.length > 4) el.removeChild(el.firstChild)
+    }
+
+    const ekgPoints = () =>
+      ekgBuf.map((v, i) =>
+        `${((i / (EKG_PTS - 1)) * 100).toFixed(1)},${(40 - Math.min(v, 35) / 35 * 38).toFixed(1)}`
+      ).join(' ')
+
+    const setBadge = (ref, text, ok) => {
+      if (!ref.current) return
+      ref.current.textContent = text
+      ref.current.className   = ok ? 'wsys-badge wsys-badge--ok' : 'wsys-badge wsys-badge--incident'
+    }
+
+    const triggerIncident = () => {
+      incTarget = Math.floor(Math.random() * INC_CELLS.length)
+      const c   = INC_CELLS[incTarget]
+      incActive = true
+      c.cell.current?.classList.add('wsys-cell--incident')
+      setBadge(c.badge, 'ALERT', false)
+      if (statusRef.current) statusRef.current.textContent = 'INCIDENT DETECTED'
+      log(`✗ ${c.label} anomaly — paging on-call`, true)
+    }
+
+    const resolveIncident = () => {
+      const c   = INC_CELLS[incTarget]
+      c.cell.current?.classList.remove('wsys-cell--incident')
+      setBadge(c.badge, 'OK', true)
+      if (statusRef.current) statusRef.current.textContent = 'ALL SYSTEMS NOMINAL'
+      log(`✓ ${c.label} recovered — auto-heal complete`)
+      incActive   = false
+      incTarget   = -1
+      incDuration = 9000 + Math.random() * 5000
+    }
+
+    // ── Initial log ──
+    log('✓ boot sequence complete')
+    log('✓ 50 workstations registered')
+    log('✓ compliance checks passed')
+
+    // ── CPU target update (runs off dt, not setInterval) ──
+    let cpuTargetTimer = 0
+    const refreshCPUTargets = () => {
+      for (let i = 0; i < 4; i++) CPU_TARGETS[i] = 18 + Math.random() * 68
+    }
+
+    let lastT = performance.now()
 
     const tick = t => {
-      const dt = Math.min(t - lastT, 50)  // cap at 50ms to absorb tab-blur spikes
+      if (cancelled) return
+      // Idle when the panel isn't the active snap — reset lastT to avoid a
+      // large dt spike on resume, then reschedule without doing any DOM work.
+      if (!isActiveRef.current) {
+        lastT = t
+        requestAnimationFrame(tick)
+        return
+      }
+      const dt = Math.min(t - lastT, 50)
       lastT = t
 
-      angle += ROT_SPEED * dt
-
-      // Re-query panel bounds periodically — handles scroll-pin reflow and resize.
-      rectAge += dt
-      if (!panelRect || rectAge > 4000) {
-        const el = nodeElsRef.current[0]?.closest('.widviz-panel')
-        panelRect = el?.getBoundingClientRect() ?? null
-        rectAge = 0
+      // ── CPU ──
+      cpuTargetTimer += dt
+      if (cpuTargetTimer > 2200) { cpuTargetTimer = 0; refreshCPUTargets() }
+      let cpuSum = 0
+      for (let i = 0; i < 4; i++) {
+        cpuCurrents[i] += (CPU_TARGETS[i] - cpuCurrents[i]) * 0.025
+        cpuSum += cpuCurrents[i]
+        if (coreRefs.current[i]) coreRefs.current[i].style.height = `${cpuCurrents[i].toFixed(1)}%`
       }
+      if (cpuValRef.current) cpuValRef.current.textContent = `${(cpuSum / 4).toFixed(0)}%`
 
-      const cosA = Math.cos(angle)
-      const sinA = Math.sin(angle)
-      const pw   = panelRect?.width  ?? 400
-      const ph   = panelRect?.height ?? 800
-
-      // Mouse in panel-% space; stays at -999 when no panel rect (off-screen)
-      const mx = panelRect ? ((CURSOR_X.get() - panelRect.left) / pw) * 100 : -999
-      const my = panelRect ? ((CURSOR_Y.get() - panelRect.top)  / ph) * 100 : -999
-
-      for (let i = 0; i < n; i++) {
-        // Y-axis yaw: x' = x·cosθ − z·sinθ  (y' = y, z' unused)
-        const rx    = x3d[i] * cosA - z3d[i] * sinA
-        const restX = 50 + rx      * 38
-        const restY = 50 + y3d[i]  * 40
-
-        // Spring — pulls toward current rotating rest position
-        let fx = (restX - posX[i]) * SPRING_K
-        let fy = (restY - posY[i]) * SPRING_K
-
-        // Mouse repulsion — medium shockwave, snaps back via spring
-        if (isActiveRef.current) {
-          const dx   = posX[i] - mx
-          const dy   = posY[i] - my
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < REPULSE_R && dist > 0.1) {
-            // Linear falloff: full strength at cursor, zero at REPULSE_R radius
-            const force = REPULSE_STR * (1 - dist / REPULSE_R)
-            fx += (dx / dist) * force
-            fy += (dy / dist) * force
-          }
+      // ── Memory ──
+      if (!memGC) {
+        memFill += dt * 0.00085
+        if (memFill >= 80) {
+          memGC = true
+          log('✓ GC sweep — heap compacted')
         }
+      } else {
+        memFill = Math.max(31, memFill - dt * 0.11)
+        if (memFill <= 32) memGC = false
+      }
+      if (memFillRef.current) memFillRef.current.style.width = `${memFill.toFixed(1)}%`
+      if (memValRef.current)  memValRef.current.textContent  = `${memFill.toFixed(0)}%`
 
-        // Euler integration — per-frame (intentionally not time-compensated for stable spring)
-        velX[i] = (velX[i] + fx) * DAMPING
-        velY[i] = (velY[i] + fy) * DAMPING
-        posX[i] = Math.max(2, Math.min(98, posX[i] + velX[i]))
-        posY[i] = Math.max(2, Math.min(98, posY[i] + velY[i]))
-
-        // Write displacement as CSS transform — GPU-composited, zero layout cost.
-        // Base position is left/top%; transform adds the physics offset in px.
-        const el = nodeElsRef.current[i]
-        if (el) {
-          const offXpx = (posX[i] - DATA.nodes[i].cx) / 100 * pw
-          const offYpx = (posY[i] - DATA.nodes[i].cy) / 100 * ph
-          el.style.transform =
-            `translate(calc(-50% + ${offXpx.toFixed(1)}px), calc(-50% + ${offYpx.toFixed(1)}px))`
+      // ── Queue ──
+      qTimer += dt
+      if (qTimer > 380) {
+        qTimer = 0
+        if (qFillIdx < Q_BARS) {
+          qFills[qFillIdx] = Math.min(100, qFills[qFillIdx] + 28 + Math.random() * 30)
+          if (qFills[qFillIdx] >= 88) qFillIdx++
+        } else {
+          qFills = new Array(Q_BARS).fill(0)
+          qFillIdx = 0
+          log('✓ batch dispatched — workers assigned')
         }
+        for (let i = 0; i < Q_BARS; i++) {
+          if (qBarRefs.current[i]) qBarRefs.current[i].style.height = `${qFills[i].toFixed(0)}%`
+        }
+        const avg = qFills.reduce((a, b) => a + b, 0) / Q_BARS
+        if (qValRef.current) qValRef.current.textContent = `${avg.toFixed(0)}%`
       }
 
-      // Entire mesh as one SVG path attribute write — N×4 line attribute writes
-      // replaced by a single setAttribute('d', ...) for the same visual output.
-      if (meshPathRef.current) {
-        let d = ''
-        for (const [i, j] of DATA.edges)
-          d += `M${posX[i].toFixed(1)} ${posY[i].toFixed(1)}L${posX[j].toFixed(1)} ${posY[j].toFixed(1)}`
-        meshPathRef.current.setAttribute('d', d)
+      // ── Error EKG ──
+      ekgTimer += dt
+      if (ekgTimer > 180) {
+        ekgTimer = 0
+        const isErrInc = incActive && incTarget === 3
+        const val = isErrInc ? 12 + Math.random() * 20 : 1 + Math.random() * 2.8
+        ekgBuf.shift()
+        ekgBuf.push(val)
+        if (errPolyRef.current) {
+          errPolyRef.current.setAttribute('points', ekgPoints())
+          errPolyRef.current.className.baseVal =
+            isErrInc ? 'wsys-ekg-line wsys-ekg-line--alert' : 'wsys-ekg-line'
+        }
+        if (errValRef.current) errValRef.current.textContent = `${val.toFixed(1)}%`
       }
 
-      raf = requestAnimationFrame(tick)
+      // ── Uptime ──
+      upTimer += dt
+      if (upTimer > 1000) {
+        upTimer = 0
+        upSec++
+        const h = String(Math.floor(upSec / 3600)).padStart(2, '0')
+        const m = String(Math.floor((upSec % 3600) / 60)).padStart(2, '0')
+        const s = String(upSec % 60).padStart(2, '0')
+        if (upDisplayRef.current) upDisplayRef.current.textContent = `${h}:${m}:${s}`
+      }
+
+      // ── Deploy canary ──
+      depTimer += dt
+      if (depTimer > 550) {
+        depTimer = 0
+        depV2 = Math.min(90, depV2 + 0.28)
+        if (depV2 >= 90) depV2 = 14
+        const v1deg = (1 - depV2 / 100) * 360
+        const v2deg = (depV2 / 100) * 360
+        if (depArcV1Ref.current && v1deg > 4)
+          depArcV1Ref.current.setAttribute('d', arc(25, 25, 17, -90, -90 + v1deg - 3))
+        if (depArcV2Ref.current && v2deg > 4)
+          depArcV2Ref.current.setAttribute('d', arc(25, 25, 17, -90 + v1deg + 3, -90 + 360 - 1))
+        if (depValRef.current) depValRef.current.textContent = `v2 · ${depV2.toFixed(0)}%`
+      }
+
+      // ── Incident machine ──
+      incTimer += dt
+      if (!incActive && incTimer > incDuration) {
+        incTimer = 0
+        triggerIncident()
+      } else if (incActive && incTimer > 3600) {
+        incTimer = 0
+        resolveIncident()
+      }
+
+      requestAnimationFrame(tick)
     }
 
-    raf = requestAnimationFrame(tick)
-
-    return () => {
-      cancelAnimationFrame(raf)
-      nodeElsSnapshot.forEach(el => {
-        if (el) el.style.transform = 'translate(-50%, -50%)'
-      })
-      if (meshPath) meshPath.removeAttribute('d')
-    }
+    requestAnimationFrame(tick)
+    return () => { cancelled = true }
   }, [isFinal])
+
+  // Initial uptime display
+  const initUp = '08:23:14'
 
   return (
     <motion.div
@@ -213,149 +297,154 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
       style={{ opacity: isFinal ? 1 : dissolve, scale: isFinal ? 1 : scale }}
     >
       <motion.div
-        ref={containerRef}
-        className="wsys-field"
+        ref={dashRef}
+        className="wsys-dashboard"
         style={{ '--enter': isFinal ? 1 : enter }}
       >
-        {/* Mesh SVG — single <path> updated by RAF each frame (mesh rotates with sphere).
-            Pulse dots travel along 10 selected long-diagonal edges via SVG SMIL. */}
-        <svg
-          className="wsys-mesh-svg"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path ref={meshPathRef} className="wsys-mesh-path" />
 
-          {/* Data pulses — bright dots fade in at source, travel edge, fade out at target.
-              Uses static rest positions (cx/cy); slight offset during repulsion is fine. */}
-          {DATA.pulseEdges.map(([i, j], k) => {
-            const a   = DATA.nodes[i]
-            const b   = DATA.nodes[j]
-            const dur = `${(0.85 + k * 0.12).toFixed(2)}s`
-            const beg = `${(k * 0.28).toFixed(2)}s`
-            return (
-              <circle key={k} className="wsys-pulse-dot" r="1.5">
-                <animate attributeName="cx" from={a.cx} to={b.cx}
-                  dur={dur} repeatCount="indefinite" begin={beg} />
-                <animate attributeName="cy" from={a.cy} to={b.cy}
-                  dur={dur} repeatCount="indefinite" begin={beg} />
-                <animate attributeName="opacity" values="0;1;1;0"
-                  keyTimes="0;0.12;0.88;1"
-                  dur={dur} repeatCount="indefinite" begin={beg} />
-              </circle>
-            )
-          })}
-        </svg>
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className="wsys-dash-header">
+          <span className="wsys-dash-kicker">INFRA STATUS</span>
+          <span ref={statusRef} className="wsys-dash-nominal">ALL SYSTEMS NOMINAL</span>
+          <span className="wsys-dash-uptime">99.98% ↑</span>
+        </div>
 
-        {/* 50 Fibonacci sphere nodes — CSS drives assembly (--enter/--i) and breathing.
-            --z (0 back → 1 front) controls size and glow via CSS calc().
-            Callback ref builds nodeElsRef array for direct RAF transform writes. */}
-        {DATA.nodes.map((n, k) => (
-          <span
-            key={k}
-            ref={el => { nodeElsRef.current[k] = el }}
-            className="wsys-node"
-            style={{
-              '--i':     NODE_I[k],
-              '--z':     n.z,
-              '--delay': `${n.delay}s`,
-              left:      `${n.cx}%`,
-              top:       `${n.cy}%`,
-            }}
-          />
-        ))}
+        {/* ── 6-cell grid ─────────────────────────────────────────────────── */}
+        <div className="wsys-grid">
 
-        {!isFinal && (
-          <motion.div
-            className="wsys-pulse"
-            style={{ opacity: pulseOpMV, left: pulseX, top: pulseY }}
-          />
-        )}
-
-        <motion.div
-          className="wsys-center-icon"
-          style={{
-            opacity: isFinal ? 0.55 : centerOpacity,
-            x: 'calc(-50% - 10px)',
-            y: isFinal ? 'calc(-50% - 20px)' : centerY,
-          }}
-          aria-hidden="true"
-        >
-          {/* Pentagon nucleus + 10 PCB traces — modelled on circuit-board logo reference.
-              Pentagon R=13, center (45,45). Vertices:
-              V0=(45,32) V1=(57.4,41) V2=(52.6,55.5) V3=(37.4,55.5) V4=(32.6,41)
-              Traces exit from all 5 vertices + 5 side midpoints. */}
-          <svg viewBox="0 0 90 90" width="80" height="80" fill="none" overflow="visible">
-
-            {/* ── Pentagon outline ── */}
-            <polygon
-              points="45,32 57.4,41 52.6,55.5 37.4,55.5 32.6,41"
-              stroke="currentColor" strokeWidth="0.85"
-              fill="rgba(201,245,88,0.04)" opacity="0.8"
-            />
-
-            {/* ── Pentagram diagonals (all non-adjacent pairs) ── */}
-            <line x1="45"  y1="32"   x2="52.6" y2="55.5" stroke="currentColor" strokeWidth="0.7" opacity="0.65" />
-            <line x1="45"  y1="32"   x2="37.4" y2="55.5" stroke="currentColor" strokeWidth="0.7" opacity="0.65" />
-            <line x1="57.4" y1="41"  x2="37.4" y2="55.5" stroke="currentColor" strokeWidth="0.7" opacity="0.65" />
-            <line x1="57.4" y1="41"  x2="32.6" y2="41"   stroke="currentColor" strokeWidth="0.7" opacity="0.65" />
-            <line x1="52.6" y1="55.5" x2="32.6" y2="41"  stroke="currentColor" strokeWidth="0.7" opacity="0.65" />
-
-            {/* ── Center dot ── */}
-            <circle cx="45" cy="45" r="2.2" fill="currentColor" className="wsys-icon-dot" />
-
-            {/* ── 10 PCB traces — vertex exits + side-midpoint exits ── */}
-
-            {/* V0 (45,32) — straight up */}
-            <path d="M45,32 V7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="45" cy="4.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V0→V1 mid (51.2,36.5) — right then up */}
-            <path d="M51.2,36.5 H65 V8" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="65" cy="5.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V1 (57.4,41) — straight right */}
-            <path d="M57.4,41 H80" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="82.5" cy="41" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V1→V2 mid (55,48.3) — right then down */}
-            <path d="M55,48.3 H71 V68" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="71" cy="70.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V2 (52.6,55.5) — right then down */}
-            <path d="M52.6,55.5 H66 V76" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="66" cy="78.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V2→V3 mid (45,55.5) — straight down */}
-            <path d="M45,55.5 V78" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="45" cy="80.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V3 (37.4,55.5) — left then down */}
-            <path d="M37.4,55.5 H24 V76" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="24" cy="78.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V3→V4 mid (35,48.3) — straight left */}
-            <path d="M35,48.3 H14" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="11.5" cy="48.3" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V4 (32.6,41) — straight left */}
-            <path d="M32.6,41 H9" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="6.5" cy="41" r="2.8" fill="currentColor" opacity="0.85" />
-
-            {/* V4→V0 mid (38.8,36.5) — left then up */}
-            <path d="M38.8,36.5 H25 V8" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="25" cy="5.5" r="2.8" fill="currentColor" opacity="0.85" />
-
-          </svg>
-
-          <div className="wsys-logo-text">
-            <div className="wsys-logo-title">SYSTEMS</div>
-            <div className="wsys-logo-sub">CORE &amp; ORCHESTRATION</div>
+          {/* CPU */}
+          <div ref={cpuCellRef} className="wsys-cell" style={{ '--i': 0 }}>
+            <div className="wsys-cell-head">
+              <span className="wsys-cell-label">CPU</span>
+              <span ref={cpuBadgeRef} className="wsys-badge wsys-badge--ok">OK</span>
+            </div>
+            <div className="wsys-cores">
+              {[52, 40, 65, 35].map((init, i) => (
+                <div key={i} className="wsys-core-track">
+                  <div
+                    ref={el => { coreRefs.current[i] = el }}
+                    className="wsys-core-bar"
+                    style={{ height: `${init}%` }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="wsys-cell-foot">
+              <span ref={cpuValRef} className="wsys-val">48%</span>
+              <span className="wsys-unit">4 cores</span>
+            </div>
           </div>
-        </motion.div>
-      </motion.div>
 
+          {/* MEMORY */}
+          <div ref={memCellRef} className="wsys-cell" style={{ '--i': 1 }}>
+            <div className="wsys-cell-head">
+              <span className="wsys-cell-label">MEMORY</span>
+              <span ref={memBadgeRef} className="wsys-badge wsys-badge--ok">OK</span>
+            </div>
+            <div className="wsys-mem-wrap">
+              <div className="wsys-mem-top">
+                <span className="wsys-mem-sub">HEAP</span>
+                <span ref={memValRef} className="wsys-val-sm">44%</span>
+              </div>
+              <div className="wsys-mem-track">
+                <div ref={memFillRef} className="wsys-mem-fill" style={{ width: '44%' }} />
+              </div>
+              <div className="wsys-mem-scale">
+                <span>0</span><span>8 GB</span>
+              </div>
+            </div>
+            <div className="wsys-cell-foot">
+              <span className="wsys-unit">GC AUTO</span>
+            </div>
+          </div>
+
+          {/* QUEUE */}
+          <div ref={qCellRef} className="wsys-cell" style={{ '--i': 2 }}>
+            <div className="wsys-cell-head">
+              <span className="wsys-cell-label">QUEUE</span>
+              <span ref={qBadgeRef} className="wsys-badge wsys-badge--ok">OK</span>
+            </div>
+            <div className="wsys-queue-bars">
+              {[0, 1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="wsys-queue-track">
+                  <div
+                    ref={el => { qBarRefs.current[i] = el }}
+                    className="wsys-queue-bar"
+                    style={{ height: '0%' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="wsys-cell-foot">
+              <span ref={qValRef} className="wsys-val">0%</span>
+              <span className="wsys-unit">depth</span>
+            </div>
+          </div>
+
+          {/* ERR RATE */}
+          <div ref={errCellRef} className="wsys-cell" style={{ '--i': 3 }}>
+            <div className="wsys-cell-head">
+              <span className="wsys-cell-label">ERR RATE</span>
+              <span ref={errBadgeRef} className="wsys-badge wsys-badge--ok">OK</span>
+            </div>
+            <svg className="wsys-ekg-svg" viewBox="0 0 100 40" preserveAspectRatio="none">
+              <polyline
+                ref={errPolyRef}
+                className="wsys-ekg-line"
+                points={Array.from({ length: 22 }, (_, i) =>
+                  `${((i / 21) * 100).toFixed(1)},37`
+                ).join(' ')}
+              />
+            </svg>
+            <div className="wsys-cell-foot">
+              <span ref={errValRef} className="wsys-val">1.4%</span>
+              <span className="wsys-unit">p99</span>
+            </div>
+          </div>
+
+          {/* UPTIME */}
+          <div ref={upCellRef} className="wsys-cell" style={{ '--i': 4 }}>
+            <div className="wsys-cell-head">
+              <span className="wsys-cell-label">UPTIME</span>
+              <span ref={upBadgeRef} className="wsys-badge wsys-badge--ok">OK</span>
+            </div>
+            <div className="wsys-uptime-wrap">
+              <div ref={upDisplayRef} className="wsys-uptime-counter">{initUp}</div>
+              <div className="wsys-uptime-sub">HH · MM · SS</div>
+            </div>
+            <div className="wsys-cell-foot">
+              <span className="wsys-val">50</span>
+              <span className="wsys-unit">hosts</span>
+            </div>
+          </div>
+
+          {/* DEPLOY */}
+          <div ref={depCellRef} className="wsys-cell" style={{ '--i': 5 }}>
+            <div className="wsys-cell-head">
+              <span className="wsys-cell-label">DEPLOY</span>
+              <span ref={depBadgeRef} className="wsys-badge wsys-badge--ok">OK</span>
+            </div>
+            <div className="wsys-deploy-wrap">
+              <svg className="wsys-deploy-svg" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="17" fill="none"
+                  stroke="var(--muted-2)" strokeWidth="3.5" />
+                <path ref={depArcV1Ref} className="wsys-arc wsys-arc--v1"
+                  fill="none" strokeWidth="3.5" strokeLinecap="round"
+                  d={arc(25, 25, 17, -90, -90 + (82 / 100) * 360 - 3)} />
+                <path ref={depArcV2Ref} className="wsys-arc wsys-arc--v2"
+                  fill="none" strokeWidth="3.5" strokeLinecap="round"
+                  d={arc(25, 25, 17, -90 + (82 / 100) * 360 + 3, 269)} />
+                <text x="25" y="23" textAnchor="middle" className="wsys-deploy-inner-label">CANARY</text>
+                <text x="25" y="33" textAnchor="middle" className="wsys-deploy-inner-sub">ROLLOUT</text>
+              </svg>
+              <div ref={depValRef} className="wsys-deploy-val">v2 · 18%</div>
+            </div>
+          </div>
+
+        </div>
+
+
+      </motion.div>
     </motion.div>
   )
 }

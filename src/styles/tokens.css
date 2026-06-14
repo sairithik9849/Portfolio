@@ -12,9 +12,41 @@
   --accent-dim: rgba(201, 245, 88, 0.18);
   --accent-2: #e8c47a;
   --accent-2-dim: rgba(232, 196, 122, 0.18);
+  --accent-alert: #ff4848;
   --serif: "IBM Plex Sans Condensed", "Helvetica Neue", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "Geist", "Helvetica Neue", sans-serif;
+
+  /* ── Type scale ─────────────────────────────────────────────────────────── */
+  --text-4xs:        7px;   /* dashboard sub-labels, tick marks, mem scale  */
+  --text-3xs:        8px;   /* dashboard cell labels, log entries, headers  */
+  --text-2xs:        9px;   /* micro viz labels, bubble role tags            */
+  --text-xs:        10px;   /* stack chips, small metadata tags              */
+  --text-sm:        11px;   /* nav, kickers, labels, roles, footer end       */
+  --text-base:      12px;   /* terminal body, footer links, edu school       */
+  --text-md:        13px;   /* meta rows, blurbs, AI input, preloader HUD   */
+  --text-body:      14px;   /* main body text, bullets, chat bubbles         */
+
+  /* Section / display sizes                                                  */
+  --text-display-xs:  24px; /* CTA button, section toggles                  */
+  --text-display-sm:  28px; /* collapsed accordion numbers                  */
+  --text-display-md:  32px; /* company names, edu degrees                   */
+  --text-display-lg:  36px; /* accordion card titles                        */
+  --text-display-xl:  48px; /* project card titles                          */
+  --text-display-2xl: 56px; /* section head title, GPA                      */
+  --text-display-3xl: 60px; /* accordion large numbers                      */
+  --text-display-4xl: 80px; /* project index numbers                        */
+  --text-display-5xl: 96px; /* section head index                           */
+
+  /* ── Letter-spacing ─────────────────────────────────────────────────────── */
+  --tracking-tighter: -0.03em; /* wide display serifs (footer, WhatIDo)     */
+  --tracking-tight:   -0.02em; /* serif headings                            */
+  --tracking-normal:   0;      /* sans body text                            */
+  --tracking-snug:     0.02em; /* mono body default                         */
+  --tracking-open:     0.06em; /* secondary mono labels                     */
+  --tracking-wide:     0.08em; /* tags, chips, links                        */
+  --tracking-wider:    0.14em; /* roles, metadata labels                    */
+  --tracking-widest:   0.18em; /* kickers, HUD text, section labels         */
 }
 
 * { box-sizing: border-box; }

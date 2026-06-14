@@ -30,8 +30,8 @@
 }
 
 .edu-head { display: flex; justify-content: space-between; align-items: flex-start; }
-.edu-degree { font-family: var(--serif); font-size: 32px; line-height: 1.05; letter-spacing: -0.015em; color: var(--fg); }
-.edu-school { font-family: var(--mono); font-size: 12px; color: var(--fg-2); letter-spacing: 0.04em; }
+.edu-degree { font-family: var(--serif); font-size: var(--text-display-md); line-height: 1.05; letter-spacing: var(--tracking-tight); color: var(--fg); }
+.edu-school { font-family: var(--mono); font-size: var(--text-base); color: var(--fg-2); letter-spacing: var(--tracking-open); }
 
 .edu-stat-row {
   display: grid;
@@ -43,17 +43,17 @@
 }
 
 .edu-stat .kicker { margin-bottom: 8px; }
-.edu-gpa { font-family: var(--serif); font-size: 56px; line-height: 1; letter-spacing: -0.02em; }
-.edu-gpa-u { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-left: 6px; letter-spacing: 0.04em; }
-.edu-status { font-family: var(--mono); font-size: 14px; color: var(--accent); letter-spacing: 0.14em; padding-top: 18px; }
-.edu-note { font-size: 13px; color: var(--fg-2); line-height: 1.55; }
+.edu-gpa { font-family: var(--serif); font-size: var(--text-display-2xl); line-height: 1; letter-spacing: var(--tracking-tight); }
+.edu-gpa-u { font-family: var(--mono); font-size: var(--text-md); color: var(--muted); margin-left: 6px; letter-spacing: var(--tracking-open); }
+.edu-status { font-family: var(--mono); font-size: var(--text-body); color: var(--accent); letter-spacing: var(--tracking-wider); padding-top: 18px; }
+.edu-note { font-size: var(--text-md); color: var(--fg-2); line-height: 1.55; }
 .edu-courses .edu-course-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .edu-courses .edu-course-list span {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-xs);
   border: 1px solid var(--line-2);
   padding: 5px 8px;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   color: var(--fg-2);
   text-transform: uppercase;
 }
