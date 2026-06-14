@@ -4,6 +4,37 @@ App-shell wiring, render order, preloader handoff, scrolling, observers, and cro
 
 **Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, cursor singleton, shader attractor, nav/footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
 
+## Subsystem Map
+
+```
+App.jsx (orchestration root)
+├── Preloader               src/components/Preloader.jsx
+├── Lenis + GSAP clock      App.jsx useEffect
+├── Cursor singleton        src/utils/cursor.js  ← import CURSOR_X/Y, never prop-drill
+│
+├── Hero subsystem          → docs/hero.md
+│   ├── Hero.jsx            (#top)
+│   ├── HeroFluid.jsx       (lazy WebGL, Three.js / R3F)
+│   ├── SplineScene.jsx     (lazy @splinetool/react-spline)
+│   └── InfiniteGrid.jsx
+│
+├── WhatIDo subsystem       → docs/what-i-do.md
+│   ├── WhatIDo.jsx         (#what-i-do, GSAP pin/scrub)
+│   └── src/components/widviz/Viz*.jsx
+│
+├── Projects subsystem
+│   ├── Projects.jsx        (#work)
+│   ├── ProjectVisual.jsx   (VIZ switch)
+│   └── src/components/visuals/Viz*.jsx
+│
+├── AI subsystem            → docs/backend.md
+│   ├── AIDrawer.jsx
+│   ├── AIOrb.jsx
+│   └── api/chat.js         (Vercel serverless → Gemini)
+│
+└── Content data            src/data/*.js  ← all copy lives here, never hardcoded
+```
+
 ## Section Render Order (`App.jsx`)
 
 `Nav → Hero → AboutMe → WhatIDo → Experience → Education → Projects → Footer`

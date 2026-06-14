@@ -67,3 +67,5 @@ Before making a change:
 3. Do not perform repository-wide searches unless blocked.
 4. Do not create architecture reviews for localized edits.
 5. Escalate only if implementation cannot proceed.
+
+Do not read to understand the app: `dist/`, `node_modules/`, `.vercel/`, lockfiles, or `src/components/visuals/Viz*.jsx` / `src/components/widviz/Viz*.jsx` visual components unless that specific visual is the task.
