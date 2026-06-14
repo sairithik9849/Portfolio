@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code across this repository.
 
 ## Project
 
-Personal portfolio for **Sairithik Komuravelly (Sai)** . Goal: best-in-class developer portfolio — highly animated, deeply interactive, polished. Showcases low-level systems engineering + high-end frontend execution.
+Personal portfolio for **Sairithik Komuravelly (Sai)**. Goal: best-in-class developer portfolio — highly animated, deeply interactive, polished. Showcases low-level systems engineering + high-end frontend execution.
 
 ## Commands
 
@@ -19,82 +19,51 @@ vercel              # preview deploy
 vercel --prod       # production deploy
 ```
 
-## Dev & Design Guidelines
+## Global Rules
+
+These apply everywhere, regardless of the area being touched.
 
 - **Language:** JavaScript only. No TypeScript, no type annotations. ES6+ (arrow fns, destructuring, async/await, optional chaining). `const` default, `let` for reassignment, never `var`. ES modules throughout.
-- **Frontend:** React + Vite (SPA).
-- **Backend:** Vercel Serverless Functions in `/api`. AI chat → Google Gemini (`gemini-1.5-flash-latest`). No Express.
-- **Animation:** Framer Motion is the primary component animation library — no react-spring, no component-level CSS keyframes. **GSAP (`gsap@^3.15.0` + `ScrollTrigger`) is used deliberately in two places only:** (1) `App.jsx` — `gsap.ticker` is the sole rAF driver for Lenis (`lenis.raf(time * 1000)`), and `lenis.on('scroll', ScrollTrigger.update)` keeps a single shared clock so Lenis and ScrollTrigger never double-rAF; (2) `WhatIDo.jsx` — `gsap.matchMedia` + `ScrollTrigger` pin/scrub for the word-stack scroll animation, with `gsap.set` driving the stack `y` (snapping is Lenis-driven, not GSAP `snap` — see the What I Do section). Do not add other animation libraries. Apply scroll-triggered fades (`whileInView`), staggered reveals on grouped content, and smooth hover transitions on every interactive element (`whileHover` or variant-driven). Shared variants live in `src/animations/variants.js` — import, never redefine inline.
-  - Scroll-reveal (whileInView): `REVEAL`, `STAGGER_PARENT`, `STAGGER_CHILD`
-  - Hero mount sequence: `HERO_PARENT` is now a bare cascade root (no `staggerChildren` — it sets `initial:'hidden'` and propagates to all children). `Hero.jsx` drives `animate={started ? 'show' : 'hidden'}` where `started` is the `revealed` flag from `App.jsx` — the entire cascade holds at `hidden` until the preloader overlay wipe fires. Each hero child controls its own timing via `fadeUp(delay, duration)` and `HERO_SEQUENCE` constants. The sequence is serialized: InfiniteGrid → meta-row+name letters → manifesto quote → metric cards (simultaneous) → CTA → terminal → footer → robot hotspot. Never reintroduce a global `staggerChildren` on `HERO_PARENT` — it breaks the per-phase ordering.
-  - `HERO_SEQUENCE` (in `variants.js`) — timing table `{ grid, meta, name, manifesto, metrics, cta, terminal, footer, robot }` in seconds. Edit this to shift phase start times.
-  - `HERO_SEQUENCE_INSTANT` — paired table with all values 0; used when `useReducedMotion()` is true.
-  - `fadeUp(delay, duration?)` — factory that returns a `{ hidden, show }` variant dict for a single delayed fade-up. Use this for every new hero element; pass `T[key]` as the delay where `T` is `HERO_SEQUENCE` or `HERO_SEQUENCE_INSTANT`.
-  - `HERO_CHILD`, `HERO_CHILD_FADE` — still exported for legacy use elsewhere; no longer used in `Hero.jsx` directly.
-  - Hero name reveal: **two-word slide+fade** — `SAIRITHIK` fades up as a single unit at `T.name`, `KOMURAVELLY.` follows 120 ms later (`T.name + 0.12`), both using `fadeUp(delay, 0.7)`. Under reduced motion the 120 ms offset collapses to 0. Each word is wrapped in `<motion.span className="hero-name-line">` inside the `h1`; individual `HeroLetter` spans carry only `whileHover` (no entrance variant). `HERO_LETTER`, `HERO_LINE_PARENT`, and `HERO_INNER_STAGGER` remain exported from `variants.js` but are **no longer used by `Hero.jsx`**.
-  - `useReducedMotion()` (framer-motion) in `Hero.jsx` sets `T = HERO_SEQUENCE_INSTANT` (all delays 0) and `dur = 0` (all durations 0) — entire sequence collapses to instant show. Apply the same `T`/`dur` pattern to any new Hero-level animation.
-  - **AboutMe scroll word-reveal** (`AboutMe.jsx`) is a scroll-scrubbed animation, not `whileInView`. It uses `useScroll({ offset: ['start end', 'center center'] })` progress mapped to per-word opacity via `useTransform` — each word lights across its `index/total → (index+1)/total` slice. `useReducedMotion()` renders all words solid instantly (no ghost/fg split). Do not convert this to `REVEAL`/`whileInView`.
-- Animations must be silky smooth (60fps+). Avoid janky layout shifts. Favor hardware-accelerated CSS properties (transform, opacity).
-- **3D/WebGL:** Three.js via `@react-three/fiber` + `@react-three/drei` (HeroFluid GLSL); Spline via `@splinetool/react-spline` + `@splinetool/runtime` (Hero robot). Both heavy bundles are code-split: `HeroFluid` is `React.lazy` in `App.jsx`; the `@splinetool/react-spline` package is `React.lazy`-loaded inside `SplineScene.jsx`. Never eager-load (~600 KB).
-- **Styling:** CSS is split into one partial per section/component in `src/styles/`. `global.css` is the import manifest (ordered list of `@import`s) — it is the only CSS file imported by `src/main.jsx`. Each partial owns its section's base rules **and** its responsive overrides (co-located `@media` at the bottom of the file). `layout.css` contains shared primitives (`.shell`, `.row`, `.section-head`). To add a new section: create `src/styles/<name>.css` and add `@import './<name>.css'` to `global.css` in visual/section order. Partials (in import order): `tokens.css`, `preloader.css`, `cursor.css`, `layout.css`, `nav.css`, `hero.css`, `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, `widviz.css`, `experience.css`, `education.css`, `projects.css`, `footer.css`. Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps+ floor.
-- **Color system (three tokens, each with a semantic role):**
-  - `--accent: #c9f558` (lime) — primary actions, brand highlights, hover-revealed states, interactive indicators, data highlights
-  - `--accent-2: #e8c47a` (gold) — non-interactive metadata labels and manifesto emphasis: role strings, index prefixes, identifier badges (e.g. `.bar-shell`, `.exec-co-role`, `.pj-info .role`, `.acc-role`, `.exec-bullet-n`, version meta-string), italicized manifesto verbs (`.manifesto-quote .serif`), hero surname letters (`.char--last`)
-  - `--fg: #ededdf` (cream) — body content, headings
-  - When adding a colored element, assign it to one of these three roles. Never introduce a fourth color without updating this section.
-- **Typography (loaded in `index.html`):** Headlines/display → **IBM Plex Sans Condensed** (technical condensed sans, used for `.hero h1`, `.mf-num`, project/edu/exec headings via `--serif` token; loaded with italic axis for editorial accents in `.hero h1 .it` and `.manifesto-quote-sm .serif`). Code/terminal/metadata → **JetBrains Mono** (`--mono`). Body/UI → **Geist** (`--sans`). The `--serif` token name is retained for stability despite IBM Plex Sans Condensed being a sans-serif typeface.
-- **Content:** All copy lives in `src/data/` — `nav.js`, `aboutMe.js`, `whatIDo.js`, `widViz.js`, `projects.js`, `experience.js`, `education.js`, `agent.js`, `preloader.js`. Never hardcode content inside components. `aboutMe.js` exports `ABOUT_ME_STATEMENT`, `ABOUT_ME_HIGHLIGHT`, `ABOUT_ME_EMPHASES` used by `AboutMe.jsx`. `preloader.js` exports `PRELOADER_NAME`, the `STATUS_PHASES` progress-band table, and `getStatusLabel(progress)` used by `Preloader.jsx`.
-- **Env vars:** `GEMINI_API_KEY` is set in Vercel project settings; `vercel dev` injects it locally — no `.env` file. Read only inside `/api` via `process.env`. Never import from `/src`.
-- **AI chat API (`api/chat.js`):** Single serverless function. No conversation history — every request sends the full system prompt + user message in one `contents` turn. The persona/facts live entirely in `SYSTEM_PROMPT` at the top of that file. `maxOutputTokens: 200` is intentional (keeps responses under 90 words).
+- **Stack:** React + Vite (SPA) frontend; Vercel Serverless Functions in `/api` (no Express).
+- **Animation default:** Framer Motion for all component-level animation — no react-spring, no component-level CSS keyframes. GSAP is used in exactly two places only — see `docs/animation.md`.
+- **3D bundles:** `HeroFluid` and `@splinetool/react-spline` are `React.lazy`. Never eager-load (~600 KB).
+- **Content:** All copy lives in `src/data/`. Never hardcode content inside components.
+- **CSS:** Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps floor.
+- **No silent regressions:** If existing styles, classes, or behavior must change, say so explicitly.
+- **Respect existing architecture:** Prefer extending existing patterns over introducing new libraries, frameworks, or architectural rewrites. When an existing system can solve the problem, use it.
 
-## Architecture Rules
+## Routing Table
 
-- **Section render order in `App.jsx`:** `Nav → Hero → AboutMe → WhatIDo → Experience → Education → Projects → Footer`. `AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree. **`<Nav />` is currently commented out in `App.jsx`** (temporarily hidden) — its import and visibility wiring remain intact; uncomment the JSX to restore it.
-- **Two-phase preloader handoff:** `App.jsx` uses two booleans — `mountContent` and `revealed` — instead of a single `ready` flag. `mountContent` (set by `Preloader`'s `onMount` callback) mounts the full content tree **under the still-opaque overlay** so HeroFluid's WebGL shader can compile and Spline can init while the monolith canvas is frozen and the GPU is free. `revealed` (set when HeroFluid fires `onReady` on its first rendered frame, or after a 1200ms safety cap) triggers `beginExit` on the Preloader, which then plays the clip-path wipe and flips `started=true` on `Hero` so the `HERO_SEQUENCE` cascade begins. **Do not collapse these back into one flag** — that causes a triple-whammy frame spike (two WebGL contexts + Spline init + framer entrance all contending with the wipe). The three `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
-- **`preloadAssets.js` progress model:** Uses a continuous time-based ramp (0→0.88 over `MIN_DISPLAY_MS`) instead of discrete signal weights. The old eager `import()` warm-signals for HeroFluid and Spline were removed — their synchronous eval was blocking the main thread right as the counter reached ~92%, causing the visible freeze. The ramp plus `document.fonts.ready` bonus (0.08 head-start) provides a smooth counter climb; `done` fires from the min-display timer as before.
-- **Section id ↔ component ↔ nav label** (the ids in `nav.js` do not match component names — use this table for scroll targets and anchor links):
-  | Component | DOM id | Nav label |
-  |-----------|--------|-----------|
-  | `Hero` | `#top` | "Index" |
-  | `AboutMe` | `#about` | "About" |
-  | `WhatIDo` | `#what-i-do` | "What I Do" |
-  | `Experience` | `#experience` | "Experience" |
-  | `Education` | `#education` | "Education" |
-  | `Projects` | `#work` | "Work" |
-  | `Footer` | `#contact` | "Contact" |
-- **AIOrb visibility:** Hidden while the Hero (`#top`) **or** the What I Do section (`#what-i-do`) is intersecting the viewport — `AIOrb` receives `hidden={heroVisible || whatIdoVisible}`. Both flags come from `IntersectionObserver`s in `App.jsx` (a third observer on `#contact` drives `footerVisible` for the HeroFluid gate). The Hero gate avoids overlapping the robot hotspot; the What I Do gate keeps the orb off the pinned viz panel.
-- **Global hotkey:** `useHotkey('cmd+k', toggleAI)` in `App.jsx` (from `src/hooks/useHotkey.js`) opens the AI drawer. The hook also supports `'escape'`. Any new global shortcut belongs in `App.jsx` using this hook.
-- **Page background z-order:** `HeroFluid` (lazy WebGL) at `z:0`, `.noise` CSS texture at `z:2`. Both persistent across the page. The old static `.grid-bg` is gone — do not reintroduce. **HeroFluid's render loop is gated on two conditions ANDed together:** `App.jsx` passes `active={heroVisible || footerVisible}` (two `IntersectionObserver`s on `#top`/`#contact`), AND `HeroFluid` itself listens to `visibilitychange` and sets `docHidden` — `frameloop` is `"always"` only when `active && !docHidden`, `"never"` otherwise. The hidden-tab gate prevents the shader from rendering stale/throttled frames while the browser is backgrounded, which previously caused a jarring green flash on return. **`uTime` is a clamped-delta accumulator** — `useFrame` receives `delta` and advances `timeRef.current += Math.min(delta, MAX_FRAME_DELTA)` (cap: 0.05 s) instead of reading `clock.getElapsedTime()`. This ensures no tab pause (hidden-tab or mid-page freeze) can teleport the noise field forward by the idle gap and snap it onto a bright/green frame. `.noise` deliberately has **no `mix-blend-mode`** (plain 4% opacity) — overlay blending forced a full-viewport blend pass per scrolled frame; do not reintroduce it.
-- **Hero internal z-order:** `InfiniteGrid` `z:0` → `SplineScene` `z:1` → text/H1 `z:2`.
-- **Cursor MotionValue singleton:** `CURSOR_X` / `CURSOR_Y` exported from `src/utils/cursor.js`. Any component needing pointer position imports them — never prop-drill, never duplicate `pointermove` listeners. Mark interactive elements with `data-cursor="hover"` for the hover state.
-- **Shader attractor singleton:** `App.jsx` owns `globalMouseRef` (viewport-normalized 0–1 + `lastMove` timestamp) passed to `HeroFluid`. The glow is **confined to `#top` and `#contact`** via `e.target.closest('#top, #contact')` in `handleGlobalPointerMove` — it does not activate over mid-page sections. Idle-decays (~1.75s) in `HeroFluid.jsx` when the pointer leaves those regions. If the fluid stops tracking the cursor, check this ref's `pointermove` listener in `App.jsx`.
-- **Lenis momentum scroll:** `App.jsx` owns a site-wide Lenis smooth-scroll instance (`duration: 1.6`, exponential ease, `smoothWheel: true`), driven by `gsap.ticker` (single shared clock — `gsap.ticker.add(tickerFn)` calls `lenis.raf(time * 1000)`; `lenis.on('scroll', ScrollTrigger.update)` keeps ScrollTrigger in sync; `gsap.ticker.lagSmoothing(0)` prevents frame-skip after tab blur) and exposed as `window.__lenis` for cross-component access. Key behaviours: (1) **entirely disabled** under `prefers-reduced-motion` (early return, no instance created); (2) **paused** (`.stop()`) while the AI drawer is open, resumed (`.start()`) on close — prevents wheel events leaking behind the drawer. Framer Motion's `useScroll` reads native `scrollTop` transparently, so scroll-progress animations (e.g. `AboutMe` word reveal) work unchanged — do not replace native scroll with a virtual Lenis scroll container. **Anchor scrolling goes through `scrollToId(id)` (`src/utils/scrollTo.js`)** — it routes through `window.__lenis.scrollTo` when Lenis exists and falls back to native `scrollIntoView`; use it (Hero and Nav already do) instead of raw `scrollIntoView` for any new in-page link.
-- **Layout shell:** `.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: hidden }` is load-bearing — Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
-- **Spline pointer forwarding (load-bearing):** `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is outside `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
-- **Lazy boundaries:** `HeroFluid` is `React.lazy` + Suspense in `App.jsx` — never convert to a static import. `SplineScene` is a static import in `Hero.jsx`; the heavy `@splinetool/react-spline` package is `React.lazy`-loaded inside `SplineScene.jsx`. The Spline code-split boundary is that package import — keep it lazy.
-- **SplineScene load fade:** `SplineScene` starts at `opacity:0` and crossfades to `1` (0.9s) when Spline fires `onLoad`. A 4s `setTimeout` fallback in `SplineScene.jsx` triggers the fade if `onLoad` never fires (slow/offline). Do not remove either path.
-- **Nav visibility:** Driven by an `IntersectionObserver` on `#top` (Hero root). Toggles `opacity`/`y`/`pointer-events` so a hidden nav is never accidentally clickable. (Nav is currently commented out in `App.jsx` — see render-order note.)
-- **Footer mount animation:** `Footer.jsx` uses a delayed `initial/animate` fade (delay = `HERO_SEQUENCE.footer`, 5.3s) rather than `whileInView`. It participates in the hero reload sequence even though it is off-screen at page load. Do not revert it to `REVEAL` / `whileInView`.
-- **Project card visuals:** Each project in `src/data/projects.js` maps to a purely CSS/SVG visualization component in `src/components/visuals/` (e.g. `VizAero.jsx`, `VizMF.jsx`). `src/components/ProjectVisual.jsx` is the switch — it selects the viz via a `VIZ` map (keyed `aero/mf/spp/ll/wb/sch`) using the `kind` prop. Adding a new project requires a new `Viz*.jsx` in `visuals/` and a `VIZ` map entry in `ProjectVisual.jsx` — no canvas or third-party deps in these components.
+Read the listed doc before working in each area. Read only what the task requires.
 
-## What I Do — word-stack scroll + live-system viz
+| When touching…                                                                                                                     | Read                    |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, hotkeys, cursor, nav/footer wiring, project-card visuals | `docs/architecture.md`  |
+| Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                   | `docs/animation.md`     |
+| `src/styles/`, colors, typography, layout shell                                                                                    | `docs/design-system.md` |
+| `Hero.jsx`, `HeroFluid`, `SplineScene`, `InfiniteGrid`, robot, shader glow                                                         | `docs/hero.md`          |
+| `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                      | `docs/what-i-do.md`     |
+| `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                        | `docs/backend.md`       |
 
-The `#what-i-do` section is a two-part rig: a pinned word-stack scrubber on the left and a scroll-synced "live system" viz panel on the right. Driven by `WhatIDo.jsx` + the `src/components/widviz/` subsystem.
+## Extending the Docs
 
-- **Single scroll clock → `progress` MotionValue.** `WhatIDo.jsx` owns one `gsap.matchMedia` + `ScrollTrigger` (desktop only — `DESKTOP_QUERY` = `min-width:981px` + `pointer:fine` + `no-preference`) that pins the section and scrubs 1:1 (`scrub: true` — Lenis is the smoothing layer; a scrub-lerp would add a second interpolation track that fights it). Pin length is budgeted per word: `end = max(SCROLL_PER_WORD × (N-1), travel + 800)` with `SCROLL_PER_WORD = 780` (`N = WHAT_I_DO.length = 5`). Its `onUpdate` **does not re-render on scroll**: sets both word stacks' `y` via `gsap.set`, pushes `self.progress` into a `useMotionValue` (`progress.set` — no React render), only calls `setActive(i)` when the rounded snap index actually changes (guarded by `activeRef`), and arms the settle snap. Never add a second ScrollTrigger or read scroll position elsewhere in this section — the viz must stay on this one clock.
-- **Snapping is Lenis-driven, not GSAP.** GSAP `snap` was removed — it fights Lenis's own interpolation and feels rubbery; do not reintroduce it. Instead a settle snap fires after `SETTLE_MS` (140 ms) of inactivity, re-checks `window.__lenis.velocity` and defers until momentum decays below `SETTLE_VELOCITY_MAX`, then `lenis.scrollTo`s the nearest `i/(N-1)` snap target (skipped within `SNAP_EPSILON_PX`). An `isSnapping` flag suppresses re-arming while a programmatic scroll (settle or click) is in flight. **The settle snap must never fire outside the pin range** — it is triple-guarded (armed only at `0 < progress < 1`, `attemptSettle` bails when `!st.isActive`, `onLeave`/`onLeaveBack` clear pending timers) because a stale settle-timer chain surviving past the boundary ghost-scrolls the user back into the section. Keep all three guards.
-- **Words are click/keyboard navigation targets.** Each base-stack `.wid-word` is `role="button"` + `tabIndex=0`; clicking (or Enter/Space) calls `scrollToIndex` — a Lenis scroll to that word's exact snap position, populated into `scrollToIndexRef` inside setup and cleared on teardown. On mobile/reduced-motion (no ScrollTrigger) the click falls back to `scrollIntoView` on the matching `.wid-mobile-blurb-item`. Keep the ko-stack geometry identical to the base stack (no padding/margin/font overrides) — glyph registration depends on it.
-- **Caption + number highlighting.** The active blurb renders as real DOM text in `.wid-caption` (`aria-live`, `AnimatePresence mode="wait"` crossfade); the viz panel itself is `aria-hidden`. `highlightText` in `WhatIDo.jsx` wraps numeric tokens (and per-entry `blurbMarks` phrases from `whatIDo.js`) in gold `.wid-caption-num` spans.
-- **Measure after `document.fonts.ready`.** Pin end and word travel are computed from the measured `.wid-word` line-box height, which depends on the loaded web font. Setup runs inside `document.fonts.ready.then(...)` guarded by an `alive` flag; teardown happens in `mm.revert()` (handles StrictMode + resize-out-of-range). Do not move measurement earlier.
-- **Knockout band technique.** Two identical word stacks (`.wid-stack--base` cream, `.wid-stack--ko` in `--bg`) share the same JS-set `y` so glyphs register pixel-perfectly; the `--ko` stack is clipped by `.wid-band` (`overflow:hidden`, accent fill) to produce the lime "active word" reveal. The `--ko` stack is `aria-hidden`; the base stack carries real text.
-- **Viz switch mirrors `ProjectVisual`.** `WidVisual.jsx` selects a viz via a `VIZ` map keyed by `whatIDo.js` id (`systems/backend/data/interface/agents`) → `src/components/widviz/Viz*.jsx`. All five layers render absolutely stacked and cross-dissolve via opacity; each receives `progress`, `index`, `isActive`, `reduced`, `frozen`. Adding a capability requires a `WHAT_I_DO` entry, a `WID_VIZ` entry, and a new `Viz*.jsx` + `VIZ` map entry. **`VizAgents` is currently a `return null` placeholder** (its animation is yet to be built) and its `whatIDo.js` blurb is an empty string. **`VizInterface` is a live viz** (rebuilt as a 4-layer autonomous isometric breathing card: raw data stream → logic grid → insight widgets → glass control panel). `systems`, `backend`, `data`, and `interface` are all live.
-- **Per-viz scroll slices via `widSlice.js`.** `widSlice(index, n)` returns the symmetric input ranges (`dissolveIn` triangle `[s-d,s,s+d]→[0,1,0]`, `enterIn` one-way `[s-d,s]→[0,1]`) each viz maps `progress` through with `useTransform`. `useTransform` clamps, so edge vizzes (i=0, i=n-1) need no manual clamping. Use this helper for any new viz rather than hand-rolling ranges.
-- **`src/utils/widDwell.js` is currently dead code.** It is a plateau transfer function (flat dwell around each snap point, smoothstep between) whose fixed points are the `i/(n-1)` snap targets — but nothing imports it; the dwell shaping was removed when snapping moved to Lenis. Comments in `WhatIDo.jsx` still reference it (`DWELL_HOLD`, "fixed points of widDwell") — read those as historical. If you reintroduce dwell shaping, this is the helper; otherwise don't let the comments mislead you into thinking progress is already shaped.
-- **Frozen mode = mobile/reduced fallback.** On mobile and `prefers-reduced-motion`, `.wid-mobile-blurbs` lists all five blurbs, each with `<WidVisual frozen index={i} />`. A frozen panel renders one viz seeded at its snap point (`frozenProgress = index/(N-1)`) with `reduced`+`frozen` true so it resolves to its final static frame. Keep both the pinned desktop path and the frozen mobile path working — they are not interchangeable.
-- **Viz content/data lives in `src/data/widViz.js`** (`WID_VIZ`, keyed by id): labels, metrics, glyph copy, and precomputed geometry (e.g. the SYSTEMS Fibonacci-sphere nodes/edges/pulse-edges computed once at module load with a seeded Mulberry32 PRNG). No copy inside the `Viz*.jsx` components. **Shared WID variants in `variants.js`:** `WID_PANEL_REVEAL` (panel `whileInView` fade), `WID_DRAW` (shared `pathLength` draw transition for structural SVG edges), `WID_AMBIENT_REST` (the `opacity:0` rest target ambient elements return to when `isActive` is false).
+Any new major component, third-party integration, or architectural rule must:
 
-## Workflow
+1. Add or update the relevant `docs/*.md` with full implementation detail.
+2. Add a routing-table row in this file.
 
-- Plan-first for multi-file or UI changes. Enumerate existing interactions before integrating into an area with hover/animation/pointer behavior — state how each is preserved or intentionally changed.
-- Never silently revert styles, classes, or behavior. Call out intentional regressions.
-- Treat this file as living: update it as part of any major architectural change (new component, third-party integration, significant refactor).
+Do not place subsystem-specific implementation details in CLAUDE.md.
+
+The root file stays a router — all implementation detail lives in `docs/`.
+
+If this file and a subsystem doc ever conflict on implementation detail, the subsystem doc wins for that area.
+
+## Exploration Budget
+
+Before making a change:
+
+1. Read the requested file.
+2. Read at most 2 directly related files.
+3. Do not perform repository-wide searches unless blocked.
+4. Do not create architecture reviews for localized edits.
+5. Escalate only if implementation cannot proceed.
