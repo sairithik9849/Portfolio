@@ -347,17 +347,17 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: SYSTEMS — Living Dashboard (6-cell control room grid)
-   Two rows × three columns of independent monitoring cells. Each cell runs its
+   Three rows × two columns of independent monitoring cells. Each cell runs its
    own ambient animation via a shared RAF loop; an incident state machine
    randomly selects one cell to go critical and then auto-heals it every ~9–14 s.
-   Scroll-driven stagger: cells appear L→R, T→B as --enter (0→1) rises.
+   Scroll-driven stagger: cells appear T→B, L→R as --enter (0→1) rises.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-systems {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 7vh 0 26vh;
+  padding: 4vh 0 20vh;
   box-sizing: border-box;
 }
 
@@ -365,7 +365,7 @@
 .wsys-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding: 0 10px;
 }
 
@@ -374,7 +374,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2px 8px;
+  padding: 0 2px 9px;
   border-bottom: 1px solid var(--line-2);
   font-family: var(--mono);
   font-size: var(--text-3xs);
@@ -386,22 +386,22 @@
 .wsys-dash-nominal { color: var(--accent); }
 .wsys-dash-uptime  { color: var(--accent-2); }
 
-/* ── 2×3 grid ─────────────────────────────────────────────────────────────── */
+/* ── 3×2 grid (2 cols × 3 rows) ──────────────────────────────────────────── */
 .wsys-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, auto);
-  gap: 7px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, auto);
+  gap: 8px;
 }
 
 /* ── Individual cell ──────────────────────────────────────────────────────── */
 .wsys-cell {
   border: 1px solid var(--line);
   background: rgba(7, 7, 7, 0.55);
-  padding: 8px 9px 7px;
+  padding: 10px 12px 9px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   border-radius: 2px;
   /* Staggered scroll-in: cell 0 appears first, cell 5 last */
   opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0) * 0.10) * 12), 1);
@@ -488,9 +488,9 @@
 /* ── CPU cell — 4 vertical core bars ─────────────────────────────────────── */
 .wsys-cores {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   align-items: flex-end;
-  height: 42px;
+  height: 54px;
 }
 
 .wsys-core-track {
@@ -566,9 +566,9 @@
 /* ── Queue cell — 6 depth bars ────────────────────────────────────────────── */
 .wsys-queue-bars {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   align-items: flex-end;
-  height: 42px;
+  height: 54px;
 }
 
 .wsys-queue-track {
@@ -597,7 +597,7 @@
 /* ── Error rate cell — EKG sparkline ─────────────────────────────────────── */
 .wsys-ekg-svg {
   width: 100%;
-  height: 42px;
+  height: 54px;
   overflow: visible;
 }
 
@@ -628,7 +628,7 @@
 
 .wsys-uptime-counter {
   font-family: var(--mono);
-  font-size: 17px;                 /* display-scale one-off — HH:MM:SS clock */
+  font-size: 21px;                 /* display-scale one-off — HH:MM:SS clock */
   letter-spacing: 0.05em;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
@@ -651,8 +651,8 @@
 }
 
 .wsys-deploy-svg {
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
   overflow: visible;
 }

@@ -443,8 +443,6 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
 
         </div>
 
-        {/* ── Event log ──────────────────────────────────────────────────── */}
-        <div ref={logRef} className="wsys-log" />
 
       </motion.div>
     </motion.div>
