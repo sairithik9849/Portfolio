@@ -16,10 +16,12 @@
   /* Lower stacking context so the section scrolls behind .about-me (z-index:2) */
   position: relative;
   z-index: 1;
-  /* --band-w drives the band's fixed width.
-     The field panel and caption use a section-relative left/right formula in CSS
-     that mirrors the stage's max-width:1440px centering, so both adjust in sync. */
-  --band-w: 68%;
+  /* --band-w: right edge lands exactly at 50vw.
+     The stage has 24px padding; the band's left edge starts at that padding,
+     so width = min(50vw, 720px) - 24px makes the right edge hit 50vw.
+     --viz-left: where the viz panel and caption begin (50vw + 48px gap). */
+  --band-w: calc(min(50vw, 720px) - 24px);
+  --viz-left: calc(50vw + 48px);
 }
 
 /* Scoped SectionHead override: mirrors .about-me .section-head — removes the
@@ -162,15 +164,15 @@
    share the same containing block and the formulas produce identical geometry. */
 .wid-caption {
   position: absolute;
-  left: calc(max(0px, 50vw - 720px) + 0.72 * min(100vw, 1440px));
+  left: var(--viz-left);
   right: max(0px, 50vw - 720px);
   top: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  /* padding-bottom lifts text clear of the ALIVE readout and the mask-image
-     bottom fade; padding-left aligns with the status label. */
+  /* padding-bottom lifts text clear of the ALIVE readout and the bottom of the panel;
+     padding-left aligns with the status label. */
   padding: 0 18px 120px 18px;
   align-items: center;
   pointer-events: none;

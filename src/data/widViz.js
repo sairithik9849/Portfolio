@@ -31,7 +31,7 @@ const _fibSphere = n => {
 
 const _sysNodes = _fibSphere(50).map(({ x3d, y3d, z3d }) => ({
   x3d, y3d, z3d,
-  cx:    +(50 + x3d * 32).toFixed(2),       // projected x, roughly 18–82%
+  cx:    +(50 + x3d * 38).toFixed(2),       // projected x, roughly 14–86% (wider panel)
   cy:    +(50 + y3d * 40).toFixed(2),       // projected y, roughly 10–90%
   z:     +((z3d + 1) / 2).toFixed(3),      // depth 0 (back) → 1 (front) for CSS cue
   delay: +(_sysRand() * 2.5).toFixed(2),   // CSS breathing stagger (seconds)
@@ -134,27 +134,28 @@ export const WID_VIZ = {
     // Layout: vertical trunk EDGE(top-center) → API(center) → symmetric Y-fork
     // to CACHE(lower-left) and DB(lower-right). Fork angles are mirrored (Δx=±20, Δy=+18).
     // Dots anchor on the coordinate; labels splay outward (EDGE/API/DB right, CACHE left).
+    // Triangle shifted up by 10pp to create breathing room above the EKG graph.
     nodes: [
-      { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 50, y: 24 },
-      { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 42 },
-      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 30, y: 60 },
-      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 70, y: 60 },
+      { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 50, y: 14 },
+      { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 32 },
+      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 30, y: 50 },
+      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 70, y: 50 },
     ],
 
     // ── Edges — d-strings for the stretched preserveAspectRatio="none" field SVG.
     // Trunk is a pure vertical (x=50). Fork is symmetric about x=50.
     edges: [
-      { id: 'edge-api',   d: 'M50,24 L50,42' },
-      { id: 'api-cache',  d: 'M50,42 L30,60' },
-      { id: 'api-db',     d: 'M50,42 L70,60' },
+      { id: 'edge-api',   d: 'M50,14 L50,32' },
+      { id: 'api-cache',  d: 'M50,32 L30,50' },
+      { id: 'api-db',     d: 'M50,32 L70,50' },
     ],
 
-    // ── BREAKER chip — exactly on the midpoint of the api→db edge (60,51).
+    // ── BREAKER chip — exactly on the midpoint of the api→db edge (60,41).
     breakerLabel:  'BREAKER',
     breakerOpen:   'OPEN',
     breakerClosed: 'CLOSED',
     breakerX: 60,
-    breakerY: 51,
+    breakerY: 41,
 
     // ── State captions
     stressState: 'DB SATURATING',
@@ -210,29 +211,57 @@ export const WID_VIZ = {
   },
 
   interface: {
-    kicker:     '// 03·04',
-    mode:       'INTERFACE',
-    // Dashboard base layer — mock layout block labels
-    baseBlocks: [
-      { id: 'header', label: 'HEADER',  w: '100%', h: '18%', t: '0%',   l: '0%' },
-      { id: 'sidebar',label: 'NAV',     w: '28%',  h: '74%', t: '22%',  l: '0%' },
-      { id: 'main',   label: 'CONTENT', w: '68%',  h: '34%', t: '22%',  l: '31%' },
-      { id: 'cards',  label: 'CARDS',   w: '68%',  h: '34%', t: '60%',  l: '31%' },
+    kicker: '// 03·04',
+    mode:   'INTERFACE',
+
+    // ── Layer 2 — Logic & Orchestration routing paths (100×100 viewBox).
+    // Circuit-like topology: single entry point → horizontal trunk → three vertical
+    // drops → bottom rail → two terminal drops. Geometric and structural.
+    routePaths: [
+      { id: 'entry',    d: 'M50,8  L50,30' },
+      { id: 'h-trunk',  d: 'M12,30 L88,30' },
+      { id: 'v-left',   d: 'M22,30 L22,62' },
+      { id: 'v-center', d: 'M50,30 L50,62' },
+      { id: 'v-right',  d: 'M78,30 L78,62' },
+      { id: 'h-bottom', d: 'M22,62 L78,62' },
+      { id: 'drop-l',   d: 'M22,62 L22,78' },
+      { id: 'drop-r',   d: 'M78,62 L78,78' },
     ],
-    // Node layer — 4 floating UI elements with positions (% of layer)
-    nodes: [
-      { id: 'bar',      label: 'PERF',  x: '38%',  y: '28%' },
-      { id: 'ring',     label: 'UX',    x: '68%',  y: '38%' },
-      { id: 'coord-a',  label: '24ms',  x: '36%',  y: '62%' },
-      { id: 'coord-b',  label: '99.9%', x: '70%',  y: '66%' },
+    // Empty structural nodes at path endpoints and intersections
+    gridNodes: [
+      { id: 'entry',  x: 50, y:  8 },
+      { id: 'tl',     x: 12, y: 30 },
+      { id: 'tc',     x: 50, y: 30 },
+      { id: 'tr',     x: 88, y: 30 },
+      { id: 'ml',     x: 22, y: 62 },
+      { id: 'mc',     x: 50, y: 62 },
+      { id: 'mr',     x: 78, y: 62 },
+      { id: 'bl',     x: 22, y: 78 },
+      { id: 'br',     x: 78, y: 78 },
     ],
-    // Bar chart sample data (8 bars, 0–100 normalized)
-    bars: [42, 67, 55, 88, 74, 91, 63, 78],
-    // Glass control-panel readouts
-    stackLabel: 'REACT · VITE',
-    fpsLabel:   '60fps',
-    renderLabel: 'RENDER',
-    fpsTarget:   '60',
+
+    // ── Layer 3 — Insight Widgets
+    // Sparkline: 12 normalized samples (0–100) for UI response latency
+    spark:        [62, 70, 55, 72, 68, 80, 65, 75, 71, 76, 69, 77],
+    sparkLabel:   'RESP',
+    // Rolling metric counter
+    counterValue: '847',
+    counterLabel: 'EVENTS/S',
+    // Resource allocation ring (fraction of circumference to fill)
+    ringPct:   0.73,
+    ringLabel: '73%',
+    ringTitle: 'GPU',
+
+    // ── Layer 4 — Glass control panel
+    panelTitle:   '// motion-first',   // Sai's actual design philosophy
+    fpsTarget:    '60',
+    fpsLabel:     'fps floor',
+    frameTarget:  '<16',
+    frameLabel:   'ms budget',
+    // The four libraries actually powering this page's animations
+    techStack:    ['THREE.JS', 'FRAMER', 'GSAP', 'LENIS'],
+    toggleLabel:  'SMOOTH',            // Lenis smooth scroll
+    buttonLabel:  'GPU',               // GPU-composited render path
   },
 
   agents: {

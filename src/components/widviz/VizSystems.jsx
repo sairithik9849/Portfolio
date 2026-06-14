@@ -147,7 +147,7 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
       for (let i = 0; i < n; i++) {
         // Y-axis yaw: x' = x·cosθ − z·sinθ  (y' = y, z' unused)
         const rx    = x3d[i] * cosA - z3d[i] * sinA
-        const restX = 50 + rx      * 32
+        const restX = 50 + rx      * 38
         const restY = 50 + y3d[i]  * 40
 
         // Spring — pulls toward current rotating rest position
@@ -286,7 +286,7 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
               Pentagon R=13, center (45,45). Vertices:
               V0=(45,32) V1=(57.4,41) V2=(52.6,55.5) V3=(37.4,55.5) V4=(32.6,41)
               Traces exit from all 5 vertices + 5 side midpoints. */}
-          <svg viewBox="0 0 90 90" width="68" height="68" fill="none" overflow="visible">
+          <svg viewBox="0 0 90 90" width="80" height="80" fill="none" overflow="visible">
 
             {/* ── Pentagon outline ── */}
             <polygon

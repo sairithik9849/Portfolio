@@ -12,7 +12,7 @@ const N    = 5
 const NODE_POS = Object.fromEntries(DATA.nodes.map(n => [n.id, { x: n.x, y: n.y }]))
 
 // ── Sparkline constants ───────────────────────────────────────────────────────
-const GW       = 230   // SVG element width and viewBox width (px)
+const GW       = 300   // SVG element width and viewBox width (px)
 const PAD_L    = 6
 const PAD_R    = 14
 const PLOT_T   = 8
@@ -61,11 +61,7 @@ const buildTrace = samples => {
 const lerpSamples = (stressed, calm, t) =>
   stressed.map((s, i) => s + (calm[i] - s) * t)
 
-// ── Layout constants for the EKG graph ───────────────────────────────────────
-// GRAPH_TOP sits below the CACHE/DB nodes (y:60%).
-// 65% gives ~40px gap on a 800px viewport, and enough bottom clearance in the
-// frozen 295px panel (graph ends at ~265px, 30px below the field bottom).
-const GRAPH_TOP = '65%'
+const GRAPH_TOP = '59%'
 
 // ── Stagger depth helper — node assembles at rank * 0.18 ─────────────────────
 const NODE_I = rank => rank * 0.18
@@ -82,11 +78,11 @@ const NUM_FLOW_DOTS  = 5
 const FLOW_DURATION  = 2.4   // seconds per full cycle
 
 // ── Queue dot positions near DB node (% of field) ────────────────────────────
-// Three small dots queued just above DB (now at x:70, y:60), visible when stressed.
+// Three small dots queued just above DB (now at x:70, y:50), visible when stressed.
 const QUEUE_DOTS = [
-  { cx: 66, cy: 53 },
-  { cx: 70, cy: 52 },
-  { cx: 68, cy: 50 },
+  { cx: 66, cy: 43 },
+  { cx: 70, cy: 42 },
+  { cx: 68, cy: 40 },
 ]
 
 // ── Subcomponent: flow dot — one round dot along the EDGE→API trunk ──────────

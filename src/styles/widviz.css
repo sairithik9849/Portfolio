@@ -12,35 +12,25 @@
 /* ── Panel — full-height unboxed field ──────────────────────────────────────── */
 .widviz-panel {
   position: absolute;
-  /* Panel is now a direct child of .what-i-do (position:relative, full-width).
-     left/right mirror the stage's max-width:1440px centered layout so the
-     field region aligns with the word band at any viewport width.
-     Formula: stage_left + (band-w + 4%) × stage_width
-             = max(0, 50vw - 720px) + 0.72 × min(100vw, 1440px) */
-  left: calc(max(0px, 50vw - 720px) + 0.72 * min(100vw, 1440px));
+  /* Panel is a direct child of .what-i-do (position:relative, full-width).
+     left is driven by --viz-left (inherited from .what-i-do) which places the
+     panel's left edge at 50vw + 48px — 48px gap past the lime band's 50vw cut.
+     right mirrors the stage's max-width:1440px right padding edge. */
+  left: var(--viz-left);
   right: max(0px, 50vw - 720px);   /* matches stage right padding edge */
   top: 0;
   height: 100vh;
   pointer-events: none;
-  /* Top fade (20%) covers the ~168px section header so nodes never paint on
-     the heading text. Bottom fade starts at 94% to keep the readout visible.
-     Right fade 10%. Left edge is hard — the lime band is the visual boundary. */
-  mask-image:
-    linear-gradient(to bottom, transparent 0%, black 20%, black 94%, transparent 100%),
-    linear-gradient(to left, transparent 0%, black 10%);
-  mask-composite: intersect;
-  -webkit-mask-image:
-    linear-gradient(to bottom, transparent 0%, black 20%, black 94%, transparent 100%),
-    linear-gradient(to left, transparent 0%, black 10%);
-  -webkit-mask-composite: destination-in;
 }
 
 /* ── Body — five absolutely-stacked layers ──────────────────────────────────── */
 .widviz-body {
   position: absolute;
   inset: 0;
-  /* overflow:visible so viz content reaches the panel edges where mask fades it */
 }
+
+/* .widviz-fade removed — the panel is fully transparent now so the page
+   background (--bg + body radial glows) shows through behind every viz. */
 
 .widviz-layer {
   position: absolute;
@@ -127,10 +117,10 @@
   left: 0;
   top: 0;
   transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--bg);
+  background: transparent;
   border: 1.5px solid var(--accent-dim);
   box-shadow: 0 0 6px rgba(201, 245, 88, 0.22);
   transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
@@ -157,7 +147,7 @@
 
 .wbk-node-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.1em;
   color: var(--fg);
@@ -208,7 +198,6 @@
 }
 
 /* ── BREAKER — inline gate chip straddling the api→db edge ── */
-/* background: --bg masks the edge beneath so it reads as a component on the wire. */
 .wbk-breaker {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -217,7 +206,7 @@
   gap: 5px;
   padding: 2px 6px;
   border: 1px solid var(--line);
-  background: var(--bg);
+  background: transparent;
   border-radius: 2px;
   white-space: nowrap;
   pointer-events: none;
@@ -255,7 +244,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 230px;
+  width: 300px;
   pointer-events: none;
 }
 
@@ -283,8 +272,8 @@
 }
 
 .wbk-graph-svg {
-  width: 230px;
-  height: 50px;
+  width: 300px;
+  height: 58px;
   display: block;
   overflow: visible;
 }
@@ -460,21 +449,21 @@
   animation: wsys-icon-glow 3s ease-in-out infinite;
 }
 
-/* Frosted dark backdrop behind just the text so sphere nodes don't obscure it */
+/* Logo text — backdrop-filter blur keeps the label readable over sphere nodes. */
 .wsys-logo-text {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   padding: 7px 12px 6px;
-  background: rgba(0, 0, 0, 0.45);
+  background: transparent;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
 .wsys-logo-title {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.32em;
   color: var(--accent);
@@ -485,7 +474,7 @@
 
 .wsys-logo-sub {
   font-family: var(--mono);
-  font-size: 7.5px;
+  font-size: 9px;
   letter-spacing: 0.18em;
   color: var(--accent-2);
   text-shadow:
@@ -523,12 +512,12 @@
 
 .widviz-data {
   /* Flex column + justify-content:center vertically centers the .wdat-layout
-     block within the full-height absolute layer. padding keeps content clear
-     of the top/bottom mask fade zones. */
+     block within the full-height absolute layer. Asymmetric padding shifts the
+     visual center upward, creating breathing room above the caption paragraph. */
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 6vh 0;
+  padding: 4vh 0 18vh;
   box-sizing: border-box;
 }
 
@@ -542,7 +531,7 @@
 .wdat-field {
   position: relative;
   width: 100%;
-  height: clamp(260px, 44vh, 440px);
+  height: clamp(300px, 50vh, 520px);
 }
 
 /* SVG layer: curve + area + spark — stretched viewBox, VizSystems convention.
@@ -562,8 +551,8 @@
    runs — on the live path inline styles win. */
 .wdat-dot {
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--muted);
   transform: translate(-50%, -50%);
@@ -687,14 +676,16 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: INTERFACE — autonomous 3D breathing UI-card
-   Three layers (base dashboard / floating nodes / glassmorphic panel) that
-   separate on Z inside a preserve-3d card, rotated to isometric. Framer Motion
-   drives a single t MotionValue (0=flat, 1=peak); CSS handles decoration.
-   All animation via transform/opacity only. 60fps floor.
+   VIZ: INTERFACE — 4-layer "raw chaos → refined UX" breathing card
+   Narrative: L1 raw data stream → L2 logic/orchestration grid → L3 insight
+   widgets → L4 frosted glass control panel. Autonomous 6.5s breathing loop
+   (flat illusion ↔ isometric anatomy reveal). Single Framer t MotionValue.
+   Rendering constraints: no filter on preserve-3d card (WebKit Z-sort bug);
+   L1 is one div + SVG background-image (no per-glyph spans); light-blob uses
+   radial-gradient only (no filter:blur). All animation transform/opacity only.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Outer centering shell — establishes perspective for the 3D space */
+/* ── Outer centering shell ─────────────────────────────────────────────────── */
 .widviz-interface {
   position: absolute;
   inset: 0;
@@ -703,51 +694,56 @@
   justify-content: center;
 }
 
-/* Perspective parent — fixed depth so the card reads authentically 3D */
-.wifc-stage {
-  position: relative;
-  width: 260px;
-  height: 200px;
-  perspective: 1000px;
-  perspective-origin: 50% 40%;
-}
-
-/* Drifting ambient mesh gradient behind the 3D card.
-   Two radial blobs (lime + gold) over --bg; transform-only animation.
-   Layer 3's backdrop-filter samples this to demonstrate live refraction. */
-.wifc-ambient {
+/* ── Background glow — flat 2D div, NOT inside preserve-3d card.
+   Applying filter to a preserve-3d ancestor breaks WebKit Z-sorting.
+   This div is a sibling of .wifc-stage so it lives in the flat stacking context.
+   Framer animates opacity + scale; the radial-gradient does the soft diffusion. */
+.wifc-glow {
   position: absolute;
-  inset: -60px;
-  background:
-    radial-gradient(circle at 30% 35%, rgba(201, 245, 88, 0.16), transparent 55%),
-    radial-gradient(circle at 72% 68%, rgba(232, 196, 122, 0.13), transparent 52%),
-    var(--bg-2);
-  border-radius: 50%;
-  animation: wifc-ambient-drift 14s ease-in-out infinite;
-  will-change: transform;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 52%,
+    rgba(201, 245, 88, 0.22) 0%,
+    rgba(201, 245, 88, 0.06) 38%,
+    rgba(232, 196, 122, 0.04) 55%,
+    transparent 72%
+  );
   pointer-events: none;
+  will-change: opacity, transform;
   z-index: 0;
 }
 
-@keyframes wifc-ambient-drift {
-  0%, 100% { transform: scale(1)    rotate(0deg); }
-  33%       { transform: scale(1.08) rotate(6deg); }
-  66%       { transform: scale(0.94) rotate(-5deg); }
+/* ── 3D stage — perspective viewport for the card ─────────────────────────── */
+.wifc-stage {
+  position: relative;
+  width: 340px;
+  height: 260px;
+  perspective: 1300px;
+  perspective-origin: 50% 40%;
+  z-index: 1;
+  /* Scale up the whole card as one unit — scales card, widgets, fonts, and
+     Z-depths together. Safe here: no filter on the preserve-3d container. */
+  transform: scale(1.35);
+  transform-origin: center;
 }
 
-/* 3D card — rotates as one unit (rotateX/rotateZ driven by Framer t).
-   transform-style:preserve-3d so child translateZ values stack in 3D space. */
+/* ── 3D card — rotates as one unit; layers separate on Z inside.
+   CRITICAL: no filter property on this element — applying filter to a
+   preserve-3d container flattens the 3D context in WebKit/Safari. ────────── */
 .wifc-card {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
   will-change: transform;
-  z-index: 1;
 }
 
-/* Shared layer — full-size planes stacked at z=0; each layer shifts its own
-   translateZ via Framer inline style to produce the Z-separation. */
-.wifc-layer {
+/* Shared layer plane — full-size, each shifts its own translateZ via Framer.
+   Note: .wifc-layer is already defined globally earlier in this file for the
+   five viz cross-dissolve layers; these wifc-layer sub-variants are specific
+   to the 3D card planes inside VizInterface. */
+.wifc-layer--raw,
+.wifc-layer--logic,
+.wifc-layer--widgets,
+.wifc-layer--glass {
   position: absolute;
   inset: 0;
   border-radius: 3px;
@@ -755,47 +751,46 @@
   backface-visibility: hidden;
 }
 
-/* ── LAYER 1 — Base dashboard map ──────────────────────────────────────────── */
-.wifc-layer--base {
-  background: var(--bg-2);
-  border: 1px solid var(--line-2);
-  /* Wireframe grid overlay via repeating gradients — two directions */
-  background-image:
-    repeating-linear-gradient(
-      to right,
-      rgba(237, 237, 223, 0.035) 0px, rgba(237, 237, 223, 0.035) 1px,
-      transparent 1px, transparent 26px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      rgba(237, 237, 223, 0.035) 0px, rgba(237, 237, 223, 0.035) 1px,
-      transparent 1px, transparent 20px
-    );
+/* ── LAYER 1 — Raw Data Stream (chaos) ─────────────────────────────────────
+   Single track div scrolls a repeating SVG background-image tile to simulate
+   a waterfall of data packets — zero per-glyph DOM nodes. ──────────────────── */
+.wifc-layer--raw {
+  background: transparent;
+  overflow: hidden;
 }
 
-/* Mock layout blocks — each absolutely positioned via inline style in JSX */
-.wifc-block {
+/* Track extends 32px beyond the layer edges so the seamless loop never shows
+   a blank edge. translateY animates one tile-height (32px) → repeating
+   background looks identical before/after → perfect seamless loop. */
+.wifc-raw-track {
   position: absolute;
-  border: 1px solid var(--line-2);
-  background: rgba(237, 237, 223, 0.025);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: -32px;
+  left: 0;
+  right: 0;
+  height: calc(100% + 64px);
+  animation: wifc-waterfall 1.4s linear infinite;
+  will-change: transform;
 }
 
-.wifc-block-label {
-  font-family: var(--mono);
-  font-size: 6px;
-  letter-spacing: 0.18em;
-  color: var(--muted);
-  opacity: 0.7;
-  user-select: none;
+/* Single div — the SVG data-URI tile is a 120×32 pattern of varied-width
+   rectangles at muted lime opacities, suggesting hex/byte data packets.
+   background-size matches the tile; repeat fills the track. */
+.wifc-raw-field {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='32'%3E%3Crect x='4' y='4' width='14' height='3' fill='rgba(201,245,88,.15)'/%3E%3Crect x='22' y='4' width='8' height='3' fill='rgba(201,245,88,.12)'/%3E%3Crect x='34' y='4' width='18' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='56' y='4' width='10' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='70' y='4' width='14' height='3' fill='rgba(201,245,88,.11)'/%3E%3Crect x='88' y='4' width='8' height='3' fill='rgba(201,245,88,.14)'/%3E%3Crect x='100' y='4' width='16' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='4' y='13' width='10' height='3' fill='rgba(201,245,88,.09)'/%3E%3Crect x='18' y='13' width='16' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='38' y='13' width='8' height='3' fill='rgba(201,245,88,.11)'/%3E%3Crect x='50' y='13' width='14' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='68' y='13' width='18' height='3' fill='rgba(201,245,88,.14)'/%3E%3Crect x='90' y='13' width='10' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='104' y='13' width='12' height='3' fill='rgba(201,245,88,.12)'/%3E%3Crect x='4' y='22' width='18' height='3' fill='rgba(201,245,88,.11)'/%3E%3Crect x='26' y='22' width='10' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='40' y='22' width='14' height='3' fill='rgba(201,245,88,.09)'/%3E%3Crect x='58' y='22' width='8' height='3' fill='rgba(201,245,88,.12)'/%3E%3Crect x='70' y='22' width='16' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='90' y='22' width='12' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='106' y='22' width='10' height='3' fill='rgba(201,245,88,.11)'/%3E%3C/svg%3E");
+  background-size: 120px 32px;
+  background-repeat: repeat;
 }
 
-/* ── Cast shadow — flat plane beneath Layer 3, above Layer 1 in Z ─────────── */
-/* Radial-gradient ellipse: soft and large to read as a real cast shadow.
-   Framer drives translateY (grows down), scaleX (grows wider), opacity.
-   No box-shadow animation — GPU transform only, zero layout cost. */
+/* Waterfall: shift by one tile height → seamless loop via repeating background */
+@keyframes wifc-waterfall {
+  from { transform: translateY(0); }
+  to   { transform: translateY(32px); }
+}
+
+/* ── Cast shadow — in-card plane, grounding the isometric tilt ────────────── */
 .wifc-shadow {
   position: absolute;
   bottom: 0;
@@ -812,65 +807,153 @@
   will-change: transform, opacity;
 }
 
-/* ── LAYER 2 — Floating data nodes ─────────────────────────────────────────── */
-.wifc-layer--nodes {
-  /* opacity + --glow-t driven by Framer inline style */
+/* ── LAYER 2 — Logic & Orchestration Grid (filter) ─────────────────────────
+   Wireframe SVG circuit paths + structural node dots. The lime data pulse
+   travels the paths via CSS animation; --pulse-op gates its opacity so it
+   appears only at peak separation. vector-effect: non-scaling-stroke keeps
+   line weights uniform despite the preserveAspectRatio="none" stretch. ──── */
+.wifc-layer--logic {
+  /* --pulse-op set by Framer; 0=invisible at flat, 1=fully visible at peak */
 }
 
-/* Node — zero-size anchor; children are absolutely offset so transform-origin
-   sits exactly on the data point. inline left/top set from widViz.js */
-.wifc-node {
+.wifc-logic-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Structural routing lines — brightens from 40%→100% opacity as pulse fires */
+.wifc-route-line {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 0.9;
+  vector-effect: non-scaling-stroke;
+  opacity: calc(0.4 + 0.6 * var(--pulse-op, 0));
+}
+
+/* Traveling pulse comet — 15% dash racing along each path.
+   CSS animation runs continuously; --pulse-op gates whether it's visible.
+   filter on individual SVG paths is fine — only the preserve-3d ANCESTOR
+   must stay filter-free (the WebKit constraint). */
+.wifc-route-pulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 0.15 0.85;
+  opacity: var(--pulse-op, 0);
+  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.8));
+  vector-effect: non-scaling-stroke;
+  animation: wifc-pulse-travel 1.8s linear infinite;
+}
+
+/* Comet travels one full path length (pathLength="1") per cycle.
+   dashoffset 0 → -1: dash advances from path start to path end, loops. */
+@keyframes wifc-pulse-travel {
+  from { stroke-dashoffset:  0; }
+  to   { stroke-dashoffset: -1; }
+}
+
+/* Empty structural nodes — hollow dots at routing intersections */
+.wifc-gridnode {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  opacity: calc(0.35 + 0.65 * var(--pulse-op, 0));
+}
+
+/* ── LAYER 3 — Insight Widgets (synthesis) ──────────────────────────────────
+   Three floating UI widgets. Their layer is Z-staggered between L2 and L4.
+   Framer ties opacity to pulseT; sparkline gets a small translateX nudge. ── */
+.wifc-layer--widgets {
+  /* opacity driven by Framer widgetOp (0.6 at rest → 1 at pulse peak) */
+}
+
+/* Base widget — absolute positioned within the layer */
+.wifc-widget {
   position: absolute;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-/* Mini bar chart */
-.wifc-node--bar {
-  transform: translate(-50%, -50%);
+.wifc-widget-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  opacity: 0.75;
 }
 
-.wifc-bar-svg {
-  width: 68px;
-  height: 28px;
+/* Sparkline — top-left, nudges left when pulse hits */
+.wifc-widget--spark {
+  top: 14%;
+  left: 5%;
+  width: 94px;
+  will-change: transform;
+}
+
+.wifc-spark-svg {
+  width: 94px;
+  height: 29px;
   display: block;
   overflow: visible;
 }
 
-.wifc-bar {
-  fill: var(--accent);
-  opacity: 0.72;
-  /* Glow scales with --glow-t via a drop-shadow filter defined in the node rule */
-  filter: drop-shadow(0 0 calc(2px + 4px * var(--glow-t, 0)) rgba(201, 245, 88, calc(0.3 + 0.5 * var(--glow-t, 0))));
+.wifc-spark-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.55));
 }
 
-.wifc-bar--peak {
-  fill: var(--accent);
-  opacity: 1;
+/* Rolling metric counter — top-right */
+.wifc-widget--counter {
+  top: 14%;
+  right: 8%;
+  align-items: flex-end;
 }
 
-.wifc-node-label {
-  display: block;
+.wifc-counter-val {
   font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 0.16em;
+  font-size: 21px;
+  font-weight: 500;
   color: var(--accent);
-  text-align: center;
-  margin-top: 3px;
-  opacity: 0.85;
-  filter: drop-shadow(0 0 4px rgba(201, 245, 88, 0.5));
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(201, 245, 88, 0.45);
 }
 
-/* Circular progress ring — 75% arc (gold) */
-.wifc-node--ring {
-  transform: translate(-50%, -50%);
+.wifc-counter-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+/* Resource allocation ring — bottom-right */
+.wifc-widget--ring {
+  bottom: 12%;
+  right: 6%;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .wifc-ring-svg {
-  width: 36px;
-  height: 36px;
+  width: 50px;
+  height: 50px;
   display: block;
-  /* Rotate so the arc starts at the top (−90°) */
+  /* Arc starts at the top (−90°) */
   transform: rotate(-90deg);
+  flex-shrink: 0;
 }
 
 .wifc-ring-track {
@@ -884,64 +967,42 @@
   stroke: var(--accent-2);
   stroke-width: 2.5;
   stroke-linecap: round;
-  /* 75% of circumference (2π × 15 ≈ 94.25); dash covers 70.7, gap covers rest */
-  stroke-dasharray: 70.7 23.55;
-  filter: drop-shadow(0 0 calc(2px + 5px * var(--glow-t, 0)) rgba(232, 196, 122, calc(0.3 + 0.6 * var(--glow-t, 0))));
-}
-
-.wifc-node-label--ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(90deg);  /* undo parent SVG rotate */
-  margin-top: 0;
-  font-size: 6.5px;
-  color: var(--accent-2);
   filter: drop-shadow(0 0 4px rgba(232, 196, 122, 0.5));
 }
 
-/* Coordinate markers */
-.wifc-node--coord {
+.wifc-ring-labels {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  transform: translate(-50%, -50%);
+  flex-direction: column;
+  gap: 3px;
 }
 
-.wifc-coord-dot {
-  display: block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 calc(3px + 6px * var(--glow-t, 0)) rgba(201, 245, 88, calc(0.4 + 0.5 * var(--glow-t, 0)));
-  flex-shrink: 0;
-}
-
-.wifc-coord-dot--gold {
-  background: var(--accent-2);
-  box-shadow: 0 0 calc(3px + 6px * var(--glow-t, 0)) rgba(232, 196, 122, calc(0.4 + 0.5 * var(--glow-t, 0)));
-}
-
-.wifc-coord-val {
+.wifc-ring-pct {
   font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-}
-
-.wifc-coord-val--gold {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--accent-2);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(232, 196, 122, 0.4);
 }
 
-/* ── LAYER 3 — Glassmorphic control panel ───────────────────────────────────── */
-/* backdrop-filter samples the drifting ambient behind Layer 1 to prove live
-   refraction. Fallback: if preserve-3d flattens backdrop-filter, the semi-
-   transparent cream background + inner border still read as glass — acceptable. */
+.wifc-ring-title {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+/* ── LAYER 4 — Human Interface (glass control) ──────────────────────────────
+   Frosted glass panel — furthest Z so it fully occludes the machinery in
+   flat State A (the "illusion" the viewer first sees).
+   backdrop-filter: blur(12px) provides real frosting where the browser supports
+   it inside preserve-3d (Chrome/FF). Where it flattens (some Safari builds),
+   the semi-transparent background + .wifc-light-blob still read as glass.
+   .wifc-light-blob is a radial-gradient — NO filter:blur (repaint-heavy). ── */
 .wifc-layer--glass {
   background: rgba(237, 237, 223, 0.05);
   border: 1px solid var(--line-2);
-  /* Inner highlight on top edge — fakes a light source above */
   box-shadow:
     inset 0 1px 0 rgba(237, 237, 223, 0.12),
     0 2px 24px rgba(0, 0, 0, 0.45);
@@ -949,12 +1010,32 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Hybrid refraction light-blob on the glass underside.
+   Lime + gold radial-gradient with soft transparent stops — zero composite cost.
+   Framer animates opacity only (0 at flat → 0.75 at pulse peak). */
+.wifc-light-blob {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  right: 5%;
+  height: 65%;
+  background: radial-gradient(ellipse at 50% 100%,
+    rgba(201, 245, 88, 0.30) 0%,
+    rgba(232, 196, 122, 0.16) 28%,
+    rgba(201, 245, 88, 0.06) 52%,
+    transparent 72%
+  );
+  pointer-events: none;
+  will-change: opacity;
+}
+
 .wifc-glass-inner {
-  padding: 10px 12px;
+  padding: 11px 14px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
+  box-sizing: border-box;
 }
 
 .wifc-glass-row {
@@ -968,22 +1049,31 @@
 
 .wifc-glass-kicker {
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 9px;
   letter-spacing: 0.2em;
   color: var(--muted);
 }
 
-.wifc-glass-mode {
+/* Panel title in the header — lime accent with subtle glow */
+.wifc-glass-title {
   font-family: var(--mono);
-  font-size: 7.5px;
+  font-size: 10px;
   letter-spacing: 0.22em;
   color: var(--accent);
   text-shadow: 0 0 8px rgba(201, 245, 88, 0.5);
 }
 
+/* Mode badge in the metrics row — gold, non-interactive metadata */
+.wifc-glass-mode {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--accent-2);
+}
+
 .wifc-glass-row--metrics {
-  gap: 10px;
-  padding: 6px 0;
+  gap: 11px;
+  padding: 7px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
@@ -996,7 +1086,7 @@
 
 .wifc-glass-val {
   font-family: var(--mono);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 500;
   color: var(--accent);
   letter-spacing: -0.02em;
@@ -1004,37 +1094,106 @@
   text-shadow: 0 0 12px rgba(201, 245, 88, 0.45);
 }
 
-.wifc-glass-val--gold {
-  font-size: 11px;
-  color: var(--accent-2);
-  text-shadow: 0 0 10px rgba(232, 196, 122, 0.45);
-}
-
 .wifc-glass-unit {
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 8.5px;
   letter-spacing: 0.14em;
   color: var(--muted);
 }
 
 .wifc-glass-sep {
   width: 1px;
-  height: 22px;
+  height: 26px;
   background: var(--line-2);
+  flex-shrink: 0;
 }
 
-/* Three slim status indicator lines at the bottom of the glass panel */
+/* Gold value modifier — for the <16ms frame-budget metric */
+.wifc-glass-val--gold {
+  color: var(--accent-2);
+  text-shadow: 0 0 10px rgba(232, 196, 122, 0.45);
+}
+
+/* Tech stack chip row — actual libraries powering the animations on this page */
+.wifc-tech-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.wifc-tech-chip {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.13em;
+  color: var(--fg-2);
+  padding: 2px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 1px;
+  white-space: nowrap;
+}
+
+/* Immersive Motion status badge row */
+.wifc-badge-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.wifc-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid rgba(201, 245, 88, 0.35);
+  border-radius: 2px;
+  background: rgba(201, 245, 88, 0.04);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  white-space: nowrap;
+  animation: wifc-badge-pulse 2.6s ease-in-out infinite;
+}
+
+.wifc-status-badge--2 {
+  animation-delay: 1.3s;
+}
+
+.wifc-status-badge--static {
+  animation: none;
+  opacity: 1;
+  border-color: rgba(201, 245, 88, 0.35);
+  box-shadow: 0 0 6px rgba(201, 245, 88, 0.12);
+}
+
+.wifc-badge-prefix {
+  color: var(--accent-2);
+}
+
+@keyframes wifc-badge-pulse {
+  0%, 100% {
+    opacity: 1;
+    border-color: rgba(201, 245, 88, 0.35);
+    box-shadow: 0 0 6px rgba(201, 245, 88, 0.18);
+  }
+  50% {
+    opacity: 0.45;
+    border-color: rgba(201, 245, 88, 0.08);
+    box-shadow: none;
+  }
+}
+
+/* Three slim status indicator bars */
 .wifc-glass-indicators {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   margin-top: auto;
 }
 
 .wifc-glass-ind {
   height: 2px;
   border-radius: 1px;
-  background: var(--line-2);
 }
 
 .wifc-glass-ind--1 { width: 100%; background: rgba(201, 245, 88, 0.35); }
@@ -1176,7 +1335,7 @@
 /* Frozen INTERFACE: sized containing block for the 3D stage (preserve-3d still works) */
 .widviz-panel--frozen .wifc-stage {
   position: relative;
-  height: 180px;
+  height: 240px;
   overflow: hidden;
 }
 

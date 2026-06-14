@@ -74,7 +74,6 @@ export default function WidVisual({ progress, active = 0, reduced = false, froze
           )
         })}
       </div>
-
     </motion.div>
   )
 }
