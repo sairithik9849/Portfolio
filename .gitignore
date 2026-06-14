@@ -28,4 +28,4 @@ dist-ssr
 .codex/
 package-lock.json
 .playwright-mcp/
-docs/
+prompts/
