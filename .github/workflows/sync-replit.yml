@@ -1,0 +1,20 @@
+name: Sync main → replit-ui-edits
+
+# Runs on every push to main — keeps the Replit staging branch
+# always pointing at the latest main so Replit starts each session
+# from a clean, up-to-date baseline.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Force-push main to replit-ui-edits
+        run: git push origin main:replit-ui-edits --force
