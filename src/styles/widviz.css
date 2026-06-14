@@ -147,16 +147,16 @@
 
 .wbk-node-label {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wider);
   color: var(--fg);
 }
 
 .wbk-node-tag {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wider);
   color: var(--accent-2);
 }
 
@@ -256,16 +256,16 @@
 }
 
 .wbk-graph-title {
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
   color: var(--accent-2);
   opacity: 0.8;
   text-transform: uppercase;
 }
 
 .wbk-graph-val {
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   transition: color 0.3s;
@@ -329,8 +329,8 @@
   display: flex;
   justify-content: space-between;
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
   color: var(--muted);
 }
 
@@ -466,14 +466,14 @@
 
 .wsys-val {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
 .wsys-val-sm {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
@@ -676,9 +676,9 @@
 
 .wsys-deploy-val {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   color: var(--accent);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   font-variant-numeric: tabular-nums;
 }
 
@@ -863,8 +863,8 @@
 .wdat-readout {
   pointer-events: none;
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wider);
 }
 
 .wdat-counter {
@@ -1193,10 +1193,10 @@
 
 .wifc-ring-pct {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 500;
   color: var(--accent-2);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-open);
   line-height: 1;
   text-shadow: 0 0 8px rgba(232, 196, 122, 0.4);
 }
@@ -1264,16 +1264,16 @@
 
 .wifc-glass-kicker {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
   color: var(--muted);
 }
 
 /* Panel title in the header — lime accent with subtle glow */
 .wifc-glass-title {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-widest);
   color: var(--accent);
   text-shadow: 0 0 8px rgba(201, 245, 88, 0.5);
 }
@@ -1281,8 +1281,8 @@
 /* Mode badge in the metrics row — gold, non-interactive metadata */
 .wifc-glass-mode {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-widest);
   color: var(--accent-2);
 }
 
@@ -1465,8 +1465,8 @@
 
 .wagnt-node {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
   color: var(--fg-2);
   padding: 3px 8px;
   border: 1px solid var(--line);
@@ -1483,12 +1483,12 @@
   padding-top: 4px;
   border-top: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   min-height: 16px;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-open);
 }
 
 .wagnt-tokens span {

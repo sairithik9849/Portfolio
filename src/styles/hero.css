@@ -52,8 +52,8 @@
   margin-bottom: 0;
   color: var(--fg-2);
   font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.12em;
+  font-size: var(--text-md);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   gap: 16px;
   text-shadow: 0 0 1px rgba(7,7,7,0.95), 0 1px 3px rgba(7,7,7,0.75);
@@ -92,7 +92,7 @@
 }
 
 .meta-copied-label {
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   font-size: 0.85em;
   animation: copied-flash 0.18s ease-out;
 }
@@ -106,7 +106,7 @@
   font-family: var(--serif);
   font-size: clamp(104px, 11.2vw, 176px);
   line-height: 0.92;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   font-weight: 500;
   margin: 0 0 0 -0.05em;   /* optical kerning — pulls serif "S" left side-bearing flush to x=0 */
 }
@@ -188,8 +188,8 @@
     inset 0 0 0 1px rgba(7, 7, 7, 0.6);
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
   line-height: 1;
   text-transform: uppercase;
   opacity: 0;
@@ -325,7 +325,7 @@
   font-size: clamp(32px, 2.8vw, 40px);
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   color: var(--accent);
   transition: text-shadow 260ms ease;
 }
@@ -338,7 +338,7 @@
   font-family: var(--serif);
   font-size: 0.28em;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   color: var(--accent);
   margin-left: 6px;
   vertical-align: baseline;
@@ -346,8 +346,8 @@
 
 .mf-label {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   color: var(--muted);
   line-height: 1.35;
@@ -388,10 +388,10 @@
   margin: 0;
   padding: 12px 28px;
   font-family: var(--serif);
-  font-size: 24px;
+  font-size: var(--text-display-xs);
   font-weight: 500;
   line-height: 1.1;
-  letter-spacing: 0;
+  letter-spacing: var(--tracking-normal);
   text-transform: none;
   color: var(--accent);
   background: rgba(201, 245, 88, 0.08);
@@ -439,8 +439,8 @@
   display: grid;
   place-items: center;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -458,7 +458,7 @@
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   max-width: 560px;
   width: min(100%, 560px);
   position: relative;
@@ -497,7 +497,7 @@
   border: 1px solid var(--line-2);
   background: transparent;
   color: var(--accent);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   line-height: 1;
   cursor: pointer;
   vertical-align: middle;
@@ -525,8 +525,8 @@
     rgba(7, 7, 7, 0.36);
   box-shadow: inset 0 1px 0 rgba(237, 237, 223, 0.08);
   color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
 }
 
 .terminal .bar .lights { display: flex; gap: 6px; }
@@ -592,8 +592,8 @@
   }
 
   .hero .meta-row {
-    font-size: 12px;
-    letter-spacing: 0.1em;
+    font-size: var(--text-base);
+    letter-spacing: var(--tracking-wider);
   }
 
   .hero .meta-row > span {
@@ -624,7 +624,7 @@
 
   .terminal {
     max-width: 580px;
-    font-size: 11px;
+    font-size: var(--text-sm);
   }
 }
 
@@ -680,7 +680,7 @@
   }
 
   .hero .meta-row {
-    font-size: 12px;
+    font-size: var(--text-base);
   }
 
   .hero .meta-row > span {
@@ -727,7 +727,7 @@
 
   .terminal {
     max-width: 540px;
-    font-size: 11px;
+    font-size: var(--text-sm);
   }
 
   .terminal .bar {
@@ -756,7 +756,7 @@
   .hero-manifesto { max-width: none; }
   .manifesto-metrics { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .hero-bottom-row .sub { max-width: 100%; flex: 1 1 auto; }
-  .robot-agent-cta { min-height: 32px; max-width: 166px; padding: 8px 10px; font-size: 10px; letter-spacing: 0.1em; }
+  .robot-agent-cta { min-height: 32px; max-width: 166px; padding: 8px 10px; font-size: var(--text-xs); letter-spacing: var(--tracking-wider); }
   .terminal { max-width: 100%; }
 }
 

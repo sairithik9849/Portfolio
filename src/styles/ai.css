@@ -43,8 +43,8 @@
 
 .ai-orb .label {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   color: var(--fg-2);
 }
@@ -52,8 +52,8 @@
 .ai-orb .label .big {
   display: block;
   font-family: var(--sans);
-  font-size: 13px;
-  letter-spacing: 0;
+  font-size: var(--text-md);
+  letter-spacing: var(--tracking-normal);
   color: var(--fg);
   text-transform: none;
   margin-top: 1px;
@@ -89,8 +89,8 @@
   padding: 18px 22px;
   border-bottom: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   color: var(--fg-2);
 }
@@ -112,12 +112,12 @@
   padding: 14px 22px;
   border-bottom: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-xs);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   color: var(--muted);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
 }
 
@@ -126,8 +126,8 @@
   color: var(--fg);
   font-family: var(--sans);
   text-transform: none;
-  letter-spacing: 0;
-  font-size: 13px;
+  letter-spacing: var(--tracking-normal);
+  font-size: var(--text-md);
   font-weight: 500;
   margin-top: 2px;
 }
@@ -145,7 +145,7 @@
 .ai-drawer .dr-body::-webkit-scrollbar { width: 6px; }
 .ai-drawer .dr-body::-webkit-scrollbar-thumb { background: var(--muted-2); }
 
-.bubble { max-width: 90%; padding: 12px 14px; font-size: 14px; line-height: 1.55; }
+.bubble { max-width: 90%; padding: 12px 14px; font-size: var(--text-body); line-height: 1.55; }
 
 .bubble.user {
   align-self: flex-end;
@@ -172,12 +172,12 @@
   background: var(--accent);
 }
 
-.bubble .role { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 6px; }
+.bubble .role { font-family: var(--mono); font-size: var(--text-2xs); color: var(--muted); letter-spacing: var(--tracking-widest); text-transform: uppercase; margin-bottom: 6px; }
 .bubble.ai .role { color: var(--accent); }
 
 .bubble .json {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--fg-2);
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--line);
@@ -189,7 +189,7 @@
 }
 
 .bubble .card-out { margin-top: 10px; border: 1px solid var(--line); padding: 10px; background: rgba(0, 0, 0, 0.3); }
-.bubble .card-out .row-c { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--fg-2); padding: 3px 0; }
+.bubble .card-out .row-c { display: flex; justify-content: space-between; font-family: var(--mono); font-size: var(--text-sm); color: var(--fg-2); padding: 3px 0; }
 .bubble .card-out .row-c b { color: var(--accent); font-weight: 500; }
 
 .skeleton-row { display: flex; gap: 6px; margin-top: 6px; }
@@ -210,7 +210,7 @@
   align-items: center;
 }
 
-.dr-input .prompt { font-family: var(--mono); color: var(--accent); font-size: 14px; }
+.dr-input .prompt { font-family: var(--mono); color: var(--accent); font-size: var(--text-body); }
 
 .dr-input input {
   flex: 1;
@@ -219,17 +219,17 @@
   outline: none;
   color: var(--fg);
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   padding: 10px 0;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--tracking-snug);
 }
 
 .dr-input input::placeholder { color: var(--muted); }
 
 .dr-input .send {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   color: var(--accent);
   border: 1px solid var(--accent-dim);
@@ -242,8 +242,8 @@
 .dr-suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 18px 16px; border-top: 1px solid var(--line); }
 .dr-suggest button {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   border: 1px solid var(--line-2);
   padding: 6px 10px;

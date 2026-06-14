@@ -10,12 +10,12 @@
   font-family: var(--serif);
   font-size: clamp(64px, 10vw, 160px);
   line-height: 0.95;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-tighter);
 }
 
 .footer .big em { color: var(--muted); font-style: italic; }
 
-.footer .links { display: flex; gap: 32px; margin-top: 48px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; }
+.footer .links { display: flex; gap: 32px; margin-top: 48px; font-family: var(--mono); font-size: var(--text-base); letter-spacing: var(--tracking-open); }
 .footer .links a { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid transparent; padding-bottom: 2px; }
 .footer .links a:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -24,8 +24,8 @@
   justify-content: space-between;
   margin-top: 64px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--muted);
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
 }

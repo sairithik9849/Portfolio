@@ -112,7 +112,7 @@
   font-family: var(--serif);
   font-weight: 700;
   font-size: clamp(48px, 8.25vw, 135px);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-tighter);
   line-height: 0.92;
   text-transform: uppercase;
   color: var(--fg);
@@ -185,7 +185,7 @@
   margin: 0;
   max-width: 78ch;
   text-align: left;
-  letter-spacing: 0.01em;
+  letter-spacing: var(--tracking-normal);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.7);
   /* Accent bar — 1.5px lime left border, softly glowing */
   border-left: 1.5px solid rgba(201, 245, 88, 0.5);
