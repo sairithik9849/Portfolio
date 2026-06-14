@@ -1,6 +1,7 @@
 /* Preloader overlay — full-screen, paints immediately, z above everything
    except the custom cursor (9999).
-   Animate transform/opacity/clip-path only — no layout-thrashing properties. */
+   Animate transform/opacity only — no layout-thrashing properties.
+   Curtain sweep: transform:translateY (compositor). Bar: transform:scaleX (compositor). */
 
 .preloader {
   position: fixed;
@@ -12,6 +13,8 @@
     radial-gradient(80% 50% at 50% 100%, rgba(201, 245, 88, 0.03), transparent 60%),
     #050505;
   overflow: hidden;
+  /* Layer-promote the overlay so the translateY curtain sweep stays compositor */
+  will-change: transform;
 }
 
 /* ── Corner meta labels ────────────────────────────────────────────────── */
@@ -92,17 +95,19 @@
   background: var(--muted-2);   /* subtle dark track */
 }
 
-/* Fill: lime bar that grows left → right with the progress counter.
-   At exit time (100%) the bar covers the full viewport width and rides
-   the bottom of the clip-path wipe as the overlay sweeps upward —
-   serving as the lime leading-edge scanline during the reveal. */
+/* Fill: lime bar that scales left → right via WAAPI transform:scaleX.
+   At exit time (scaleX=1) the bar covers the full viewport width and rides
+   the bottom of the overlay as it sweeps up — the lime leading-edge scanline.
+   scaleX is compositor-promoted so main-thread work (WebGL/Spline eval) cannot
+   stutter it. Width is 100% so scaleX(1) = full width; origin anchors at left. */
 .preloader-line-fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   background: var(--accent);
   box-shadow: 0 0 18px var(--accent), 0 0 48px rgba(201, 245, 88, 0.35);
-  /* Width is driven inline from JS via the rAF lerp — no CSS transition
-     needed (avoids doubling with the rAF smoothing). */
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
 }
 
 /* ── CSS 3D box loader ─────────────────────────────────────────────────── */

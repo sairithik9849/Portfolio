@@ -1,120 +1,136 @@
-// Preloader orchestrator: tracks assets, drives the HUD, and sequences the
-// two-phase handoff to Hero:
+// Preloader overlay + HUD. Two responsibilities:
 //
-//   done → mount-delay pulse (420ms)
-//     → onMount():  App mounts content under the opaque overlay;
-//                   HeroFluid WebGL can compile while the overlay is still up
-//     → beginExit:  App sends true once HeroFluid fires its first frame
-//                   (or READY_CAP_MS safety cap fires) → overlay wipe plays
+//   1. Bar: a compositor-driven WAAPI animation on transform:scaleX — it runs
+//      off the main thread, so HeroFluid/Spline eval (which mounts under this
+//      overlay) can never stutter it. It fills 0 → FILL_RAMP over MIN_DISPLAY_MS,
+//      then races FILL_RAMP → 1 the instant beginExit arrives, so 100% and the
+//      curtain coincide (no dead wait at the end).
+//
+//   2. Curtain: when beginExit fires (App: fluid AND robot ready, or safety cap),
+//      the bar completes, then the overlay sweeps up via transform:translateY
+//      (compositor) revealing the already-loaded hero behind it.
+//
+// The percent/status HUD is written via refs (no per-frame React re-renders).
 
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import BoxLoader from './preloader/BoxLoader.jsx'
-import { createPreloadTracker } from '../utils/preloadAssets.js'
+import { MIN_DISPLAY_MS } from '../utils/preloadAssets.js'
 import { PRELOADER_NAME, getStatusLabel } from '../data/preloader.js'
 
-// Beat 1: brief hold after assets load — lets the counter show 100 before
-// mounting Hero under the still-opaque overlay (ms).
-const MOUNT_DELAY_MS      = 420
-const MOUNT_DELAY_REDUCED = 60   // reduced-motion: skip the cinematic pause
-// Beat 2 exit animation durations (s).
+// Bar fills to this fraction over the cinematic floor; the final stretch to 1
+// is the reveal race, so the bar lands on 100 exactly as the curtain lifts.
+const FILL_RAMP        = 0.92
+const RACE_DURATION_MS = 320   // FILL_RAMP → 1 once readiness fires
+const RACE_DURATION_REDUCED = 80
+const RAMP_EASE        = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+// Curtain (overlay sweep-up) durations (s).
 const EXIT_DURATION      = 0.88
 const EXIT_DURATION_FAST = 0.3   // reduced-motion fade
 const EXIT_EASE          = [0.22, 1, 0.36, 1]
 
-export default function Preloader({ onMount, beginExit }) {
+export default function Preloader({ beginExit }) {
   const reduced    = !!useReducedMotion()
   const reducedRef = useRef(reduced)
 
-  // Stable ref for the mount callback — avoids re-creating the tracker
-  // if the parent re-renders with a new function identity.
-  const onMountRef = useRef(onMount)
-
-  // Sync mutable refs after every render (layout effect fires before paint).
   useLayoutEffect(() => {
     reducedRef.current = reduced
-    onMountRef.current = onMount
   })
 
-  const [displayedPercent, setDisplayedPercent] = useState(0)
-  const [statusLabel,      setStatusLabel]      = useState('INITIALIZING')
-  const [dismissed,        setDismissed]        = useState(false)
-
-  const targetRef    = useRef(0)
-  const displayedRef = useRef(0)   // lerp accumulator — updated each rAF tick
-  // exitingRef: drives the lerp snap to 1 once assets finish loading.
-  // Not React state — only the lerp loop reads it, no re-render needed.
-  const exitingRef   = useRef(false)
+  const [dismissed, setDismissed] = useState(false)
   const dismissedRef = useRef(false)
 
-  // ── Asset tracking ────────────────────────────────────────────────────
+  // DOM refs for the ref-driven HUD (no React state churn during the fill).
+  const fillRef   = useRef(null)
+  const pctRef    = useRef(null)
+  const statusRef = useRef(null)
+  const barRef    = useRef(null)
+
+  // Active fill animation + its scaleX range, so the number mirror can map the
+  // animation's eased progress back to a 0–100 readout for whichever phase runs.
+  const animRef     = useRef(null)
+  const rangeRef    = useRef({ from: 0, to: FILL_RAMP })
+  const lastPctRef  = useRef(-1)
+  const lastLabelRef = useRef('')
+
+  // ── Bar: WAAPI ramp + ref-driven number mirror ────────────────────────────
   useEffect(() => {
-    const tracker = createPreloadTracker()
+    const fillEl = fillRef.current
+    if (!fillEl) return undefined
 
-    const unsub = tracker.subscribe(({ target, done }) => {
-      targetRef.current = target
+    rangeRef.current = { from: 0, to: FILL_RAMP }
+    animRef.current = fillEl.animate(
+      [{ transform: 'scaleX(0)' }, { transform: `scaleX(${FILL_RAMP})` }],
+      { duration: MIN_DISPLAY_MS, easing: RAMP_EASE, fill: 'forwards' },
+    )
 
-      if (done && !exitingRef.current) {
-        exitingRef.current = true
+    let rafId
+    const mirror = () => {
+      if (dismissedRef.current) return
+      const anim = animRef.current
+      const { from, to } = rangeRef.current
+      const progress = anim ? (anim.effect.getComputedTiming().progress ?? 1) : 1
+      const scaleX = from + (to - from) * progress
 
-        // Brief hold: lets the HUD read 100/READY, then mounts Hero + HeroFluid
-        // under the still-opaque overlay. No WebGL in the preloader overlay
-        // anymore, so the GPU is already free for HeroFluid's shader compile.
-        // The overlay wipe fires later via the beginExit prop (from App).
-        const delay = reducedRef.current ? MOUNT_DELAY_REDUCED : MOUNT_DELAY_MS
-        setTimeout(() => {
-          onMountRef.current()   // App mounts Hero + HeroFluid under cover
-        }, delay)
+      const pct = Math.round(scaleX * 100)
+      if (pct !== lastPctRef.current) {
+        lastPctRef.current = pct
+        if (pctRef.current) pctRef.current.textContent = `${String(pct).padStart(2, '0')}%`
+        if (barRef.current) barRef.current.setAttribute('aria-valuenow', String(pct))
+        const label = getStatusLabel(scaleX)
+        if (label !== lastLabelRef.current) {
+          lastLabelRef.current = label
+          if (statusRef.current) statusRef.current.textContent = label
+        }
       }
-    })
+      rafId = requestAnimationFrame(mirror)
+    }
+    rafId = requestAnimationFrame(mirror)
 
     return () => {
-      unsub()
-      tracker.dispose()
+      cancelAnimationFrame(rafId)
+      animRef.current?.cancel()
     }
-  }, []) // intentionally empty — all deps accessed through refs
-
-  // ── Trigger overlay exit when App signals readiness ───────────────────
-  // App passes beginExit=true once HeroFluid's first frame fires (or the
-  // READY_CAP_MS safety timeout fires). At that point the scene is live
-  // behind the overlay and the clip-path wipe can reveal it cleanly.
-  useEffect(() => {
-    if (beginExit && !dismissedRef.current) {
-      dismissedRef.current = true
-      setDismissed(true)   // AnimatePresence plays the exit variant
-    }
-  }, [beginExit])
-
-  // ── Smooth progress counter (rAF lerp, updates state on integer ticks) ─
-  // When exitingRef is true the target snaps to 1 so the HUD reads 100/READY.
-  useEffect(() => {
-    let rafId
-
-    const tick = () => {
-      if (dismissedRef.current) return   // stop once dismissed
-
-      // Snap target to 1 once the exit begins so the HUD reads 100 / READY.
-      const target = exitingRef.current ? 1 : targetRef.current
-      const curr   = displayedRef.current
-      const next   = curr + (target - curr) * 0.07   // lerp toward target
-      displayedRef.current = next
-
-      // Only trigger a React render when the displayed integer changes.
-      const prevInt = Math.floor(curr * 100)
-      const nextInt = Math.floor(next * 100)
-      if (nextInt !== prevInt) {
-        setDisplayedPercent(nextInt)
-        setStatusLabel(getStatusLabel(next))
-      }
-
-      rafId = requestAnimationFrame(tick)
-    }
-
-    rafId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafId)
   }, [])
 
-  // ── Motion props — conditional on reduced-motion preference ───────────
+  // ── Reveal: race the bar to 100, then sweep the curtain up ────────────────
+  useEffect(() => {
+    if (!beginExit || dismissedRef.current) return
+    const fillEl = fillRef.current
+    if (!fillEl) {
+      dismissedRef.current = true
+      setDismissed(true)
+      return
+    }
+
+    // Current scaleX from the in-flight ramp, so the race starts seamlessly.
+    const prev = animRef.current
+    const { from, to } = rangeRef.current
+    const current = from + (to - from) * (prev?.effect.getComputedTiming().progress ?? 1)
+    prev?.cancel()
+
+    rangeRef.current = { from: current, to: 1 }
+    const duration = reducedRef.current ? RACE_DURATION_REDUCED : RACE_DURATION_MS
+    const race = fillEl.animate(
+      [{ transform: `scaleX(${current})` }, { transform: 'scaleX(1)' }],
+      { duration, easing: 'ease-out', fill: 'forwards' },
+    )
+    animRef.current = race
+
+    let cancelled = false
+    race.finished
+      .then(() => {
+        if (cancelled || dismissedRef.current) return
+        dismissedRef.current = true
+        setDismissed(true)   // AnimatePresence plays the curtain sweep
+      })
+      .catch(() => {})
+
+    return () => { cancelled = true }
+  }, [beginExit])
+
+  // ── Curtain motion — translateY sweep (compositor), fade under reduced motion ─
   const motionProps = reduced
     ? {
         initial: { opacity: 1 },
@@ -122,16 +138,10 @@ export default function Preloader({ onMount, beginExit }) {
         exit:    { opacity: 0, transition: { duration: EXIT_DURATION_FAST } },
       }
     : {
-        initial: { clipPath: 'inset(0% 0 0% 0)' },
-        animate: { clipPath: 'inset(0% 0 0% 0)' },
-        exit:    {
-          clipPath:   'inset(100% 0 0% 0)',
-          transition: { duration: EXIT_DURATION, ease: EXIT_EASE },
-        },
+        initial: { y: 0 },
+        animate: { y: 0 },
+        exit:    { y: '-100%', transition: { duration: EXIT_DURATION, ease: EXIT_EASE } },
       }
-
-  // Pad to two digits: "7%" → "07%"
-  const pctLabel = `${String(displayedPercent).padStart(2, '0')}%`
 
   return (
     <AnimatePresence>
@@ -152,25 +162,23 @@ export default function Preloader({ onMount, beginExit }) {
           {/* Status + percent — bottom-left in gold */}
           <div className="preloader-hud">
             <p className="preloader-status">
-              {statusLabel}
+              <span ref={statusRef}>INITIALIZING</span>
               <span className="preloader-cur" aria-hidden="true" />
             </p>
-            <span className="preloader-pct" aria-hidden="true">{pctLabel}</span>
+            <span className="preloader-pct" aria-hidden="true" ref={pctRef}>00%</span>
           </div>
 
           {/* Full-viewport-width progress line — bottom of screen */}
           <div
             className="preloader-line"
+            ref={barRef}
             role="progressbar"
-            aria-valuenow={displayedPercent}
+            aria-valuenow={0}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Loading portfolio"
           >
-            <div
-              className="preloader-line-fill"
-              style={{ width: `${displayedPercent}%` }}
-            />
+            <div className="preloader-line-fill" ref={fillRef} />
           </div>
         </motion.div>
       )}

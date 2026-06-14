@@ -30,7 +30,7 @@ const EMAIL = 'sairithik8639@gmail.com'
 
 const PASSTHROUGH = { hidden: {}, show: {} }
 
-export default function Hero({ onOpenAI, started = false }) {
+export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
   const splineRef = useRef(null)
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef(null)
@@ -126,6 +126,7 @@ export default function Hero({ onOpenAI, started = false }) {
         <SplineScene
           scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
           className="spline-canvas"
+          onLoaded={onSplineLoaded}
         />
       </div>
 

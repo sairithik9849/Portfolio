@@ -1,103 +1,68 @@
-// Asset tracking helper for the preloader.
-// Drives a smooth time-based progress ramp over MIN_DISPLAY_MS so the counter
-// never freezes mid-preload.
+// Readiness tracker for the preloader → hero reveal handoff.
 //
-// The previous eager import() warm-signals for HeroFluid / Spline were the root
-// cause of the ~92% main-thread eval stall: the 600 KB Three.js bundle eval
-// blocked the JS thread at the exact moment the counter plateaued at 0.85.
-// Those imports are removed. Heavy chunks now load under the frozen preloader
-// overlay (GPU free) and the reveal fires only once HeroFluid's first frame
-// is up — see App.jsx for the two-phase mount-under-cover → reveal handoff.
+// This no longer fakes a progress ramp. The visible bar is now a compositor-
+// driven WAAPI animation in Preloader.jsx (immune to main-thread jank), so the
+// tracker's only job is to decide *when the curtain may lift*:
+//
+//   reveal when  (min-display floor elapsed)  AND  fluidReady  AND  splineReady
+//                — or the hard ceiling fires, so a blocked Spline domain or a
+//                  WebGL fallback never traps the user behind the overlay.
+//
+// Loading the heavy chunks (HeroFluid WebGL, Spline scene) happens under the
+// opaque overlay during the floor window — see App.jsx (content mounts one frame
+// after the overlay paints). Because the bar is compositor-driven, the old
+// ~92% main-thread eval freeze can no longer stall it.
 
-const MIN_DISPLAY_MS  = 2200   // cinematic always plays fully
-const HARD_CEILING_MS = 7000   // never trap the user
+// Cinematic floor — the bar always takes at least this long to fill, even if
+// assets resolve instantly. Shared with Preloader's WAAPI ramp duration.
+export const MIN_DISPLAY_MS = 1500
 
-// Progress ceiling for the ramp — the Preloader lerp will show ~88% right
-// before done fires, then race to 100 when exiting snaps the lerp target to 1.
-const RAMP_CEILING = 0.88
+// Safety ceiling — reveal regardless of readiness so the site is never
+// permanently hidden (slow network, blocked Spline host, WebGL unavailable).
+const HARD_CEILING_MS = 6500
 
-// Instant head-start when web fonts are ready so the counter isn't stuck at
-// 0% if fonts resolve before the first interval tick.
-const FONTS_BOOST = 0.08
-
-// Interval between ramp ticks — 50ms is smooth enough for the 0.07 lerp.
-const RAMP_TICK_MS = 50
-
-// Returns an object with:
-//   subscribe(fn) — calls fn({ target: 0–1, done: bool }) as the ramp advances;
-//                   returns an unsubscribe function.
-//   dispose()     — cancels timers (call on unmount).
-export function createPreloadTracker() {
-  let target   = 0
-  let done     = false
-  let disposed = false
-  const listeners = new Set()
+// Creates a tracker. `onReady` fires exactly once when the reveal should begin.
+//   markFluidReady() — HeroFluid rendered its first WebGL frame.
+//   markSplineReady() — the Spline robot finished loading (or its own fallback).
+//   dispose()        — clears timers (call on unmount).
+export function createPreloadTracker({ onReady } = {}) {
+  let fluidReady  = false
+  let splineReady = false
+  let finished    = false
+  let disposed    = false
   const startMs   = performance.now()
 
-  const emit = () => {
-    if (disposed) return
-    const snap = { target, done }
-    for (const fn of listeners) fn(snap)
-  }
-
   const finish = () => {
-    if (done || disposed) return
-    target = 1
-    done   = true
-    emit()
+    if (finished || disposed) return
+    finished = true
+    onReady?.()
   }
 
-  // Continuous ramp: advances target proportionally with elapsed time so the
-  // displayed counter climbs smoothly instead of jumping in discrete signals.
-  const tick = () => {
-    if (done || disposed) return
-    const elapsed    = performance.now() - startMs
-    const rampTarget = Math.min(RAMP_CEILING, (elapsed / MIN_DISPLAY_MS) * RAMP_CEILING)
-    if (rampTarget > target) {
-      target = rampTarget
-      emit()
+  // Reveal only once both heavy subsystems are live AND the floor has elapsed.
+  const tryFinish = () => {
+    if (finished || disposed) return
+    if (fluidReady && splineReady && performance.now() - startMs >= MIN_DISPLAY_MS) {
+      finish()
     }
   }
-  const intervalId = setInterval(tick, RAMP_TICK_MS)
 
-  // ── signal 1: web fonts — instant head-start ───────────────────────────
-  document.fonts.ready
-    .then(() => {
-      if (done || disposed) return
-      if (FONTS_BOOST > target) {
-        target = FONTS_BOOST
-        emit()
-      }
-    })
-    .catch(() => {})
-
-  // ── signal 2: minimum display floor — declares done ────────────────────
-  const minTimer = setTimeout(() => {
-    clearInterval(intervalId)
-    finish()
-  }, MIN_DISPLAY_MS)
-
-  // ── signal 3: hard ceiling — always finishes regardless ────────────────
-  const ceilingTimer = setTimeout(() => {
-    clearInterval(intervalId)
-    finish()
-  }, HARD_CEILING_MS)
+  // Covers the assets-ready-before-floor case: re-check when the floor passes.
+  const minTimer     = setTimeout(tryFinish, MIN_DISPLAY_MS)
+  const ceilingTimer = setTimeout(finish, HARD_CEILING_MS)
 
   return {
-    subscribe(fn) {
-      listeners.add(fn)
-      // Emit current state immediately so late subscribers sync up.
-      fn({ target, done })
-      return () => listeners.delete(fn)
+    markFluidReady() {
+      fluidReady = true
+      tryFinish()
+    },
+    markSplineReady() {
+      splineReady = true
+      tryFinish()
     },
     dispose() {
       disposed = true
       clearTimeout(minTimer)
       clearTimeout(ceilingTimer)
-      clearInterval(intervalId)
-      listeners.clear()
     },
-    get target() { return target },
-    get done()   { return done   },
   }
 }

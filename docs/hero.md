@@ -76,6 +76,10 @@ Spline via `@splinetool/react-spline` + `@splinetool/runtime`.
 
 `SplineScene` starts at `opacity:0` and crossfades to `1` (0.9s) when Spline fires `onLoad`. A 4s `setTimeout` fallback in `SplineScene.jsx` triggers the fade if `onLoad` never fires (slow/offline). **Do not remove either path** — both are needed for reliability.
 
+### `onLoaded` Prop (Reveal Gate)
+
+`SplineScene` accepts an `onLoaded` prop. Both the `onLoad` callback and the 4s fallback call `onLoaded` when they fire — this propagates up through `Hero` (`onSplineLoaded`) to `App`, which forwards it to `createPreloadTracker().markSplineReady()`. The preloader curtain waits for this signal (plus HeroFluid's `markFluidReady`) before revealing. Do not remove the `onLoaded` call from either code path in `SplineScene.jsx`.
+
 ### Spline Pointer Forwarding (Load-Bearing)
 
 `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is **outside** `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react'
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, lazy, Suspense } from 'react'
 import Lenis        from 'lenis'
 import { gsap }    from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -15,6 +15,7 @@ import AIDrawer     from './components/AIDrawer'
 import AIOrb        from './components/AIOrb'
 import Cursor       from './components/Cursor'
 import Preloader    from './components/Preloader'
+import { createPreloadTracker } from './utils/preloadAssets'
 import { useHotkey } from './hooks/useHotkey'
 
 // Register ScrollTrigger once at module level.
@@ -23,37 +24,49 @@ gsap.registerPlugin(ScrollTrigger)
 // Three.js is ~600 KB — lazy-load so it doesn't block initial paint
 const HeroFluid = lazy(() => import('./components/HeroFluid'))
 
-// Maximum ms to wait for HeroFluid's first frame before forcing the reveal.
-// Covers slow machines and fallback scenarios (e.g. Spline domain blocked).
-const READY_CAP_MS = 1200
-
 export default function App() {
   // Two-phase preloader handoff:
   //
-  //   mountContent: true  → content tree mounts behind the still-opaque overlay.
-  //                         Heavy work (HeroFluid WebGL compile, Spline scene init)
-  //                         runs here with the monolith frozen so the GPU is free.
+  //   mountContent: true  → content tree mounts behind the still-opaque overlay
+  //                         one rAF after the overlay paints. Heavy work (HeroFluid
+  //                         WebGL compile, Spline scene fetch+eval) runs here under
+  //                         the opaque cover during the ~1.5s cinematic floor.
   //
-  //   revealed: true      → overlay wipe fires and HERO_SEQUENCE cascade starts.
-  //                         Triggered by HeroFluid's first rendered frame (or the
-  //                         READY_CAP_MS safety timeout — whichever comes first).
-  //
-  // This replaces the previous single `ready` flag that mounted content and
-  // started the wipe in the same tick, causing a triple-whammy frame spike
-  // (two WebGL contexts + Spline init + framer entrance contending with the wipe).
+  //   revealed: true      → overlay sweeps up (translateY curtain) AND HERO_SEQUENCE
+  //                         cascade starts. Fires only once both HeroFluid AND the
+  //                         Spline robot are ready (or the ~6.5s safety ceiling).
+  //                         This ensures nothing heavy runs concurrently with the wipe.
   const [mountContent, setMountContent] = useState(false)
   const [revealed,     setRevealed]     = useState(false)
 
-  const handlePreloaderMount = useCallback(() => setMountContent(true), [])
-  const handleFluidReady     = useCallback(() => setRevealed(true),     [])
+  // Stable ref to the tracker so signal methods are reachable in stable callbacks.
+  const trackerRef = useRef(null)
 
-  // Safety cap: if HeroFluid never fires onReady (slow machine, WebGL fallback),
-  // force the reveal after READY_CAP_MS so the site is never permanently hidden.
+  // Create the readiness tracker synchronously before the first paint (layout
+  // effect), so the cinematic floor timer starts as early as possible.
+  // setRevealed from useState is stable across renders — safe to close over.
+  // Cleanup disposes the tracker (clears its hard-ceiling timer) on unmount.
+  useLayoutEffect(() => {
+    if (trackerRef.current) return undefined
+    trackerRef.current = createPreloadTracker({
+      onReady: () => setRevealed(true),
+    })
+    return () => {
+      trackerRef.current?.dispose()
+      trackerRef.current = null
+    }
+  }, [])
+
+  // Mount content one rAF after the overlay paints — starts HeroFluid + Spline
+  // loading under the opaque cover as early as possible.
   useEffect(() => {
-    if (!mountContent) return undefined
-    const timer = setTimeout(() => setRevealed(true), READY_CAP_MS)
-    return () => clearTimeout(timer)
-  }, [mountContent])
+    const id = requestAnimationFrame(() => setMountContent(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  // Forward readiness signals to the tracker.
+  const handleFluidReady  = useCallback(() => trackerRef.current?.markFluidReady(),  [])
+  const handleSplineReady = useCallback(() => trackerRef.current?.markSplineReady(), [])
 
   const [aiOpen, setAiOpen] = useState(false)
   const [heroVisible,  setHeroVisible]  = useState(true)
@@ -196,16 +209,15 @@ export default function App() {
   return (
     <>
       {/* Preloader — mounts immediately, exits when the reveal fires.
-          onMount: App mounts content under the opaque overlay (heavy init here).
-          beginExit: App sends true once HeroFluid's first frame is ready →
-            overlay clip-path wipe plays, HERO_SEQUENCE cascade starts.
-          Cursor stays outside this gate so CURSOR_X/Y update during preload
-          and the monolith can track the pointer. */}
-      <Preloader onMount={handlePreloaderMount} beginExit={revealed} />
+          beginExit: App sends true once both HeroFluid + Spline robot are ready
+            (or the ~6.5s safety ceiling) → overlay translateY curtain plays,
+            HERO_SEQUENCE cascade starts. Content mounts one rAF after first paint.
+          Cursor stays outside this gate so CURSOR_X/Y update during preload. */}
+      <Preloader beginExit={revealed} />
 
-      {/* Content tree — mounts behind the opaque overlay during warm-up so
-          the WebGL compile + Spline scene init happen before the wipe reveals
-          the page. Hero holds all elements at opacity:0 until started=true. */}
+      {/* Content tree — mounts one rAF after the overlay paints so the WebGL
+          compile + Spline scene init run during the ~1.5s cinematic floor.
+          Hero holds all elements at opacity:0 until started=true. */}
       {mountContent && (
         <>
           {/* Fixed background layers — painted in z-order: fluid (0) < noise (2) */}
@@ -221,7 +233,7 @@ export default function App() {
           {/* Page content — onPointerMove feeds globalMouseRef for the shader attractor */}
           <div onPointerMove={handleGlobalPointerMove}>
             {/* <Nav /> */}
-            <Hero         onOpenAI={() => setAiOpen(true)} started={revealed} />
+            <Hero         onOpenAI={() => setAiOpen(true)} started={revealed} onSplineLoaded={handleSplineReady} />
             <AboutMe />
             <WhatIDo />
             <Experience />

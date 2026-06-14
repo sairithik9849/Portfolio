@@ -61,16 +61,18 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 
 `App.jsx` uses two booleans — `mountContent` and `revealed` — instead of a single `ready` flag.
 
-- `mountContent` (set by `Preloader`'s `onMount` callback) mounts the full content tree **under the still-opaque overlay** so HeroFluid's WebGL shader can compile and Spline can init while the monolith canvas is frozen and the GPU is free.
-- `revealed` (set when HeroFluid fires `onReady` on its first rendered frame, or after a 1200ms safety cap) triggers `beginExit` on the Preloader, which plays the clip-path wipe and flips `started=true` on `Hero` so the `HERO_SEQUENCE` cascade begins.
+- `mountContent` (set via `requestAnimationFrame` one frame after the overlay paints) mounts the full content tree **under the still-opaque overlay** so HeroFluid's WebGL shader can compile and Spline can init during the ~1.5s cinematic floor.
+- `revealed` (set by `createPreloadTracker`'s `onReady` callback) triggers `beginExit` on the Preloader, which plays the `translateY` curtain sweep and flips `started=true` on `Hero` so the `HERO_SEQUENCE` cascade begins. `onReady` fires only when **both** HeroFluid (`markFluidReady`) and the Spline robot (`markSplineReady`) are ready AND `MIN_DISPLAY_MS` has elapsed — or the `HARD_CEILING_MS` (~6.5s) safety cap fires.
 
 **Do not collapse these back into one flag** — that causes a triple-whammy frame spike (two WebGL contexts + Spline init + Framer entrance all contending with the wipe).
+
+**Do not gate `mountContent` on the tracker's floor** — content must mount early so both subsystems load under the opaque overlay during the cinematic window.
 
 The three `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
 
 ## `preloadAssets.js` Progress Model
 
-Uses a continuous time-based ramp (0→0.88 over `MIN_DISPLAY_MS`) instead of discrete signal weights. The old eager `import()` warm-signals for HeroFluid and Spline were removed — their synchronous eval was blocking the main thread right as the counter reached ~92%, causing a visible freeze. The ramp plus `document.fonts.ready` bonus (0.08 head-start) provides a smooth counter climb; `done` fires from the min-display timer as before.
+The progress bar (Preloader.jsx) is a **compositor-driven WAAPI animation** on `transform: scaleX` — it runs off the main thread, so WebGL/Spline eval under the overlay can never stutter it. `preloadAssets.js` no longer drives the bar at all; it only tracks *when the reveal may happen* via `markFluidReady()` / `markSplineReady()`. `MIN_DISPLAY_MS = 1500` is the shared cinematic floor exported from `preloadAssets.js` and imported by `Preloader.jsx` as the WAAPI ramp duration. The old `setInterval` ramp, `RAMP_CEILING`, and per-integer React re-renders are gone.
 
 ## Lenis Momentum Scroll
 
