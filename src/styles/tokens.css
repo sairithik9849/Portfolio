@@ -12,11 +12,14 @@
   --accent-dim: rgba(201, 245, 88, 0.18);
   --accent-2: #e8c47a;
   --accent-2-dim: rgba(232, 196, 122, 0.18);
+  --accent-alert: #ff4848;
   --serif: "IBM Plex Sans Condensed", "Helvetica Neue", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "Geist", "Helvetica Neue", sans-serif;
 
   /* ── Type scale ─────────────────────────────────────────────────────────── */
+  --text-4xs:        7px;   /* dashboard sub-labels, tick marks, mem scale  */
+  --text-3xs:        8px;   /* dashboard cell labels, log entries, headers  */
   --text-2xs:        9px;   /* micro viz labels, bubble role tags            */
   --text-xs:        10px;   /* stack chips, small metadata tags              */
   --text-sm:        11px;   /* nav, kickers, labels, roles, footer end       */

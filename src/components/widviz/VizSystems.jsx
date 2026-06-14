@@ -65,6 +65,11 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
   const statusRef = useRef(null)
   const logRef    = useRef(null)
 
+  // isActiveRef so the RAF closure always reads the latest value without
+  // being in its dependency array (would reset accumulated sim state).
+  const isActiveRef = useRef(isActive)
+  useEffect(() => { isActiveRef.current = isActive }, [isActive])
+
   // ── Main animation RAF ────────────────────────────────────────────────────
   useEffect(() => {
     if (isFinal) return
@@ -170,6 +175,13 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
 
     const tick = t => {
       if (cancelled) return
+      // Idle when the panel isn't the active snap — reset lastT to avoid a
+      // large dt spike on resume, then reschedule without doing any DOM work.
+      if (!isActiveRef.current) {
+        lastT = t
+        requestAnimationFrame(tick)
+        return
+      }
       const dt = Math.min(t - lastT, 50)
       lastT = t
 
@@ -274,7 +286,6 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
 
     requestAnimationFrame(tick)
     return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinal])
 
   // Initial uptime display

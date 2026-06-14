@@ -223,6 +223,17 @@
   50%      { opacity: 0;   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .wid-caption-text {
+    animation: none;
+    background: none;
+  }
+  .wid-caption-text::after {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
 .wid-caption-num {
   color: var(--accent-2);
   /* Gold glow on numbers — "50 workstations", "10M", etc. */
