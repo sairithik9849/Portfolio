@@ -186,12 +186,49 @@
   max-width: 78ch;
   text-align: left;
   letter-spacing: 0.01em;
-  /* Subtle shadow for legibility over the viz field — no box, no bg */
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.7);
+  /* Accent bar — 1.5px lime left border, softly glowing */
+  border-left: 1.5px solid rgba(201, 245, 88, 0.5);
+  padding-left: 14px;
+  /* Shimmer sweep — faint lime gradient slides through the text every 6s */
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(201, 245, 88, 0.045) 50%,
+    transparent 60%
+  );
+  background-size: 280% 100%;
+  background-position: 160% center;
+  animation: wid-caption-shimmer 6s ease-in-out infinite 1.8s;
+}
+
+/* Blinking block cursor — appears inline at the end of the last text line */
+.wid-caption-text::after {
+  content: '▌';
+  color: var(--accent);
+  font-size: 0.8em;
+  margin-left: 2px;
+  vertical-align: baseline;
+  animation: wid-cursor-blink 1.15s step-end infinite;
+}
+
+@keyframes wid-caption-shimmer {
+  0%, 55%  { background-position: 160% center; }
+  85%      { background-position: -60% center; }
+  100%     { background-position: 160% center; }
+}
+
+@keyframes wid-cursor-blink {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 0;   }
 }
 
 .wid-caption-num {
   color: var(--accent-2);
+  /* Gold glow on numbers — "50 workstations", "10M", etc. */
+  text-shadow:
+    0 0 12px rgba(232, 196, 122, 0.55),
+    0 0 28px rgba(232, 196, 122, 0.22);
 }
 
 .wid-readout-idx {
