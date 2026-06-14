@@ -346,157 +346,372 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: SYSTEMS — Fibonacci sphere field
-   50 nodes on a projected sphere + rotating mesh + data pulses + spring physics.
+   VIZ: SYSTEMS — Living Dashboard (6-cell control room grid)
+   Two rows × three columns of independent monitoring cells. Each cell runs its
+   own ambient animation via a shared RAF loop; an incident state machine
+   randomly selects one cell to go critical and then auto-heals it every ~9–14 s.
+   Scroll-driven stagger: cells appear L→R, T→B as --enter (0→1) rises.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-systems {
-  /* position:absolute + inset:0 is inherited from the co-applied .widviz-layer
-     rule. Do NOT add position:relative here — it would override the absolute
-     positioning, collapse the element's height to 0, and break node top:% math.
-     All absolutely-positioned children (.wsys-field, .wsys-status, .wsys-pulse)
-     use this element as their containing block via its absolute positioning. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6vh 0 20vh;
+  box-sizing: border-box;
 }
 
-/* Container that holds --enter CSS custom prop (set by Framer subscription).
-   All child nodes inherit it and compute their assembly opacity via it. */
-.wsys-field {
-  position: absolute;
-  inset: 0;
+/* ── Dashboard container ──────────────────────────────────────────────────── */
+.wsys-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 10px;
 }
 
-/* Mesh SVG — behind nodes in DOM order, no pointer events */
-.wsys-mesh-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
+/* ── Header bar ───────────────────────────────────────────────────────────── */
+.wsys-dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  opacity: clamp(0, calc(var(--enter, 1) * 6), 1);
+}
+
+.wsys-dash-kicker  { color: var(--muted); }
+.wsys-dash-nominal { color: var(--accent); }
+.wsys-dash-uptime  { color: var(--accent-2); }
+
+/* ── 2×3 grid ─────────────────────────────────────────────────────────────── */
+.wsys-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, auto);
+  gap: 7px;
+}
+
+/* ── Individual cell ──────────────────────────────────────────────────────── */
+.wsys-cell {
+  border: 1px solid var(--line);
+  background: rgba(7, 7, 7, 0.55);
+  padding: 8px 9px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 2px;
+  transition: border-color 0.5s, box-shadow 0.5s;
+  /* Staggered scroll-in: cell 0 appears first, cell 5 last */
+  opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0) * 0.10) * 12), 1);
+  transform: translateY(calc((1 - clamp(0, (var(--enter, 1) - var(--i, 0) * 0.10) * 12, 1)) * 10px));
+  transition: border-color 0.45s, box-shadow 0.45s, opacity 0.3s, transform 0.3s;
+}
+
+.wsys-cell--incident {
+  border-color: rgba(255, 72, 72, 0.38);
+  box-shadow: 0 0 14px rgba(255, 72, 72, 0.08), inset 0 0 20px rgba(255, 72, 72, 0.04);
+}
+
+/* ── Cell header ──────────────────────────────────────────────────────────── */
+.wsys-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wsys-cell-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── Status badge ─────────────────────────────────────────────────────────── */
+.wsys-badge {
+  font-family: var(--mono);
+  font-size: 6.5px;
+  letter-spacing: 0.12em;
+  padding: 1.5px 4px;
+  border-radius: 2px;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.wsys-badge--ok {
+  color: var(--accent);
+  border: 1px solid rgba(201, 245, 88, 0.28);
+}
+
+.wsys-badge--incident {
+  color: #ff4848;
+  border: 1px solid rgba(255, 72, 72, 0.38);
+  animation: wsys-badge-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes wsys-badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* ── Cell footer ──────────────────────────────────────────────────────────── */
+.wsys-cell-foot {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.wsys-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wsys-val-sm {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wsys-unit {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* ── CPU cell — 4 vertical core bars ─────────────────────────────────────── */
+.wsys-cores {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 42px;
+}
+
+.wsys-core-track {
+  flex: 1;
   height: 100%;
-  pointer-events: none;
+  background: var(--muted-2);
+  border-radius: 1px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.wsys-core-bar {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+  transition: height 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 6px rgba(201, 245, 88, 0.3);
+}
+
+.wsys-cell--incident .wsys-core-bar {
+  background: #ff4848;
+  box-shadow: 0 0 6px rgba(255, 72, 72, 0.3);
+}
+
+/* ── Memory cell — horizontal fill gauge ─────────────────────────────────── */
+.wsys-mem-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.wsys-mem-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 7.5px;
+  color: var(--muted);
+}
+
+.wsys-mem-track {
+  height: 9px;
+  background: var(--muted-2);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.wsys-mem-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.9s linear;
+  box-shadow: 2px 0 8px rgba(201, 245, 88, 0.4);
+}
+
+.wsys-cell--incident .wsys-mem-fill {
+  background: #ff4848;
+  box-shadow: 2px 0 8px rgba(255, 72, 72, 0.35);
+}
+
+.wsys-mem-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 7px;
+  color: var(--muted-2);
+}
+
+/* ── Queue cell — 6 depth bars ────────────────────────────────────────────── */
+.wsys-queue-bars {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 42px;
+}
+
+.wsys-queue-track {
+  flex: 1;
+  height: 100%;
+  background: var(--muted-2);
+  border-radius: 1px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.wsys-queue-bar {
+  width: 100%;
+  background: var(--accent-2);
+  border-radius: 1px 1px 0 0;
+  transition: height 0.25s ease;
+  box-shadow: 0 0 5px rgba(232, 196, 122, 0.25);
+}
+
+.wsys-cell--incident .wsys-queue-bar {
+  background: #ff4848;
+}
+
+/* ── Error rate cell — EKG sparkline ─────────────────────────────────────── */
+.wsys-ekg-svg {
+  width: 100%;
+  height: 42px;
   overflow: visible;
 }
 
-.wsys-mesh-path {
-  /* Single <path> replaces individual <line> elements — updated by RAF each frame.
-     Faint lime so the rotating mesh reads as a network without being loud. */
+.wsys-ekg-line {
   fill: none;
-  stroke: rgba(201, 245, 88, 0.10);
-  stroke-width: 0.6;
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 2px rgba(201, 245, 88, 0.5));
+  transition: stroke 0.3s, filter 0.3s;
 }
 
-/* Data pulse dots — bright lime circles traveling along selected edges via SMIL */
-.wsys-pulse-dot {
-  fill: var(--accent);
-  filter: drop-shadow(0 0 4px rgba(201, 245, 88, 0.85));
+.wsys-ekg-line--alert {
+  stroke: #ff4848;
+  filter: drop-shadow(0 0 3px rgba(255, 72, 72, 0.7));
 }
 
-/* Each node is a circle positioned via left/top percentages.
-   --z (0 back → 1 front) scales size and glow: back nodes are 4px/faint,
-   front nodes are 8px/bright, giving the sphere a 3D depth reading.
-   Assembly opacity is driven by --enter (container) + --i (per-node stagger).
-   Breathing composes via filter:brightness without touching opacity. */
-.wsys-node {
-  position: absolute;
-  width:  calc(4px + 4px * var(--z, 0.5));
-  height: calc(4px + 4px * var(--z, 0.5));
-  border-radius: 50%;
-  background: var(--accent);
-  transform: translate(-50%, -50%);
-  opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0)) * 20), 1);
-  will-change: transform, opacity, filter;
-  box-shadow: 0 0 calc(5px + 12px * var(--z, 0.5)) 1px
-              rgba(201, 245, 88, calc(0.18 + 0.5 * var(--z, 0.5)));
-  animation: wsys-breathe 2.8s ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-}
-
-@keyframes wsys-breathe {
-  0%, 100% { filter: brightness(1); }
-  /* Floor raised to 0.65 — nodes stay visibly lime at peak dim */
-  50%       { filter: brightness(0.65); }
-}
-
-/* Temporarily healing node: drop to muted, pause breathing */
-.wsys-node--healing {
-  background: var(--muted);
-  animation: none;
-}
-
-/* Heal-pulse ring — JS drives left/top via MotionValues */
-.wsys-pulse {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--accent);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-/* Center logo — pentagon nucleus + PCB traces + text label.
-   Framer owns x/y; no CSS transform here to avoid conflict. */
-.wsys-center-icon {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+/* ── Uptime cell — HH:MM:SS counter ──────────────────────────────────────── */
+.wsys-uptime-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  color: var(--accent);
-  pointer-events: none;
-  z-index: 2;
-  animation: wsys-icon-glow 3s ease-in-out infinite;
+  gap: 2px;
+  flex: 1;
+  justify-content: center;
 }
 
-/* Logo text — backdrop-filter blur keeps the label readable over sphere nodes. */
-.wsys-logo-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 7px 12px 6px;
-  background: transparent;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.wsys-logo-title {
+.wsys-uptime-counter {
   font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.32em;
+  font-size: 17px;
+  letter-spacing: 0.05em;
   color: var(--accent);
-  text-shadow:
-    0 0 16px rgba(201, 245, 88, 0.6),
-    0 1px 8px rgba(0, 0, 0, 0.95);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 16px rgba(201, 245, 88, 0.35);
 }
 
-.wsys-logo-sub {
+.wsys-uptime-sub {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+/* ── Deploy cell — canary donut ring ─────────────────────────────────────── */
+.wsys-deploy-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.wsys-deploy-svg {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.wsys-arc--v1 { stroke: var(--muted); }
+.wsys-arc--v2 { stroke: var(--accent); filter: drop-shadow(0 0 3px rgba(201,245,88,0.55)); }
+
+.wsys-deploy-inner-label {
+  font-family: var(--mono);
+  font-size: 5.5px;
+  letter-spacing: 0.08em;
+  fill: var(--muted);
+}
+
+.wsys-deploy-inner-sub {
+  font-family: var(--mono);
+  font-size: 4.5px;
+  letter-spacing: 0.06em;
+  fill: var(--muted-2);
+}
+
+.wsys-deploy-val {
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.18em;
-  color: var(--accent-2);
-  text-shadow:
-    0 0 10px rgba(232, 196, 122, 0.7),
-    0 0 20px rgba(232, 196, 122, 0.35),
-    0 1px 6px rgba(0, 0, 0, 0.9);
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Center dot pulses gently in sync with node breathing */
-.wsys-icon-dot {
-  transform-origin: 45px 45px;
-  animation: wsys-icon-dot-pulse 2.4s ease-in-out infinite;
+/* ── Event log ────────────────────────────────────────────────────────────── */
+.wsys-log {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  max-height: 58px;
+  opacity: clamp(0, calc((var(--enter, 1) - 0.5) * 6), 1);
+  border-top: 1px solid var(--line);
+  padding-top: 7px;
 }
 
-@keyframes wsys-icon-glow {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(201, 245, 88, 0.3)); }
-  50%       { filter: drop-shadow(0 0 12px rgba(201, 245, 88, 0.65)); }
+.wsys-log-entry {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: wsys-log-slide 0.3s ease forwards;
 }
 
-@keyframes wsys-icon-dot-pulse {
-  0%, 100% { transform: scale(1);   opacity: 1; }
-  50%       { transform: scale(1.8); opacity: 0.4; }
+.wsys-log-entry--alert {
+  color: #ff4848;
+}
+
+@keyframes wsys-log-slide {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 
