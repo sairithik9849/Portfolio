@@ -171,24 +171,23 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  /* padding-bottom lifts text clear of the ALIVE readout and the bottom of the panel;
-     padding-left aligns with the status label. */
-  padding: 0 18px 120px 18px;
-  align-items: center;
+  padding: 0 22px 88px 14px;
+  align-items: flex-start;
   pointer-events: none;
   z-index: 5;
 }
 
 .wid-caption-text {
-  font-size: clamp(13px, 1.1vw, 15px);
-  font-family: var(--sans);
+  font-size: clamp(12px, 0.95vw, 13.5px);
+  font-family: var(--mono);
   color: var(--fg-2);
-  line-height: 1.55;
+  line-height: 1.7;
   margin: 0;
-  max-width: 32ch;
-  text-align: center;
-  /* Subtle shadow for legibility over the sparse node field — no box, no bg */
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.6);
+  max-width: 58ch;
+  text-align: left;
+  letter-spacing: 0.01em;
+  /* Subtle shadow for legibility over the viz field — no box, no bg */
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.7);
 }
 
 .wid-caption-num {
