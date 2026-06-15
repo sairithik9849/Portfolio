@@ -68,7 +68,10 @@ const frag = /* glsl */`
        low-value noise at the left/right edges, producing black bars. */
     vec2  st   = (uv - 0.5) * vec2(asp, 1.0);
 
-    float t = uTime * 0.05;
+    /* Oscillate instead of drifting linearly — prevents the noise field from
+       wandering into green-heavy regions of infinite noise space over long
+       sessions. Period ≈ 21 min, max speed identical to old 0.05 drift. */
+    float t = sin(uTime * 0.005) * 10.0;
 
     /* ---- Mouse attractor: bend domain toward cursor ---- */
     vec2  mouse = (uMouse - 0.5) * vec2(asp, 1.0);   // same centred space
