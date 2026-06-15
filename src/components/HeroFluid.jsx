@@ -70,8 +70,8 @@ const frag = /* glsl */`
 
     /* Oscillate instead of drifting linearly — prevents the noise field from
        wandering into green-heavy regions of infinite noise space over long
-       sessions. Period ≈ 21 min, max speed identical to old 0.05 drift. */
-    float t = sin(uTime * 0.005) * 10.0;
+       sessions. Period ≈ 5 min — visibly animated at comfortable pace. */
+    float t = sin(uTime * 0.021) * 10.0;
 
     /* ---- Mouse attractor: bend domain toward cursor ---- */
     vec2  mouse = (uMouse - 0.5) * vec2(asp, 1.0);   // same centred space
@@ -91,18 +91,24 @@ const frag = /* glsl */`
 
     /* ---- Color composition ---- */
     float balanced = clamp(mix(n, 0.5, 0.22), 0.26, 0.76);
-    vec3 col = mix(uBg + uColor * 0.012, uBg + uColor * 0.07, balanced);
 
-    /* Blooms: bounded so long idle runs do not drift too green or too black */
+    /* Base: background tinted with accent — min 0.055, max 0.22 (was 0.012/0.07) */
+    vec3 col = mix(uBg + uColor * 0.055, uBg + uColor * 0.22, balanced);
+
+    /* Secondary warmth layer: subtle amber undertone in mid-range for depth */
+    vec3 uMid = uColor * 0.55 + vec3(0.12, 0.08, 0.0);
+    col += uMid * smoothstep(0.35, 0.62, balanced) * 0.07;
+
+    /* Bloom: bright peaks of the noise field glow harder (was 0.24) */
     float bloom = smoothstep(0.52, 0.74, balanced);
-    col += uColor * bloom * 0.24;
+    col += uColor * bloom * 0.52;
 
-    /* Mouse glow: soft lime aura that intensifies beneath the cursor */
-    float glow = exp(-md * 5.0) * 0.45;
+    /* Mouse glow: wider, more atmospheric aura (was exp(-md*5.0)*0.45) */
+    float glow = exp(-md * 2.6) * 0.72;
     col += uColor * glow * uCursorActive;
 
-    /* Lighter vignette — previous 0.8 factor was crushing the side brightness */
-    float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.55;
+    /* Vignette: softer falloff so edges stay alive (was 0.55) */
+    float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.32;
     col *= clamp(vig, 0.0, 1.0);
 
     /* Temporal grain: breaks gradient banding in near-black regions */
