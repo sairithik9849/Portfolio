@@ -68,10 +68,10 @@ const frag = /* glsl */`
        low-value noise at the left/right edges, producing black bars. */
     vec2  st   = (uv - 0.5) * vec2(asp, 1.0);
 
-    /* Oscillate instead of drifting linearly — prevents the noise field from
-       wandering into green-heavy regions of infinite noise space over long
-       sessions. Period ≈ 5 min — visibly animated at comfortable pace. */
-    float t = sin(uTime * 0.021) * 10.0;
+    /* Slow constant linear drift — always moving forward, no reversal stall.
+       Speed 0.013 units/s moves ~4.7 units over 6 min; the domain offset
+       (+4.3, +2.7) keeps us in a well-mapped noise region throughout. */
+    float t = uTime * 0.013;
 
     /* ---- Mouse attractor: bend domain toward cursor ---- */
     vec2  mouse = (uMouse - 0.5) * vec2(asp, 1.0);   // same centred space
@@ -92,19 +92,19 @@ const frag = /* glsl */`
     /* ---- Color composition ---- */
     float balanced = clamp(mix(n, 0.5, 0.22), 0.26, 0.76);
 
-    /* Base: background tinted with accent — min 0.055, max 0.22 (was 0.012/0.07) */
-    vec3 col = mix(uBg + uColor * 0.055, uBg + uColor * 0.22, balanced);
+    /* Base: background tinted with accent — min 0.028, max 0.11 (halved) */
+    vec3 col = mix(uBg + uColor * 0.028, uBg + uColor * 0.11, balanced);
 
     /* Secondary warmth layer: subtle amber undertone in mid-range for depth */
     vec3 uMid = uColor * 0.55 + vec3(0.12, 0.08, 0.0);
-    col += uMid * smoothstep(0.35, 0.62, balanced) * 0.07;
+    col += uMid * smoothstep(0.35, 0.62, balanced) * 0.035;
 
-    /* Bloom: bright peaks of the noise field glow harder (was 0.24) */
+    /* Bloom: bright peaks of the noise field glow (halved) */
     float bloom = smoothstep(0.52, 0.74, balanced);
-    col += uColor * bloom * 0.52;
+    col += uColor * bloom * 0.26;
 
-    /* Mouse glow: wider, more atmospheric aura (was exp(-md*5.0)*0.45) */
-    float glow = exp(-md * 2.6) * 0.72;
+    /* Mouse glow: atmospheric aura (halved) */
+    float glow = exp(-md * 2.6) * 0.36;
     col += uColor * glow * uCursorActive;
 
     /* Vignette: softer falloff so edges stay alive (was 0.55) */
