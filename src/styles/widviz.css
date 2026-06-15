@@ -993,7 +993,7 @@
 .wifc-raw-field {
   position: absolute;
   inset: 0;
-  opacity: 0.55;
+  opacity: 0.72;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='32'%3E%3Crect x='4' y='4' width='14' height='3' fill='rgba(201,245,88,.15)'/%3E%3Crect x='22' y='4' width='8' height='3' fill='rgba(201,245,88,.12)'/%3E%3Crect x='34' y='4' width='18' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='56' y='4' width='10' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='70' y='4' width='14' height='3' fill='rgba(201,245,88,.11)'/%3E%3Crect x='88' y='4' width='8' height='3' fill='rgba(201,245,88,.14)'/%3E%3Crect x='100' y='4' width='16' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='4' y='13' width='10' height='3' fill='rgba(201,245,88,.09)'/%3E%3Crect x='18' y='13' width='16' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='38' y='13' width='8' height='3' fill='rgba(201,245,88,.11)'/%3E%3Crect x='50' y='13' width='14' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='68' y='13' width='18' height='3' fill='rgba(201,245,88,.14)'/%3E%3Crect x='90' y='13' width='10' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='104' y='13' width='12' height='3' fill='rgba(201,245,88,.12)'/%3E%3Crect x='4' y='22' width='18' height='3' fill='rgba(201,245,88,.11)'/%3E%3Crect x='26' y='22' width='10' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='40' y='22' width='14' height='3' fill='rgba(201,245,88,.09)'/%3E%3Crect x='58' y='22' width='8' height='3' fill='rgba(201,245,88,.12)'/%3E%3Crect x='70' y='22' width='16' height='3' fill='rgba(201,245,88,.1)'/%3E%3Crect x='90' y='22' width='12' height='3' fill='rgba(201,245,88,.13)'/%3E%3Crect x='106' y='22' width='10' height='3' fill='rgba(201,245,88,.11)'/%3E%3C/svg%3E");
   background-size: 120px 32px;
   background-repeat: repeat;
@@ -1208,6 +1208,27 @@
   color: var(--muted);
 }
 
+/* ── Data particle — rising data bubble in flat stacking context ─────────────
+   Sits as a sibling of .wifc-card inside .wifc-stage (NOT inside preserve-3d)
+   so it renders above the 3D layers and is driven purely by 2D Framer top/left.
+   Travels from lower-right to upper-left tracing the isometric "up" axis,
+   symbolising data rising from raw stream (L1) to glass interface (L4). ────── */
+.wifc-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 0  8px rgba(201, 245, 88, 0.95),
+    0 0 18px rgba(201, 245, 88, 0.50),
+    0 0 32px rgba(201, 245, 88, 0.20);
+  pointer-events: none;
+  will-change: top, left, opacity;
+  z-index: 10;
+}
+
 /* ── LAYER 4 — Human Interface (glass control) ──────────────────────────────
    Frosted glass panel — furthest Z so it fully occludes the machinery in
    flat State A (the "illusion" the viewer first sees).
@@ -1242,6 +1263,43 @@
   );
   pointer-events: none;
   will-change: opacity;
+}
+
+/* ── Terminal scanline — horizontal line that sweeps the glass panel ──────────
+   Slow top→bottom sweep (every 4.5s) mimicking a terminal/HUD refresh.
+   NO filter on this element — it's inside preserve-3d's child, which is
+   exempt from the WebKit constraint (only the preserve-3d ANCESTOR must stay
+   filter-free). Uses overflow:hidden on the parent to clip at edges. ───────── */
+.wifc-scanline {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 3px;
+}
+
+.wifc-scanline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(201, 245, 88, 0.18) 20%,
+    rgba(201, 245, 88, 0.32) 50%,
+    rgba(201, 245, 88, 0.18) 80%,
+    transparent 100%
+  );
+  animation: wifc-scanline-sweep 4.5s ease-in-out infinite;
+}
+
+@keyframes wifc-scanline-sweep {
+  0%   { top: 0%;   opacity: 0; }
+  4%   { opacity: 1; }
+  94%  { opacity: 0.85; }
+  100% { top: 100%; opacity: 0; }
 }
 
 .wifc-glass-inner {
@@ -1398,7 +1456,7 @@
   }
 }
 
-/* Three slim status indicator bars */
+/* Three slim status indicator bars — animated shimmer */
 .wifc-glass-indicators {
   display: flex;
   flex-direction: column;
@@ -1411,9 +1469,29 @@
   border-radius: 1px;
 }
 
-.wifc-glass-ind--1 { width: 100%; background: rgba(201, 245, 88, 0.35); }
-.wifc-glass-ind--2 { width: 72%;  background: rgba(232, 196, 122, 0.25); }
-.wifc-glass-ind--3 { width: 44%;  background: var(--line-2); }
+@keyframes wifc-ind-breathe {
+  0%, 100% { opacity: 0.35; box-shadow: none; }
+  50%       { opacity: 1.0;  box-shadow: 0 0 5px currentColor; }
+}
+
+.wifc-glass-ind--1 {
+  width: 100%;
+  background: rgba(201, 245, 88, 0.6);
+  color: rgba(201, 245, 88, 0.4);
+  animation: wifc-ind-breathe 2.8s ease-in-out infinite;
+}
+.wifc-glass-ind--2 {
+  width: 72%;
+  background: rgba(232, 196, 122, 0.45);
+  color: rgba(232, 196, 122, 0.3);
+  animation: wifc-ind-breathe 2.8s ease-in-out infinite 0.93s;
+}
+.wifc-glass-ind--3 {
+  width: 44%;
+  background: rgba(180, 180, 160, 0.35);
+  color: rgba(180, 180, 160, 0.2);
+  animation: wifc-ind-breathe 2.8s ease-in-out infinite 1.86s;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    VIZ: AGENTS
