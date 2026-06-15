@@ -954,7 +954,10 @@
 /* Shared layer plane — full-size, each shifts its own translateZ via Framer.
    Note: .wifc-layer is already defined globally earlier in this file for the
    five viz cross-dissolve layers; these wifc-layer sub-variants are specific
-   to the 3D card planes inside VizInterface. */
+   to the 3D card planes inside VizInterface.
+   border: 1px solid transparent is required on L1/L2/L3 so that Framer's
+   inline borderColor override has a base width/style to work from. L4 gets
+   its own border declaration in .wifc-layer--glass below. */
 .wifc-layer--raw,
 .wifc-layer--logic,
 .wifc-layer--widgets,
@@ -964,6 +967,12 @@
   border-radius: 3px;
   will-change: transform, opacity;
   backface-visibility: hidden;
+}
+
+.wifc-layer--raw,
+.wifc-layer--logic,
+.wifc-layer--widgets {
+  border: 1px solid transparent;
 }
 
 /* ── LAYER 1 — Raw Data Stream (chaos) ─────────────────────────────────────
@@ -1263,43 +1272,6 @@
   );
   pointer-events: none;
   will-change: opacity;
-}
-
-/* ── Terminal scanline — horizontal line that sweeps the glass panel ──────────
-   Slow top→bottom sweep (every 4.5s) mimicking a terminal/HUD refresh.
-   NO filter on this element — it's inside preserve-3d's child, which is
-   exempt from the WebKit constraint (only the preserve-3d ANCESTOR must stay
-   filter-free). Uses overflow:hidden on the parent to clip at edges. ───────── */
-.wifc-scanline {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  border-radius: 3px;
-}
-
-.wifc-scanline::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(201, 245, 88, 0.18) 20%,
-    rgba(201, 245, 88, 0.32) 50%,
-    rgba(201, 245, 88, 0.18) 80%,
-    transparent 100%
-  );
-  animation: wifc-scanline-sweep 4.5s ease-in-out infinite;
-}
-
-@keyframes wifc-scanline-sweep {
-  0%   { top: 0%;   opacity: 0; }
-  4%   { opacity: 1; }
-  94%  { opacity: 0.85; }
-  100% { top: 100%; opacity: 0; }
 }
 
 .wifc-glass-inner {

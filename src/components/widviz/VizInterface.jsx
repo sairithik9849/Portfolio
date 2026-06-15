@@ -33,6 +33,20 @@ const PULSE_CFG = [
   { delay: '-0.88s',  dur: '1.70s' },
 ]
 
+// ── Peak border color values (isFinal shortcut) ────────────────────────────
+// accent-2 = rgba(232, 196, 122, …)
+const BORDER_FINAL = {
+  l1: 'rgba(232, 196, 122, 0.38)',
+  l2: 'rgba(232, 196, 122, 0.45)',
+  l3: 'rgba(232, 196, 122, 0.52)',
+  l4: 'rgba(232, 196, 122, 0.58)',
+}
+const GLOW_FINAL = {
+  l1: '0 0 10px rgba(232, 196, 122, 0.14)',
+  l2: '0 0 10px rgba(232, 196, 122, 0.17)',
+  l3: '0 0 10px rgba(232, 196, 122, 0.20)',
+}
+
 // ── Sparkline helpers ─────────────────────────────────────────────────────────
 const SPARK_W = 94
 const SPARK_H = 29
@@ -140,14 +154,12 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   const widgetOp   = useTransform(pulseT, [0, 1], [0.72, 1.0])
   const sparkShift = useTransform(pulseT, [0, 1], [0, -6])
 
-  // ── Layer peel opacity — FIX: L3 stays readable at peak (was 0.65, now 0.88) ──
+  // ── Layer peel opacity ────────────────────────────────────────────────────
   const l4PeelOp = useTransform(t, [0.35, 1], [1, 0.28], { clamp: true })
   const l3PeelOp = useTransform(t, [0.35, 1], [1, 0.88], { clamp: true })
   const l3Op     = useTransform([l3PeelOp, widgetOp], ([peel, widget]) => peel * widget)
 
-  // ── Light blob — FIX: persistent once layers open (t-driven, not pulseT) ──
-  // Previously: opacity 0→0.75 driven by pulseT (only at burst peak).
-  // Now: ramps in as layers separate (t=0.25), stays present through peak.
+  // ── Light blob — persistent once layers open (t-driven) ──────────────────
   const lightBlobOp = useTransform(t, [0, 0.25, 1], [0, 0.22, 0.82], { clamp: true })
 
   // Cast shadow
@@ -157,16 +169,33 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
 
   const pulseOpStr = useTransform(pulseT, v => v.toFixed(3))
 
+  // ── Layer border color — accent-2 (gold) that blooms as layers peel ───────
+  // Each layer has a slight stagger matching its Z-separation lag so the
+  // border appears to "arrive" with the layer rather than before or after it.
+  const l1BorderOp = useTransform(t, [0.08, 1], [0, 0.38], { clamp: true })
+  const l2BorderOp = useTransform(t, [0.12, 1], [0, 0.45], { clamp: true })
+  const l3BorderOp = useTransform(t, [0.16, 1], [0, 0.52], { clamp: true })
+  const l4BorderOp = useTransform(t, [0,    1], [0.15, 0.58], { clamp: true })
+
+  // Convert opacity to full rgba string (Framer applies this as inline borderColor)
+  const l1BorderColor = useTransform(l1BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
+  const l2BorderColor = useTransform(l2BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
+  const l3BorderColor = useTransform(l3BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
+  const l4BorderColor = useTransform(l4BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
+
+  // Outer glow for inner layers (L1/L2/L3) — not L4 which has its own CSS box-shadow
+  const l1Glow = useTransform(l1BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.37).toFixed(3)})`)
+  const l2Glow = useTransform(l2BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.38).toFixed(3)})`)
+  const l3Glow = useTransform(l3BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.39).toFixed(3)})`)
+
   // ── Data particle — rises through layers at pulse peak ────────────────────
-  // Sits outside preserve-3d card (sibling), animates in flat stacking context.
-  // Path traces isometric "up": lower-right → upper-left across the card face.
   const particleY  = useTransform(pulseT, [0, 1], ['78%', '12%'])
   const particleX  = useTransform(pulseT, [0, 1], ['54%', '44%'])
   const particleOp = useTransform(pulseT, [0, 0.12, 0.80, 1], [0, 1, 0.9, 0])
 
-  const sparkPoints       = buildSparkPoints(sparkData)
+  const sparkPoints                = buildSparkPoints(sparkData)
   const { dash: ringDash, gap: ringGap } = buildRingDash(ringPct)
-  const ringLabel         = `${Math.round(ringPct * 100)}%`
+  const ringLabel                  = `${Math.round(ringPct * 100)}%`
 
   return (
     <motion.div
@@ -187,7 +216,7 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
       {/* ── 3D stage ────────────────────────────────────────────────────── */}
       <div className="wifc-stage">
 
-        {/* ── Data particle — flat 2D, sits above 3D card in stage ─────── */}
+        {/* ── Data particle — flat 2D above 3D card ────────────────────── */}
         {!isFinal && (
           <motion.div
             className="wifc-particle"
@@ -209,14 +238,21 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
           }}
         >
 
-          {/* LAYER 1 — Raw Data Stream */}
-          <div className="wifc-layer wifc-layer--raw">
+          {/* ── LAYER 1 — Raw Data Stream ─────────────────────────────────
+                border: set in CSS as transparent 1px; borderColor animated here */}
+          <motion.div
+            className="wifc-layer wifc-layer--raw"
+            style={{
+              borderColor: isFinal ? BORDER_FINAL.l1 : l1BorderColor,
+              boxShadow:   isFinal ? GLOW_FINAL.l1   : l1Glow,
+            }}
+          >
             <div className="wifc-raw-track" aria-hidden="true">
               <div className="wifc-raw-field" />
             </div>
-          </div>
+          </motion.div>
 
-          {/* Cast shadow */}
+          {/* ── Cast shadow ──────────────────────────────────────────────── */}
           <motion.div
             className="wifc-shadow"
             aria-hidden="true"
@@ -227,12 +263,15 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
             }}
           />
 
-          {/* LAYER 2 — Logic Grid */}
+          {/* ── LAYER 2 — Logic Grid ──────────────────────────────────────
+                border: set in CSS as transparent 1px; borderColor animated here */}
           <motion.div
             className="wifc-layer wifc-layer--logic"
             style={{
-              translateZ:   isFinal ? `${PEAK_Z_L2}px` : zL2,
-              '--pulse-op': isFinal ? '1' : pulseOpStr,
+              translateZ:    isFinal ? `${PEAK_Z_L2}px` : zL2,
+              '--pulse-op':  isFinal ? '1' : pulseOpStr,
+              borderColor:   isFinal ? BORDER_FINAL.l2 : l2BorderColor,
+              boxShadow:     isFinal ? GLOW_FINAL.l2   : l2Glow,
             }}
           >
             <svg
@@ -244,7 +283,6 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
               {DATA.routePaths.map(p => (
                 <path key={`s-${p.id}`} className="wifc-route-line" d={p.d} />
               ))}
-              {/* Each comet gets its own speed + offset — organic stagger */}
               {DATA.routePaths.map((p, i) => (
                 <path
                   key={`c-${p.id}`}
@@ -268,12 +306,15 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
             </svg>
           </motion.div>
 
-          {/* LAYER 3 — Insight Widgets */}
+          {/* ── LAYER 3 — Insight Widgets ─────────────────────────────────
+                border: set in CSS as transparent 1px; borderColor animated here */}
           <motion.div
             className="wifc-layer wifc-layer--widgets"
             style={{
-              translateZ: isFinal ? `${PEAK_Z_L3}px` : zL3,
-              opacity:    isFinal ? 0.88 : l3Op,
+              translateZ:  isFinal ? `${PEAK_Z_L3}px` : zL3,
+              opacity:     isFinal ? 0.88 : l3Op,
+              borderColor: isFinal ? BORDER_FINAL.l3 : l3BorderColor,
+              boxShadow:   isFinal ? GLOW_FINAL.l3   : l3Glow,
             }}
           >
             {/* Sparkline — rolls with live data */}
@@ -315,23 +356,22 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
             </div>
           </motion.div>
 
-          {/* LAYER 4 — Glass control */}
+          {/* ── LAYER 4 — Glass control ───────────────────────────────────
+                CSS already supplies border: 1px solid var(--line-2).
+                borderColor inline overrides just the color at runtime. ── */}
           <motion.div
             className="wifc-layer wifc-layer--glass"
             style={{
-              translateZ: isFinal ? `${PEAK_Z_L4}px` : zL4,
-              opacity:    isFinal ? 0.30 : l4PeelOp,
+              translateZ:  isFinal ? `${PEAK_Z_L4}px` : zL4,
+              opacity:     isFinal ? 0.30 : l4PeelOp,
+              borderColor: isFinal ? BORDER_FINAL.l4 : l4BorderColor,
             }}
           >
-            {/* Refraction blob — now persistent once layers open */}
             <motion.div
               className="wifc-light-blob"
               aria-hidden="true"
               style={{ opacity: isFinal ? 0.75 : lightBlobOp }}
             />
-
-            {/* Terminal scanline — sweeps glass panel on a slow loop */}
-            <div className="wifc-scanline" aria-hidden="true" />
 
             <div className="wifc-glass-inner">
               <div className="wifc-glass-row wifc-glass-row--head">
