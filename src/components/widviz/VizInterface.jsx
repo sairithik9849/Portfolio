@@ -311,10 +311,8 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
           <motion.div
             className="wifc-layer wifc-layer--widgets"
             style={{
-              translateZ:  isFinal ? `${PEAK_Z_L3}px` : zL3,
-              opacity:     isFinal ? 0.88 : l3Op,
-              borderColor: isFinal ? BORDER_FINAL.l3 : l3BorderColor,
-              boxShadow:   isFinal ? GLOW_FINAL.l3   : l3Glow,
+              translateZ: isFinal ? `${PEAK_Z_L3}px` : zL3,
+              opacity:    isFinal ? 0.88 : l3Op,
             }}
           >
             {/* Sparkline — rolls with live data */}
