@@ -1246,13 +1246,13 @@
    the semi-transparent background + .wifc-light-blob still read as glass.
    .wifc-light-blob is a radial-gradient — NO filter:blur (repaint-heavy). ── */
 .wifc-layer--glass {
-  background: rgba(237, 237, 223, 0.05);
-  border: 1px solid var(--line-2);
+  background: rgba(14, 14, 14, 0.82);
+  border: 1px solid rgba(237, 237, 223, 0.18);
   box-shadow:
-    inset 0 1px 0 rgba(237, 237, 223, 0.12),
-    0 2px 24px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+    inset 0 1px 0 rgba(237, 237, 223, 0.08),
+    0 2px 24px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* Hybrid refraction light-blob on the glass underside.
