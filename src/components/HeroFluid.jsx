@@ -63,34 +63,21 @@ const frag = /* glsl */`
     float asp  = uResolution.x / uResolution.y;
     vec2  uv   = vUv;                                 // [0,1] x [0,1]
 
-    /* ---- Corner mask: fluid is confined to the 4 viewport corners ----
-       Each corner contributes a smooth radial falloff with radius r.
-       At center (0.5, 0.5): dist to any corner ≈ 0.707 > r=0.65
-       → every term = max(0, 1 - 0.707/0.65) < 0 → 0.0 → fully black.
-       At exact corners: dist = 0 → contribution = 1.0.
-       Cubic smoothstep sharpens the center cutoff while keeping corners rich. */
-    float r    = 0.65;
-    float c_tl = max(0.0, 1.0 - length(uv - vec2(0.0, 0.0)) / r);
-    float c_tr = max(0.0, 1.0 - length(uv - vec2(1.0, 0.0)) / r);
-    float c_bl = max(0.0, 1.0 - length(uv - vec2(0.0, 1.0)) / r);
-    float c_br = max(0.0, 1.0 - length(uv - vec2(1.0, 1.0)) / r);
-    float cornerMask = clamp(c_tl + c_tr + c_bl + c_br, 0.0, 1.0);
-    /* Cubic ease for a crisper center fade and richer corner saturation */
-    cornerMask = cornerMask * cornerMask * (3.0 - 2.0 * cornerMask);
-
-    /* Centre the noise domain around the origin so coverage is symmetric */
+    /* Centre the noise domain around the origin so coverage is symmetric —
+       previously the domain ran [0, asp] x [0, 1], which happened to sample
+       low-value noise at the left/right edges, producing black bars. */
     vec2  st   = (uv - 0.5) * vec2(asp, 1.0);
 
-    /* Slow constant linear drift — always moving forward, no reversal stall.
-       Speed 0.013 units/s moves ~4.7 units over 6 min; the domain offset
-       (+4.3, +2.7) keeps us in a well-mapped noise region throughout. */
-    float t = uTime * 0.013;
+    /* Oscillate instead of drifting linearly — prevents the noise field from
+       wandering into green-heavy regions of infinite noise space over long
+       sessions. Period ≈ 21 min, max speed identical to old 0.05 drift. */
+    float t = sin(uTime * 0.005) * 10.0;
 
     /* ---- Mouse attractor: bend domain toward cursor ---- */
-    vec2  mouse = (uMouse - 0.5) * vec2(asp, 1.0);
+    vec2  mouse = (uMouse - 0.5) * vec2(asp, 1.0);   // same centred space
     vec2  toM   = mouse - st;
     float md    = length(toM);
-    vec2  p     = st - toM * exp(-md * 3.5) * 0.22;
+    vec2  p     = st - toM * exp(-md * 3.5) * 0.18;
 
     /* Shift into a visually rich region of the infinite noise field */
     p += vec2(4.3, 2.7);
@@ -104,31 +91,22 @@ const frag = /* glsl */`
 
     /* ---- Color composition ---- */
     float balanced = clamp(mix(n, 0.5, 0.22), 0.26, 0.76);
+    vec3 col = mix(uBg + uColor * 0.012, uBg + uColor * 0.07, balanced);
 
-    /* Base: background tinted with accent — boosted for vivid corners */
-    vec3 col = mix(uBg + uColor * 0.05, uBg + uColor * 0.22, balanced);
+    /* Blooms: bounded so long idle runs do not drift too green or too black */
+    float bloom = smoothstep(0.52, 0.74, balanced);
+    col += uColor * bloom * 0.24;
 
-    /* Secondary warmth layer: amber undertone adds depth in mid-range */
-    vec3 uMid = uColor * 0.55 + vec3(0.14, 0.09, 0.0);
-    col += uMid * smoothstep(0.35, 0.62, balanced) * 0.065;
-
-    /* Bloom: bright peaks glow strongly in corners */
-    float bloom = smoothstep(0.50, 0.72, balanced);
-    col += uColor * bloom * 0.55;
-
-    /* Mouse glow: atmospheric aura follows cursor */
-    float glow = exp(-md * 2.4) * 0.55;
+    /* Mouse glow: soft lime aura that intensifies beneath the cursor */
+    float glow = exp(-md * 5.0) * 0.45;
     col += uColor * glow * uCursorActive;
 
-    /* Inner corner radiance: extra brightness at the very corner tips */
-    float cornerTip = clamp(c_tl * c_tl + c_tr * c_tr + c_bl * c_bl + c_br * c_br, 0.0, 1.0);
-    col += uColor * cornerTip * 0.18;
+    /* Lighter vignette — previous 0.8 factor was crushing the side brightness */
+    float vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.55;
+    col *= clamp(vig, 0.0, 1.0);
 
-    /* Apply corner mask: center stays pure --bg, corners show fluid */
-    col = mix(uBg, col, cornerMask);
-
-    /* Temporal grain in corners only — breaks gradient banding */
-    col += (grain(gl_FragCoord.xy * 0.01 + uTime * 0.1) - 0.5) * 0.014 * cornerMask;
+    /* Temporal grain: breaks gradient banding in near-black regions */
+    col += (grain(gl_FragCoord.xy * 0.01 + uTime * 0.1) - 0.5) * 0.012;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -227,7 +205,7 @@ function FluidMesh({ mouseRef, onReady }) {
 
 /* ---- exported wrapper ---- */
 
-export default function HeroFluid({ mouseRef, onReady }) {
+export default function HeroFluid({ mouseRef, active = true, onReady }) {
   /* Pause the render loop entirely while the tab is backgrounded — prevents
      both wasted GPU work and the stale/throttled frames that can land on a
      bright-green noise frame on return. */
@@ -250,9 +228,13 @@ export default function HeroFluid({ mouseRef, onReady }) {
         overflow: 'hidden',
       }}
     >
+      {/* frameloop pauses mid-page (canvas holds its last frame): the cursor
+          glow only activates over #top/#contact, and the ambient drift is
+          slow enough (uTime * 0.05) that the freeze is imperceptible. uTime
+          reads the still-running clock, so motion resumes without a jump. */}
       <Canvas
         dpr={[1, 1.5]}
-        frameloop={!docHidden ? 'always' : 'never'}
+        frameloop={active && !docHidden ? 'always' : 'never'}
         gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
         style={{ width: '100%', height: '100%' }}
       >
