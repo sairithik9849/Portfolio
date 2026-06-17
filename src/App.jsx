@@ -69,8 +69,6 @@ export default function App() {
   const handleSplineReady = useCallback(() => trackerRef.current?.markSplineReady(), [])
 
   const [aiOpen, setAiOpen] = useState(false)
-  const [heroVisible,  setHeroVisible]  = useState(true)
-  const [footerVisible, setFooterVisible] = useState(false)
   const [whatIdoVisible, setWhatIdoVisible] = useState(false)
   const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
@@ -80,9 +78,6 @@ export default function App() {
   const globalMouseRef = useRef({ x: 0.5, y: 0.5, lastMove: 0 })
   const handleGlobalPointerMove = useCallback((e) => {
     if (e.pointerType && e.pointerType !== 'mouse') return
-    // Confine WebGL fluid glow to Hero (#top) and Footer (#contact).
-    // Idle decay (~1.75s) in HeroFluid.jsx fades it out when this stops firing.
-    if (!e.target.closest('#top, #contact')) return
     globalMouseRef.current.x = e.clientX / window.innerWidth
     globalMouseRef.current.y = e.clientY / window.innerHeight
     globalMouseRef.current.lastMove = performance.now()
@@ -147,48 +142,7 @@ export default function App() {
     else window.__lenis.start()
   }, [aiOpen])
 
-  // IntersectionObservers depend on mountContent so they re-run once the DOM
-  // nodes (#top, #contact, #what-i-do) actually exist. Previously the empty dep
-  // array caused them to run at App mount when those ids weren't in the tree yet,
-  // silently no-op'ing — heroVisible would stay true forever, HeroFluid's
-  // frameloop would never pause mid-page.
-  useEffect(() => {
-    if (!mountContent) return undefined
-    const hero = document.getElementById('top')
-
-    if (!hero || !('IntersectionObserver' in window)) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setHeroVisible(entry.isIntersecting),
-      { threshold: 0 },
-    )
-
-    observer.observe(hero)
-    return () => observer.disconnect()
-  }, [mountContent])
-
-  // Footer visibility gates the HeroFluid render loop (with heroVisible below):
-  // the fluid's glow is confined to #top/#contact, so mid-page frames are
-  // wasted GPU work — frameloop pauses when neither section is on screen.
-  useEffect(() => {
-    if (!mountContent) return undefined
-    const footer = document.getElementById('contact')
-
-    if (!footer || !('IntersectionObserver' in window)) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setFooterVisible(entry.isIntersecting),
-      { threshold: 0 },
-    )
-
-    observer.observe(footer)
-    return () => observer.disconnect()
-  }, [mountContent])
-
+  // IntersectionObserver for WhatIDo section gates the AIOrb visibility.
   useEffect(() => {
     if (!mountContent) return undefined
     const section = document.getElementById('what-i-do')
@@ -224,7 +178,6 @@ export default function App() {
           <Suspense fallback={null}>
             <HeroFluid
               mouseRef={globalMouseRef}
-              active={heroVisible || footerVisible}
               onReady={handleFluidReady}
             />
           </Suspense>
@@ -242,7 +195,7 @@ export default function App() {
             <Footer       onOpenAI={() => setAiOpen(true)} />
           </div>
 
-          <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible} />
+          <AIOrb onClick={() => setAiOpen(true)} hidden={whatIdoVisible} />
           <AIDrawer open={aiOpen} onClose={closeAI} />
         </>
       )}
