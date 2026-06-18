@@ -60,66 +60,48 @@ export const WID_VIZ = {
 
     // ── Node graph — positions as % of the 0–100 field SVG / field div.
     // Layout: vertical trunk EDGE(top-center) → API(center) → symmetric Y-fork
-    // to CACHE(lower-left) and DB(lower-right). Fork angles are mirrored (Δx=±20, Δy=+18).
-    // Dots anchor on the coordinate; labels splay outward (EDGE/API/DB right, CACHE left).
-    // Triangle shifted up by 10pp to create breathing room above the EKG graph.
+    // to CACHE(lower-left) and DB(lower-right). Nodes shifted down to leave
+    // the top 18% clear for the EQ bar visualizer.
     nodes: [
-      { id: 'edge',  label: 'EDGE',     tag: 'TLS',      x: 50, y: 14 },
-      { id: 'api',   label: 'API',      tag: 'NODE',     x: 50, y: 32 },
-      { id: 'cache', label: 'CACHE',    tag: 'REDIS',    x: 30, y: 50 },
-      { id: 'db',    label: 'DB',       tag: 'POSTGRES', x: 70, y: 50 },
+      { id: 'edge',  label: 'EDGE',  tag: 'TLS',      x: 50, y: 22 },
+      { id: 'api',   label: 'API',   tag: 'NODE',     x: 50, y: 40 },
+      { id: 'cache', label: 'CACHE', tag: 'REDIS',    x: 28, y: 60 },
+      { id: 'db',    label: 'DB',    tag: 'POSTGRES', x: 72, y: 60 },
     ],
 
     // ── Edges — d-strings for the stretched preserveAspectRatio="none" field SVG.
-    // Trunk is a pure vertical (x=50). Fork is symmetric about x=50.
     edges: [
-      { id: 'edge-api',   d: 'M50,14 L50,32' },
-      { id: 'api-cache',  d: 'M50,32 L30,50' },
-      { id: 'api-db',     d: 'M50,32 L70,50' },
+      { id: 'edge-api',  d: 'M50,22 L50,40' },
+      { id: 'api-cache', d: 'M50,40 L28,60' },
+      { id: 'api-db',    d: 'M50,40 L72,60' },
     ],
 
-    // ── BREAKER chip — exactly on the midpoint of the api→db edge (60,41).
+    // ── Flow dash overlay paths (must match edge d-strings above exactly)
+    flowPathDb:    'M50,40 L72,60',
+    flowPathCache: 'M50,40 L28,60',
+
+    // ── BREAKER chip — midpoint of api→db edge: ((50+72)/2, (40+60)/2) = (61, 50)
     breakerLabel:  'BREAKER',
     breakerOpen:   'OPEN',
     breakerClosed: 'CLOSED',
-    breakerX: 60,
-    breakerY: 41,
+    breakerX: 61,
+    breakerY: 50,
 
     // ── State captions
     stressState: 'DB SATURATING',
     calmState:   'CACHE WARM',
 
-    // ── Readout labels (résumé-tied headline + illustrative set-dressing)
+    // ── Readout labels
     latencyLabel: 'p95 LATENCY',
-    latencyHi:    '180ms',   // STRESSED display value
-    latencyLo:    '72ms',    // RESOLVED display value (−60%)
-    deltaLabel:   'p95 −60%',
+    latencyHi:    '180ms',
+    latencyLo:    '72ms',
 
     hitRateLabel: 'CACHE HIT',
-    hitRateLo:    '31%',     // STRESSED (cold cache, realistic floor)
-    hitRateHi:    '96%',     // RESOLVED
+    hitRateLo:    '31%',
+    hitRateHi:    '96%',
 
-    reqLabel:  'REQ',
-    rpsLabel:  '10M req / day',
-
-    // ── Sparkline sample arrays — 44 points each (must stay equal-length).
-    // STRESSED: starts low, climbs toward the p99 ceiling with erratic spikes.
-    // CALM:     flat-low around p50 with gentle heartbeat bumps.
-    // Scale: 0–34ms, matching existing MAX_MS = 34.
-    traceStressed: [
-       4,  4,  5,  5,  6,  7,  8,  9, 11, 13,
-      15, 17, 20, 22, 25, 26, 27, 28, 28, 27,
-      26, 28, 29, 30, 28, 26, 28, 30, 28, 27,
-      26, 24, 25, 27, 28, 28, 27, 26, 25, 24,
-      26, 27, 28, 28,
-    ],
-    traceCalm: [
-       4,  4,  4,  4,  4,  5,  4,  4,  4,  4,
-       4,  4,  4,  5,  5,  8, 10,  8,  5,  4,
-       4,  4,  4,  4,  4,  4,  4,  4,  5,  5,
-       8, 10,  8,  5,  4,  4,  4,  4,  4,  4,
-       4,  4,  5,  4,
-    ],
+    reqLabel: 'REQ / DAY',
+    rpsLabel: '10M',
   },
 
   data: {

@@ -40,10 +40,10 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: BACKEND — two-state "resilience" narrative
-   Layout: EDGE → API → fork → CACHE (Redis, fast path) / DB (Postgres, slow path).
-   STRESSED: DB saturating, latency climbing, queue bunching, gold caution signals.
-   RESOLVED: cache absorbs load, circuit breaker closes, lime calm state.
+   VIZ: BACKEND — resilience narrative (redesign)
+   EQ spectrum bars at top show request throughput.
+   STRESSED: DB pressured — amber rings + particle flow, high latency.
+   RESOLVED: CACHE absorbs load — lime bloom + particle flow, latency drops.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-backend {
@@ -55,6 +55,108 @@
   inset: 0;
 }
 
+/* ── Dot-grid background ───────────────────────────────────────────────────── */
+.wbk-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(237, 237, 223, 0.055) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 90% 75% at 50% 38%, black 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 75% at 50% 38%, black 20%, transparent 75%);
+}
+
+/* ── EQ bars — request throughput visualizer ───────────────────────────────── */
+.wbk-bars {
+  position: absolute;
+  top: 3%;
+  left: 5%;
+  right: 5%;
+  height: 13%;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  pointer-events: none;
+  opacity: clamp(0, calc((var(--enter, 1) - 0.05) * 8), 1);
+}
+
+.wbk-bar {
+  flex: 1;
+  min-width: 0;
+  height: calc(12% + var(--seed, 0.5) * 88%);
+  transform-origin: bottom;
+  border-radius: 1px 1px 0 0;
+  background: var(--accent-2);
+  opacity: 0.68;
+  box-shadow: 0 -2px 8px rgba(232, 196, 122, 0.38);
+  animation: wbk-bar-bounce calc(0.13s + var(--seed, 0.5) * 0.2s) ease-in-out infinite alternate;
+  animation-delay: calc(var(--i, 0) * -0.035s + var(--seed, 0) * -0.07s);
+}
+
+.wbk-bars--resolved .wbk-bar {
+  background: var(--accent);
+  box-shadow: 0 -2px 6px rgba(201, 245, 88, 0.28);
+  animation-duration: calc(0.44s + var(--seed, 0.5) * 0.42s);
+  opacity: 0.58;
+}
+
+@keyframes wbk-bar-bounce {
+  0%   { transform: scaleY(0.07); }
+  100% { transform: scaleY(1);    }
+}
+
+/* ── Status row — live state label ─────────────────────────────────────────── */
+.wbk-status-row {
+  position: absolute;
+  top: 18%;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  opacity: clamp(0, calc((var(--enter, 1) - 0.1) * 8), 1);
+}
+
+.wbk-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  animation: wbk-status-pulse 1.1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.wbk-status-row--resolved .wbk-status-dot {
+  background: var(--accent);
+  animation: wbk-status-pulse-calm 2s ease-in-out infinite;
+}
+
+.wbk-status-label {
+  font-family: var(--mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-widest);
+  color: var(--accent-2);
+  text-transform: uppercase;
+  transition: color 0.4s;
+}
+
+.wbk-status-row--resolved .wbk-status-label {
+  color: var(--accent);
+}
+
+@keyframes wbk-status-pulse {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.2; }
+}
+
+@keyframes wbk-status-pulse-calm {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Mesh SVG ──────────────────────────────────────────────────────────────── */
 .wbk-mesh-svg {
   position: absolute;
   inset: 0;
@@ -64,8 +166,7 @@
   overflow: visible;
 }
 
-/* Graph edges — draw in via --enter / --i dashoffset.
-   pathLength="1" normalizes dash math to 0–1. Window ≈ 0.2 per edge. */
+/* Base edges — draw-in via CSS --enter/--i dashoffset */
 .wbk-edge {
   fill: none;
   stroke: var(--line-2);
@@ -75,35 +176,85 @@
   stroke-dashoffset: clamp(0, calc(1 - (var(--enter, 1) - var(--i, 0)) * 5.5), 1);
 }
 
-/* Queue congestion dots near DB — HTML divs (round, not SVG circles).
-   Drain into DB node via Framer MotionValue left/top as phase resolves. */
-.wbk-queue-dot-html {
+/* Flowing dash overlays on active paths */
+.wbk-edge-flow {
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 2.5 9;
+  animation: wbk-dash-flow 0.72s linear infinite;
+  pointer-events: none;
+}
+
+.wbk-edge-flow--db {
+  stroke: var(--accent-2);
+  filter: drop-shadow(0 0 2.5px rgba(232, 196, 122, 0.85));
+}
+
+.wbk-edge-flow--cache {
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 2.5px rgba(201, 245, 88, 0.85));
+}
+
+@keyframes wbk-dash-flow {
+  to { stroke-dashoffset: -11.5; }
+}
+
+/* ── DB pressure rings ─────────────────────────────────────────────────────── */
+.wbk-rings {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.wbk-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 196, 122, 0.65);
+  animation: wbk-ring-expand 1.65s ease-out infinite;
+  animation-play-state: paused;
+  animation-delay: calc(var(--ring-i, 0) * -0.55s);
+}
+
+.wbk-rings--active .wbk-ring {
+  animation-play-state: running;
+}
+
+@keyframes wbk-ring-expand {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.75; }
+  100% { transform: translate(-50%, -50%) scale(3.8); opacity: 0;    }
+}
+
+/* ── Flow particles ────────────────────────────────────────────────────────── */
+.wbk-flow-dot {
   position: absolute;
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--accent-2);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  will-change: left, top, opacity;
-}
-
-/* Request flow dots along the EDGE→API trunk — HTML divs driven by flowClock MV.
-   Round regardless of the mesh SVG's non-uniform scaling. */
-.wbk-flow-dot {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--line-2);
   transform: translate(-50%, -50%);
   pointer-events: none;
   will-change: top, left, opacity;
 }
 
-/* ── Node chips — HTML for crisp rendering over non-uniform SVG ── */
-/* Zero-size anchor at the node coordinate; dot + label-group are absolutely
-   positioned children so the circle sits exactly on the SVG edge endpoint. */
+.wbk-flow-dot--trunk {
+  background: var(--line-2);
+}
+
+.wbk-flow-dot--db {
+  background: var(--accent-2);
+  box-shadow: 0 0 5px rgba(232, 196, 122, 0.85);
+}
+
+.wbk-flow-dot--cache {
+  background: var(--accent);
+  box-shadow: 0 0 5px rgba(201, 245, 88, 0.85);
+}
+
+/* ── Node chips ────────────────────────────────────────────────────────────── */
 .wbk-node {
   position: absolute;
   pointer-events: none;
@@ -111,27 +262,40 @@
   will-change: opacity;
 }
 
-/* Dot centered exactly on the anchor (= edge endpoint) */
-.wbk-node-dot {
+/* Hex badge — outer ring centered on the node anchor */
+.wbk-node-hex {
   position: absolute;
   left: 0;
   top: 0;
   transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: transparent;
-  border: 1.5px solid var(--accent-dim);
-  box-shadow: 0 0 6px rgba(201, 245, 88, 0.22);
-  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+  background: var(--bg-2);
+  border: 1.5px solid rgba(201, 245, 88, 0.32);
+  box-shadow: 0 0 8px rgba(201, 245, 88, 0.16), inset 0 0 6px rgba(201, 245, 88, 0.04);
+  transition: border-color 0.35s, box-shadow 0.35s;
   will-change: opacity;
 }
 
-/* Label group — default: to the RIGHT of the dot (EDGE, API, DB) */
+/* Inner core dot */
+.wbk-node-inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(201, 245, 88, 0.32);
+  transition: background 0.35s;
+}
+
+/* Label group — default: to the right of the dot */
 .wbk-node-labels {
   position: absolute;
   top: 0;
-  left: 11px;
+  left: 14px;
   transform: translateY(-50%);
   display: flex;
   align-items: baseline;
@@ -139,10 +303,10 @@
   white-space: nowrap;
 }
 
-/* CACHE: label group to the LEFT of the dot */
+/* CACHE: labels to the left */
 .wbk-node--cache .wbk-node-labels {
   left: auto;
-  right: 11px;
+  right: 14px;
 }
 
 .wbk-node-label {
@@ -160,56 +324,61 @@
   color: var(--accent-2);
 }
 
-/* CACHE is the resolved-state hero node — label lime, dot bright ring */
-.wbk-node--cache .wbk-node-dot   { border-color: var(--accent); }
-.wbk-node--cache .wbk-node-label { color: var(--accent); }
-
-/* DB stressed state — JS adds this class via wbk-node--stressed */
-.wbk-node--stressed .wbk-node-dot {
-  border-color: var(--accent-2);
-  box-shadow: 0 0 7px rgba(232, 196, 122, 0.3);
+/* CACHE — always lime */
+.wbk-node--cache .wbk-node-hex {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(201, 245, 88, 0.35), inset 0 0 8px rgba(201, 245, 88, 0.08);
 }
+.wbk-node--cache .wbk-node-inner  { background: rgba(201, 245, 88, 0.58); }
+.wbk-node--cache .wbk-node-label  { color: var(--accent); }
 
-/* CACHE lit glow — absolute div colocated with the CACHE node.
-   opacity driven by phase MotionValue (0→1 as system resolves). */
+/* DB stressed — amber glow */
+.wbk-node--stressed .wbk-node-hex {
+  border-color: rgba(232, 196, 122, 0.55);
+  box-shadow: 0 0 12px rgba(232, 196, 122, 0.38), inset 0 0 8px rgba(232, 196, 122, 0.08);
+}
+.wbk-node--stressed .wbk-node-inner { background: rgba(232, 196, 122, 0.52); }
+
+/* CACHE lit glow bloom */
 .wbk-cache-glow {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 26px;
-  height: 26px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: var(--accent-dim);
-  box-shadow: 0 0 18px 6px var(--accent-dim);
+  background: rgba(201, 245, 88, 0.1);
+  box-shadow: 0 0 32px 12px rgba(201, 245, 88, 0.13);
   pointer-events: none;
   will-change: opacity;
 }
 
-/* ── Hero request packet — lime ◆ diamond ── */
+/* ── Hero request packet ────────────────────────────────────────────────────── */
 .wbk-packet {
   position: absolute;
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
   background: var(--accent);
-  box-shadow: 0 0 10px rgba(201, 245, 88, 0.9), 0 0 20px rgba(201, 245, 88, 0.4);
+  box-shadow: 0 0 10px rgba(201, 245, 88, 0.9), 0 0 22px rgba(201, 245, 88, 0.4);
   transform: translate(-50%, -50%) rotate(45deg);
   pointer-events: none;
   will-change: left, top, opacity;
 }
 
-/* ── BREAKER — inline gate chip straddling the api→db edge ── */
+/* ── BREAKER chip ───────────────────────────────────────────────────────────── */
 .wbk-breaker {
   position: absolute;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 6px;
+  padding: 3px 7px;
   border: 1px solid var(--line);
-  background: transparent;
+  background: rgba(7, 7, 7, 0.7);
   border-radius: 2px;
   white-space: nowrap;
   pointer-events: none;
+  backdrop-filter: blur(4px);
   opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0)) * 6), 1);
 }
 
@@ -228,7 +397,6 @@
   transition: color 0.2s;
 }
 
-/* BREAKER OPEN state — JS adds wbk-breaker--open class */
 .wbk-breaker--open {
   border-color: var(--accent-2-dim);
 }
@@ -236,112 +404,61 @@
   color: var(--accent-2);
 }
 
-/* ── EKG latency graph widget ─────────────────────────────────────────────────
-   Identical structure to the previous build. Outer wrapper handles centering via
-   flex; inner motion.div is position:relative to avoid transform conflicts.
-   1:1 viewBox so the sweep dot is a geometrically round circle. */
-.wbk-graph {
+/* ── Bottom metrics bar ─────────────────────────────────────────────────────── */
+.wbk-metrics {
+  position: absolute;
+  top: 75%;
+  left: 4%;
+  right: 4%;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  background: rgba(7, 7, 7, 0.55);
+  border-radius: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.wbk-metric {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  width: 300px;
-  pointer-events: none;
+  gap: 3px;
+  padding: 8px 10px;
 }
 
-.wbk-graph-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+.wbk-metric-sep {
+  width: 1px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+.wbk-metric-label {
   font-family: var(--mono);
-}
-
-.wbk-graph-title {
-  font-size: var(--text-2xs);
+  font-size: var(--text-3xs);
   letter-spacing: var(--tracking-widest);
-  color: var(--accent-2);
-  opacity: 0.8;
+  color: var(--muted);
   text-transform: uppercase;
 }
 
-.wbk-graph-val {
-  font-size: var(--text-sm);
-  letter-spacing: var(--tracking-wide);
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  transition: color 0.3s;
-}
-
-.wbk-graph-svg {
-  width: 300px;
-  height: 58px;
-  display: block;
-  overflow: visible;
-}
-
-/* p99 ceiling — dashed gold reference line */
-.wbk-graph-ceil {
-  stroke: var(--accent-2);
-  stroke-width: 0.6;
-  stroke-dasharray: 2 3;
-  opacity: 0.32;
-}
-
-/* p50 baseline — faint lime floor */
-.wbk-graph-base {
-  stroke: var(--accent);
-  stroke-width: 0.5;
-  opacity: 0.18;
-}
-
-/* Latency trace — lime when resolved, gold when stressed */
-.wbk-graph-line {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 2px rgba(201, 245, 88, 0.45));
-  transition: stroke 0.3s, filter 0.3s;
-}
-
-/* Sweep dot — lime always (trace color handles the stressed signal) */
-.wbk-graph-dot {
-  fill: var(--accent);
-  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.85));
-  transition: fill 0.3s, filter 0.3s;
-}
-
-/* STRESSED state — JS adds wbk-graph--stressed class when phase < 0.5 */
-.wbk-graph--stressed .wbk-graph-line {
-  stroke: var(--accent-2);
-  filter: drop-shadow(0 0 3px rgba(232, 196, 122, 0.75));
-}
-.wbk-graph--stressed .wbk-graph-dot {
-  fill: var(--accent-2);
-  filter: drop-shadow(0 0 3px rgba(232, 196, 122, 0.85));
-}
-.wbk-graph--stressed .wbk-graph-val {
-  color: var(--accent-2);
-}
-
-/* Graph legend — cache hit % left, label right */
-.wbk-graph-legend {
-  display: flex;
-  justify-content: space-between;
+.wbk-metric-val {
   font-family: var(--mono);
-  font-size: var(--text-2xs);
+  font-size: var(--text-sm);
+  font-weight: 500;
   letter-spacing: var(--tracking-wide);
-  color: var(--muted);
-}
-
-.wbk-hit-val {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+  transition: color 0.35s;
 }
 
-.wbk-hit-label {
+/* Latency metric turns amber when stressed */
+.wbk-metric--stressed .wbk-metric-val {
   color: var(--accent-2);
-  opacity: 0.7;
+}
+
+.wbk-metric-val--req {
+  color: var(--fg-2);
 }
 
 
@@ -2643,11 +2760,11 @@
 }
 
 /* Frozen BACKEND: field needs explicit height for absolute positioned children.
-   295px: nodes at y:60% + graph starting at GRAPH_TOP=65% (191px) ending ~265px,
-   leaving 30px bottom clearance so the legend doesn't crowd the blurb text. */
+   Nodes reach y:60% (≈186px in 310px field), metrics bar at y:75% (≈232px) +
+   ~40px bar height + 12px bottom clearance = ~284px. Use 310px for comfort. */
 .widviz-panel--frozen .wbk-field {
   position: relative;
-  height: 295px;
+  height: 310px;
   overflow: hidden;
 }
 
