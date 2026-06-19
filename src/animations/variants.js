@@ -29,6 +29,7 @@ export const HERO_SEQUENCE = {
   meta:      0.95,
   name:      1.00,
   manifesto: 2.20,
+  focus:     2.55,
   metrics:   2.90,
   cta:       3.55,
   terminal:  4.50,

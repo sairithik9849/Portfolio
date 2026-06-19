@@ -180,10 +180,15 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
         </motion.h1>
       </motion.div>
 
-      {/* Phase 3 — manifesto quote; direct .hero child so space-between centers it between H1 and the metrics row */}
-      <motion.p className="manifesto-quote" variants={fade('manifesto')}>
-        I'll skip the standard pitch about having the best 'if statements' in the business, no one hangs code on a fridge. Instead, I focus on what <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>actually matters</span>: turning complex infrastructure bottlenecks into elegant, high-throughput solutions. From bare-metal system administration to silky-smooth React frontends, I build software that <span className="serif" style={{ color: 'var(--accent-2)', fontStyle: 'italic' }}>performs</span>. Let's build something awesome.
-      </motion.p>
+      {/* Phase 3 — manifesto block; single .hero child wrapping body + focus line */}
+      <motion.div className="manifesto-block" variants={PASSTHROUGH}>
+        <motion.p className="manifesto-quote" variants={fade('manifesto')}>
+          I engineer software at the intersection of infrastructure, data, and AI. Over the past few years, I've built distributed services processing 10M+ daily requests, developed intelligent automation systems, and delivered tools that improve operational efficiency for non-technical teams.
+        </motion.p>
+        <motion.p className="manifesto-focus" variants={fade('focus')}>
+          My focus is simple: <span className="serif">build scalable systems that create measurable impact</span>.
+        </motion.p>
+      </motion.div>
 
       <motion.div className="hero-bottom-row" variants={PASSTHROUGH}>
         <motion.div className="hero-manifesto" variants={PASSTHROUGH}>
@@ -199,17 +204,19 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
                 </svg>
               </span>
               <span className="mf-num">10M+</span>
-              <span className="mf-label">Daily API Requests Scaled</span>
+              <span className="mf-label">Requests/Day Served</span>
             </li>
             <li className="mf-metric">
               <span className="mf-icon">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <polyline points="4 9 9 12 4 15" />
-                  <line x1="12" y1="15" x2="20" y2="15" />
+                  <circle cx="9" cy="7" r="3" />
+                  <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  <path d="M21 20c0-3.3-2.7-6-6-6" />
                 </svg>
               </span>
-              <span className="mf-num">50+</span>
-              <span className="mf-label">Physical Systems Automated</span>
+              <span className="mf-num">25+</span>
+              <span className="mf-label">Internal Users Supported</span>
             </li>
             <li className="mf-metric">
               <span className="mf-icon">
@@ -220,6 +227,16 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
               </span>
               <span className="mf-num">4.0<span className="mf-num-unit">GPA</span></span>
               <span className="mf-label">MS in Computer Science</span>
+            </li>
+            <li className="mf-metric">
+              <span className="mf-icon">
+                {/* Gemini mark — filled 4-pointed star, currentColor so it follows gold→lime hover */}
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" aria-hidden="true">
+                  <path d="M12 1.5Q15.5 9 22.5 12Q15.5 15 12 22.5Q8.5 15 1.5 12Q8.5 9 12 1.5Z" />
+                </svg>
+              </span>
+              <span className="mf-num">10+</span>
+              <span className="mf-label">Multi-Agent Workflows</span>
             </li>
           </motion.ul>
 
