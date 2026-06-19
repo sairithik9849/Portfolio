@@ -271,14 +271,36 @@ export default function WhatIDo() {
       // document.fonts.ready resolves immediately if fonts are already loaded,
       // or waits for the first web-font swap. The `alive` flag prevents a
       // stale setup call if the component unmounts first.
+      let didSetup = false
       document.fonts.ready.then(() => {
         if (!alive) return
         setup()
+        didSetup = true
         ScrollTrigger.refresh()
       })
 
-      // Re-sync pin math after any layout-shifting resize.
-      const onResize = () => ScrollTrigger.refresh()
+      // Re-measure and rebuild the entire rig on resize so the band height,
+      // stack offsets, and word travel all re-derive from the new word size
+      // (font-size: clamp(48px, 8.25vw, 135px) changes with viewport width).
+      // A bare ScrollTrigger.refresh() only re-derives pin positions — it
+      // does not re-measure wordH or recompute any geometry, so the band stays
+      // frozen at the load-time size after a Chrome window resize.
+      // Debounced at 150 ms trailing so we don't kill/recreate the trigger on
+      // every resize tick. Only fires after the initial setup() has run.
+      let resizeDebounceTimer = null
+      const onResize = () => {
+        clearTimeout(resizeDebounceTimer)
+        resizeDebounceTimer = setTimeout(() => {
+          if (!alive || !didSetup) return
+          // Tear down the current trigger, clear all JS-set geometry, and
+          // clear any pending settle-snap state — stKiller() handles all of it.
+          stKiller?.()
+          // Re-measure wordH from the live DOM (font is already loaded) and
+          // rebuild band geometry + a fresh ScrollTrigger with correct travel.
+          setup()
+          ScrollTrigger.refresh()
+        }, 150)
+      }
       window.addEventListener('resize', onResize, { passive: true })
 
       // ── matchMedia cleanup ─────────────────────────────────────────────
@@ -287,6 +309,7 @@ export default function WhatIDo() {
       // teardown — ScrollTrigger, transforms, and the resize listener.
       return () => {
         alive = false
+        clearTimeout(resizeDebounceTimer)
         window.removeEventListener('resize', onResize)
         stKiller?.()
         scrollToIndexRef.current = null
