@@ -1,0 +1,117 @@
+/* ---- hero identity (name + professional headline bonded) ---- */
+.hero-identity {
+  display: flex;
+  flex-direction: column;
+  /* matches hero's main flex gap → equal breathing room above and below the headline */
+  gap: clamp(16px, 2.6vh, 28px);
+}
+
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(90px, 9.6vw, 152px);   /* up ~12% from reduced value; still ~14% under original */
+  line-height: 0.92;
+  letter-spacing: var(--tracking-tight);
+  font-weight: 500;
+  margin: 0 0 0 -0.05em;   /* optical kerning — pulls serif "S" left side-bearing flush to x=0 */
+}
+
+/* ---- professional identifier headline ---- */
+.hero-headline {
+  font-family: var(--serif);   /* IBM Plex Sans Condensed — same voice as the name */
+  font-size: clamp(15px, 1.95vw, 30px);  /* vw-driven: fits one line ≥770px inside 40px gutter */
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* "Full-Stack Engineer" — white/near-white anchor, bold */
+.hero-headline-role {
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
+/* "specializing in" — connector, full white */
+.hero-headline-sep {
+  color: var(--fg);
+  font-weight: 400;
+}
+
+/* "AI Integration & Tooling" — gold accent, the specialization payload */
+.hero-headline-ai {
+  color: var(--accent-2);
+  font-weight: 600;
+  text-shadow:
+    0 0 10px rgba(232, 196, 122, 0.65),
+    0 0 24px rgba(232, 196, 122, 0.28);
+}
+
+.hero h1 .hero-name-line { display: inline-block; will-change: transform; }
+.hero h1 .char { display: inline-block; vertical-align: baseline; will-change: transform; }
+.hero h1 .char--last { color: var(--accent-2); }
+.hero h1 .it { font-style: italic; color: var(--fg-2); }
+.hero h1 .hero-dot {
+  color: var(--accent);
+  font-style: italic;
+  text-shadow:
+    0 0 8px rgba(201, 245, 88, 0.9),
+    0 0 18px rgba(201, 245, 88, 0.5),
+    0 0 34px rgba(201, 245, 88, 0.28);
+}
+
+/* ---- responsive ---- */
+
+@media (max-width: 1280px) and (min-width: 981px) {
+  .hero h1 {
+    font-size: min(clamp(62px, 9.3vw, 138px), 20vh);
+    white-space: nowrap;
+  }
+
+  .hero-identity {
+    gap: clamp(18px, 3vh, 28px);  /* matches hero gap at this breakpoint */
+  }
+
+  .hero-headline {
+    font-size: clamp(13px, 1.6vw, 24px);
+  }
+}
+
+@media (max-height: 900px) and (min-height: 721px) and (min-width: 769px) {
+  .hero h1 {
+    font-size: min(clamp(90px, 9.6vw, 152px), 17vh);
+    white-space: nowrap;
+  }
+
+  .hero-identity {
+    gap: clamp(12px, 2vh, 20px);  /* matches hero gap at this breakpoint */
+  }
+
+  .hero-headline {
+    font-size: clamp(14px, 1.7vw, 26px);
+  }
+}
+
+@media (max-height: 720px) and (min-width: 769px) {
+  .hero h1 {
+    font-size: min(clamp(80px, 8.8vw, 134px), 14vh);
+    white-space: nowrap;
+  }
+
+  .hero-identity {
+    gap: clamp(14px, 2.4vh, 22px);  /* matches hero gap at this breakpoint */
+  }
+
+  .hero-headline {
+    font-size: clamp(13px, 1.5vw, 22px);
+  }
+}
+
+@media (max-width: 640px) {
+  /* Headline allowed to wrap on phones — hero is auto-height below 980px, extra line is free */
+  .hero-headline {
+    white-space: normal;
+    font-size: clamp(13px, 3.6vw, 18px);
+  }
+}

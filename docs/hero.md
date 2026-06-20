@@ -84,6 +84,14 @@ Spline via `@splinetool/react-spline` + `@splinetool/runtime`.
 
 `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is **outside** `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
 
+## Terminal
+
+`.hero-bottom-row .sub` is `position: absolute` (out of flex flow) so the terminal centers on the robot without disturbing the left column. The `left` formula is `78vw`-based: robot center ≈ `--robot-left` (48%) + half the remaining span + `--robot-translate` (8%) ≈ 78.16vw. The `max(40px, (100vw - 1440px) / 2)` term corrects for hero padding that grows above 1440px — without it the terminal drifts right on wide monitors. At `≤980px` the terminal reverts to `position: static` so it stacks normally below the metrics.
+
+**Framer Motion trap:** `.sub` is a `motion.div`. Framer sets `style.transform = "none"` inline, overriding any CSS `transform`. Never center with `translateX(-50%)` — bake the half-width offset into `left` directly.
+
+Copy lives in `src/data/terminal.js`; line shapes are documented there. The `help` command and `● READY` status line are intentionally absent.
+
 ## InfiniteGrid
 
 Static import in `Hero.jsx`. Renders at `z:0`. Its `100vw` full-bleed extends past the `.shell` intentionally — `body { overflow-x: hidden }` in `global.css` is the containment; do not remove it.
@@ -104,3 +112,6 @@ Static import in `Hero.jsx`. Renders at `z:0`. Its `100vw` full-bleed extends pa
 - Never remove the Spline pointer-forwarding in `Hero.jsx` without also removing letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
 - Never add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.
 - Never eager-load `@splinetool/react-spline` — keep it `React.lazy` inside `SplineScene.jsx`.
+- Never center the terminal with `transform: translateX(-50%)` — Framer Motion sets `transform: none` inline; bake the offset into `left` directly.
+- Never move the scanline back to `.terminal::after` — it belongs on `.terminal .bar::after`; `.bar` needs `position: relative; overflow: hidden` to clip it.
+- Never shrink `.hero-manifesto` below `max-width: clamp(520px, 58%, 768px)` — the longest metric label truncates below 768px.

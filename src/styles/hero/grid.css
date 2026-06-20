@@ -1,0 +1,25 @@
+/* ---- hero infinite grid (animated, full-bleed) ---- */
+.infinite-grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  color: rgba(237, 237, 223, 0.85);
+}
+
+.infinite-grid__base,
+.infinite-grid__masked {
+  position: absolute;
+  inset: 0;
+}
+
+.infinite-grid__base   { opacity: 0.10; }
+.infinite-grid__masked { opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .infinite-grid__masked { opacity: 0.30; }
+}

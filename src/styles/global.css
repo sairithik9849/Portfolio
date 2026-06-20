@@ -8,7 +8,13 @@
 @import './cursor.css';
 @import './layout.css';
 @import './nav.css';
-@import './hero.css';
+/* hero — split into per-component partials (cascade order preserved) */
+@import './hero/grid.css';
+@import './hero/shell.css';
+@import './hero/identity.css';
+@import './hero/robot.css';
+@import './hero/manifesto.css';
+@import './hero/terminal.css';
 @import './ai.css';
 @import './components.css';
 @import './about-me.css';
