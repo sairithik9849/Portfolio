@@ -324,9 +324,10 @@
   line-height: 1.68;
   letter-spacing: -0.005em;
   color: rgba(237, 237, 223, 0.78);
-  max-width: 64ch;
+  max-width: 66ch;
   margin: 0;
   padding-left: clamp(16px, 1.35vw, 22px);
+  text-align: justify;
 }
 
 .manifesto-quote::before {
