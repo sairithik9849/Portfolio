@@ -174,19 +174,16 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   // border appears to "arrive" with the layer rather than before or after it.
   const l1BorderOp = useTransform(t, [0.08, 1], [0, 0.38], { clamp: true })
   const l2BorderOp = useTransform(t, [0.12, 1], [0, 0.45], { clamp: true })
-  const l3BorderOp = useTransform(t, [0.16, 1], [0, 0.52], { clamp: true })
   const l4BorderOp = useTransform(t, [0,    1], [0.15, 0.58], { clamp: true })
 
   // Convert opacity to full rgba string (Framer applies this as inline borderColor)
   const l1BorderColor = useTransform(l1BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
   const l2BorderColor = useTransform(l2BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
-  const l3BorderColor = useTransform(l3BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
   const l4BorderColor = useTransform(l4BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
 
-  // Outer glow for inner layers (L1/L2/L3) — not L4 which has its own CSS box-shadow
+  // Outer glow for inner layers (L1/L2) — L3 uses CSS-only border; L4 has its own CSS box-shadow
   const l1Glow = useTransform(l1BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.37).toFixed(3)})`)
   const l2Glow = useTransform(l2BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.38).toFixed(3)})`)
-  const l3Glow = useTransform(l3BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.39).toFixed(3)})`)
 
   // ── Data particle — rises through layers at pulse peak ────────────────────
   const particleY  = useTransform(pulseT, [0, 1], ['78%', '12%'])

@@ -109,13 +109,54 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ---- hero identity (name + professional headline bonded) ---- */
+.hero-identity {
+  display: flex;
+  flex-direction: column;
+  /* matches hero's main flex gap → equal breathing room above and below the headline */
+  gap: clamp(16px, 2.6vh, 28px);
+}
+
 .hero h1 {
   font-family: var(--serif);
-  font-size: clamp(104px, 11.2vw, 176px);
+  font-size: clamp(90px, 9.6vw, 152px);   /* up ~12% from reduced value; still ~14% under original */
   line-height: 0.92;
   letter-spacing: var(--tracking-tight);
   font-weight: 500;
   margin: 0 0 0 -0.05em;   /* optical kerning — pulls serif "S" left side-bearing flush to x=0 */
+}
+
+/* ---- professional identifier headline ---- */
+.hero-headline {
+  font-family: var(--serif);   /* IBM Plex Sans Condensed — same voice as the name */
+  font-size: clamp(15px, 1.95vw, 30px);  /* vw-driven: fits one line ≥770px inside 40px gutter */
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* "Full-Stack Engineer" — white/near-white anchor, bold */
+.hero-headline-role {
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
+/* "specializing in" — connector, full white */
+.hero-headline-sep {
+  color: var(--fg);
+  font-weight: 400;
+}
+
+/* "AI Integration & Tooling" — gold accent, the specialization payload */
+.hero-headline-ai {
+  color: var(--accent-2);
+  font-weight: 600;
+  text-shadow:
+    0 0 10px rgba(232, 196, 122, 0.65),
+    0 0 24px rgba(232, 196, 122, 0.28);
 }
 
 .hero h1 .hero-name-line { display: inline-block; will-change: transform; }
@@ -272,6 +313,8 @@
   display: flex;
   flex-direction: column;
   gap: clamp(18px, 2.8vh, 32px);
+  position: relative;
+  z-index: 2;
 }
 
 .manifesto-quote {
@@ -318,11 +361,13 @@
 .manifesto-focus {
   position: relative;
   font-family: var(--sans);
-  font-size: clamp(19px, 1.6vw, 26px);
-  font-weight: 500;
-  line-height: 1.4;
+  /* Demoted from tier-2 (19–26px, 500) to tier-3 — matches manifesto-quote range
+     so the new .hero-headline is the sole tier-2 emphasis element */
+  font-size: clamp(17px, 1.35vw, 22px);
+  font-weight: 400;
+  line-height: 1.68;
   letter-spacing: 0;
-  color: var(--fg);
+  color: rgba(237, 237, 223, 0.78);
   max-width: 64ch;
   margin: 0;
   padding-left: clamp(16px, 1.35vw, 22px);
@@ -750,8 +795,16 @@
   }
 
   .hero h1 {
-    font-size: min(clamp(72px, 10.8vw, 160px), 22vh);
+    font-size: min(clamp(62px, 9.3vw, 138px), 20vh);
     white-space: nowrap;
+  }
+
+  .hero-identity {
+    gap: clamp(18px, 3vh, 28px);  /* matches hero gap at this breakpoint */
+  }
+
+  .hero-headline {
+    font-size: clamp(13px, 1.6vw, 24px);
   }
 
   /* loosen the gap so the manifesto column isn't squeezed before the 980px stack */
@@ -778,8 +831,16 @@
   }
 
   .hero h1 {
-    font-size: min(clamp(104px, 11.2vw, 176px), 19vh);
+    font-size: min(clamp(90px, 9.6vw, 152px), 17vh);
     white-space: nowrap;
+  }
+
+  .hero-identity {
+    gap: clamp(12px, 2vh, 20px);  /* matches hero gap at this breakpoint */
+  }
+
+  .hero-headline {
+    font-size: clamp(14px, 1.7vw, 26px);
   }
 
   .hero-manifesto {
@@ -792,7 +853,8 @@
   }
 
   .manifesto-focus {
-    font-size: clamp(17px, 1.45vw, 22px);
+    font-size: clamp(15px, 1.2vw, 19px);
+    line-height: 1.55;
   }
 
   .mf-metric {
@@ -838,8 +900,16 @@
   }
 
   .hero h1 {
-    font-size: min(clamp(92px, 10.2vw, 156px), 16vh);
+    font-size: min(clamp(80px, 8.8vw, 134px), 14vh);
     white-space: nowrap;
+  }
+
+  .hero-identity {
+    gap: clamp(14px, 2.4vh, 22px);  /* matches hero gap at this breakpoint */
+  }
+
+  .hero-headline {
+    font-size: clamp(13px, 1.5vw, 22px);
   }
 
   .hero-manifesto {
@@ -852,7 +922,8 @@
   }
 
   .manifesto-focus {
-    font-size: clamp(16px, 1.3vw, 20px);
+    font-size: clamp(14px, 1.15vw, 18px);
+    line-height: 1.55;
   }
 
   .mf-metric {
@@ -878,6 +949,14 @@
 
   .terminal .body {
     padding: 10px 12px 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Headline allowed to wrap on phones — hero is auto-height below 980px, extra line is free */
+  .hero-headline {
+    white-space: normal;
+    font-size: clamp(13px, 3.6vw, 18px);
   }
 }
 

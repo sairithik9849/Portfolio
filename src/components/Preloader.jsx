@@ -1,36 +1,36 @@
 // Preloader overlay + HUD. Two responsibilities:
 //
-//   1. Bar: a compositor-driven WAAPI animation on transform:scaleX — it runs
-//      off the main thread, so HeroFluid/Spline eval (which mounts under this
-//      overlay) can never stutter it. It fills 0 → FILL_RAMP over MIN_DISPLAY_MS,
-//      then races FILL_RAMP → 1 the instant beginExit arrives, so 100% and the
-//      curtain coincide (no dead wait at the end).
+//   1. Bar: a compositor-driven WAAPI animation on transform:scaleX that fills
+//      0 → 1 over FILL_DURATION_MS with a near-linear ease. Runs off the main
+//      thread, so HeroFluid/Spline eval can never stutter it. No hold, no second
+//      segment — a single smooth sweep all the way to 100.
 //
-//   2. Curtain: when beginExit fires (App: fluid AND robot ready, or safety cap),
-//      the bar completes, then the overlay sweeps up via transform:translateY
+//   2. Curtain: when BOTH the fill has finished AND beginExit fires (assets ready
+//      or safety ceiling), the overlay sweeps up via transform:translateY
 //      (compositor) revealing the already-loaded hero behind it.
+//      onRevealComplete fires once the sweep finishes — App uses this to start
+//      the Hero entrance cascade, keeping the heavy Framer spike off the
+//      preloader's visible frames entirely.
 //
 // The percent/status HUD is written via refs (no per-frame React re-renders).
 
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import BoxLoader from './preloader/BoxLoader.jsx'
-import { MIN_DISPLAY_MS } from '../utils/preloadAssets.js'
 import { PRELOADER_NAME, getStatusLabel } from '../data/preloader.js'
 
-// Bar fills to this fraction over the cinematic floor; the final stretch to 1
-// is the reveal race, so the bar lands on 100 exactly as the curtain lifts.
-const FILL_RAMP        = 0.92
-const RACE_DURATION_MS = 320   // FILL_RAMP → 1 once readiness fires
-const RACE_DURATION_REDUCED = 80
-const RAMP_EASE        = 'cubic-bezier(0.22, 1, 0.36, 1)'
+// Single continuous fill: 0 → 1 over FILL_DURATION_MS.
+// Near-linear ease-in-out-sine: starts moving immediately, never parks near 100.
+const FILL_DURATION_MS      = 2600
+const FILL_DURATION_REDUCED = 600
+const FILL_EASE             = 'cubic-bezier(0.45, 0, 0.55, 1)'
 
 // Curtain (overlay sweep-up) durations (s).
 const EXIT_DURATION      = 0.88
 const EXIT_DURATION_FAST = 0.3   // reduced-motion fade
 const EXIT_EASE          = [0.22, 1, 0.36, 1]
 
-export default function Preloader({ beginExit }) {
+export default function Preloader({ beginExit, onRevealComplete }) {
   const reduced    = !!useReducedMotion()
   const reducedRef = useRef(reduced)
 
@@ -47,38 +47,64 @@ export default function Preloader({ beginExit }) {
   const statusRef = useRef(null)
   const barRef    = useRef(null)
 
-  // Active fill animation + its scaleX range, so the number mirror can map the
-  // animation's eased progress back to a 0–100 readout for whichever phase runs.
-  const animRef     = useRef(null)
-  const rangeRef    = useRef({ from: 0, to: FILL_RAMP })
-  const lastPctRef  = useRef(-1)
+  // Gate: curtain lifts only when BOTH conditions are met.
+  const fillDoneRef  = useRef(false)
+  const beginExitRef = useRef(false)
+
+  // Number mirror dedup refs.
+  const lastPctRef   = useRef(-1)
   const lastLabelRef = useRef('')
 
-  // ── Bar: WAAPI ramp + ref-driven number mirror ────────────────────────────
+  // Active WAAPI animation — read by the rAF mirror.
+  const animRef = useRef(null)
+
+  // Shared reveal check: called by both the fill-.finished path and the
+  // beginExit effect; the dismissedRef guard ensures it fires exactly once.
+  const checkReveal = useRef(() => {
+    if (dismissedRef.current) return
+    if (fillDoneRef.current && beginExitRef.current) {
+      dismissedRef.current = true
+      setDismissed(true)   // AnimatePresence plays the curtain sweep
+    }
+  })
+
+  // ── Bar: single WAAPI 0→1 fill + ref-driven number mirror ────────────────
   useEffect(() => {
     const fillEl = fillRef.current
     if (!fillEl) return undefined
 
-    rangeRef.current = { from: 0, to: FILL_RAMP }
-    animRef.current = fillEl.animate(
-      [{ transform: 'scaleX(0)' }, { transform: `scaleX(${FILL_RAMP})` }],
-      { duration: MIN_DISPLAY_MS, easing: RAMP_EASE, fill: 'forwards' },
+    const duration = reducedRef.current ? FILL_DURATION_REDUCED : FILL_DURATION_MS
+    const anim = fillEl.animate(
+      [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+      { duration, easing: FILL_EASE, fill: 'forwards' },
     )
+    animRef.current = anim
 
+    // Mark fill done and check if curtain can lift.
+    let cancelled = false
+    anim.finished
+      .then(() => {
+        if (cancelled) return
+        fillDoneRef.current = true
+        checkReveal.current()
+      })
+      .catch(() => {})
+
+    // rAF mirror: tracks the animation's eased progress to drive the percent
+    // readout and status label without touching React state.
     let rafId
     const mirror = () => {
       if (dismissedRef.current) return
-      const anim = animRef.current
-      const { from, to } = rangeRef.current
-      const progress = anim ? (anim.effect.getComputedTiming().progress ?? 1) : 1
-      const scaleX = from + (to - from) * progress
+      const progress = animRef.current?.effect?.getComputedTiming().progress ?? 1
 
-      const pct = Math.round(scaleX * 100)
+      const pct = Math.round(progress * 100)
       if (pct !== lastPctRef.current) {
         lastPctRef.current = pct
-        if (pctRef.current) pctRef.current.textContent = `${String(pct).padStart(2, '0')}%`
-        if (barRef.current) barRef.current.setAttribute('aria-valuenow', String(pct))
-        const label = getStatusLabel(scaleX)
+        if (pctRef.current)
+          pctRef.current.textContent = `${String(pct).padStart(2, '0')}%`
+        if (barRef.current)
+          barRef.current.setAttribute('aria-valuenow', String(pct))
+        const label = getStatusLabel(progress)
         if (label !== lastLabelRef.current) {
           lastLabelRef.current = label
           if (statusRef.current) statusRef.current.textContent = label
@@ -89,45 +115,17 @@ export default function Preloader({ beginExit }) {
     rafId = requestAnimationFrame(mirror)
 
     return () => {
+      cancelled = true
       cancelAnimationFrame(rafId)
-      animRef.current?.cancel()
+      anim.cancel()
     }
   }, [])
 
-  // ── Reveal: race the bar to 100, then sweep the curtain up ────────────────
+  // ── Readiness gate: assets ready (or ceiling fired) ───────────────────────
   useEffect(() => {
     if (!beginExit || dismissedRef.current) return
-    const fillEl = fillRef.current
-    if (!fillEl) {
-      dismissedRef.current = true
-      setDismissed(true)
-      return
-    }
-
-    // Current scaleX from the in-flight ramp, so the race starts seamlessly.
-    const prev = animRef.current
-    const { from, to } = rangeRef.current
-    const current = from + (to - from) * (prev?.effect.getComputedTiming().progress ?? 1)
-    prev?.cancel()
-
-    rangeRef.current = { from: current, to: 1 }
-    const duration = reducedRef.current ? RACE_DURATION_REDUCED : RACE_DURATION_MS
-    const race = fillEl.animate(
-      [{ transform: `scaleX(${current})` }, { transform: 'scaleX(1)' }],
-      { duration, easing: 'ease-out', fill: 'forwards' },
-    )
-    animRef.current = race
-
-    let cancelled = false
-    race.finished
-      .then(() => {
-        if (cancelled || dismissedRef.current) return
-        dismissedRef.current = true
-        setDismissed(true)   // AnimatePresence plays the curtain sweep
-      })
-      .catch(() => {})
-
-    return () => { cancelled = true }
+    beginExitRef.current = true
+    checkReveal.current()
   }, [beginExit])
 
   // ── Curtain motion — translateY sweep (compositor), fade under reduced motion ─
@@ -144,7 +142,7 @@ export default function Preloader({ beginExit }) {
       }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onRevealComplete}>
       {!dismissed && (
         <motion.div
           className="preloader"

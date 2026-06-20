@@ -38,6 +38,10 @@ export default function App() {
   //                         This ensures nothing heavy runs concurrently with the wipe.
   const [mountContent, setMountContent] = useState(false)
   const [revealed,     setRevealed]     = useState(false)
+  // heroStarted gates the Hero entrance cascade — set only after the curtain
+  // sweep finishes (Preloader's onRevealComplete) so the Framer spike that
+  // schedules the full HERO_SEQUENCE never contends with the visible wipe.
+  const [heroStarted,  setHeroStarted]  = useState(false)
 
   // Stable ref to the tracker so signal methods are reachable in stable callbacks.
   const trackerRef = useRef(null)
@@ -67,6 +71,10 @@ export default function App() {
   // Forward readiness signals to the tracker.
   const handleFluidReady  = useCallback(() => trackerRef.current?.markFluidReady(),  [])
   const handleSplineReady = useCallback(() => trackerRef.current?.markSplineReady(), [])
+
+  // Fires once the curtain sweep fully completes — starts the Hero cascade on
+  // a clean main thread, after all preloader visuals are gone.
+  const handleRevealComplete = useCallback(() => setHeroStarted(true), [])
 
   const [aiOpen, setAiOpen] = useState(false)
   const [heroVisible,  setHeroVisible]  = useState(true)
@@ -213,7 +221,7 @@ export default function App() {
             (or the ~6.5s safety ceiling) → overlay translateY curtain plays,
             HERO_SEQUENCE cascade starts. Content mounts one rAF after first paint.
           Cursor stays outside this gate so CURSOR_X/Y update during preload. */}
-      <Preloader beginExit={revealed} />
+      <Preloader beginExit={revealed} onRevealComplete={handleRevealComplete} />
 
       {/* Content tree — mounts one rAF after the overlay paints so the WebGL
           compile + Spline scene init run during the ~1.5s cinematic floor.
@@ -233,7 +241,7 @@ export default function App() {
           {/* Page content — onPointerMove feeds globalMouseRef for the shader attractor */}
           <div onPointerMove={handleGlobalPointerMove}>
             {/* <Nav /> */}
-            <Hero         onOpenAI={() => setAiOpen(true)} started={revealed} onSplineLoaded={handleSplineReady} />
+            <Hero         onOpenAI={() => setAiOpen(true)} started={heroStarted} onSplineLoaded={handleSplineReady} />
             <AboutMe />
             <WhatIDo />
             <Experience />

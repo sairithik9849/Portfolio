@@ -25,16 +25,17 @@ export const STAGGER_CHILD = {
 // Phase timing table for the serialized hero reload sequence.
 // Each key maps to the delay (in seconds) at which that phase starts.
 export const HERO_SEQUENCE = {
-  grid:      0.20,
-  meta:      0.95,
-  name:      1.00,
-  manifesto: 2.20,
-  focus:     2.55,
-  metrics:   2.90,
-  cta:       3.55,
-  terminal:  4.50,
-  footer:    5.30,
-  robot:     5.60,
+  grid:      0.10,
+  meta:      0.45,
+  name:      0.50,
+  headline:  0.85,  // professional identifier — fades up after name settles
+  manifesto: 1.10,
+  focus:     1.30,
+  metrics:   1.50,
+  cta:       1.80,
+  terminal:  2.25,
+  footer:    2.65,
+  robot:     2.80,
 }
 
 export const HERO_SEQUENCE_INSTANT = Object.fromEntries(

@@ -10,7 +10,7 @@ Hero entrance cascade, WebGL fluid background, Spline robot, and InfiniteGrid. L
 
 ## Hero Entrance Cascade
 
-`Hero.jsx` drives `animate={started ? 'show' : 'hidden'}` where `started` is the `revealed` flag from `App.jsx` — the entire cascade holds at `hidden` until the preloader overlay wipe fires. See `docs/architecture.md` for the two-phase preloader handoff.
+`Hero.jsx` drives `animate={started ? 'show' : 'hidden'}` where `started` is the `heroStarted` flag from `App.jsx` — the entire cascade holds at `hidden` until **after** the preloader curtain has fully swept up. `heroStarted` is set from `Preloader`'s `onRevealComplete` (`AnimatePresence onExitComplete`), which fires ~0.88s after `revealed` becomes true. This ensures the Framer reconciliation spike that schedules all ~5.6s of `HERO_SEQUENCE` delays lands on a clean main thread with the overlay already gone. The Spline robot is unaffected (its crossfade is outside the cascade, driven by its own `onLoad`). See `docs/architecture.md` for the three-flag preloader handoff.
 
 ### Sequence (serialized)
 

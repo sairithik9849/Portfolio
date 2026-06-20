@@ -57,22 +57,23 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 | `Projects` | `#work` | "Work" |
 | `Footer` | `#contact` | "Contact" |
 
-## Two-Phase Preloader Handoff
+## Three-Flag Preloader Handoff
 
-`App.jsx` uses two booleans — `mountContent` and `revealed` — instead of a single `ready` flag.
+`App.jsx` uses three booleans — `mountContent`, `revealed`, and `heroStarted` — to separate the three distinct phases cleanly.
 
-- `mountContent` (set via `requestAnimationFrame` one frame after the overlay paints) mounts the full content tree **under the still-opaque overlay** so HeroFluid's WebGL shader can compile and Spline can init during the ~1.5s cinematic floor.
-- `revealed` (set by `createPreloadTracker`'s `onReady` callback) triggers `beginExit` on the Preloader, which plays the `translateY` curtain sweep and flips `started=true` on `Hero` so the `HERO_SEQUENCE` cascade begins. `onReady` fires only when **both** HeroFluid (`markFluidReady`) and the Spline robot (`markSplineReady`) are ready AND `MIN_DISPLAY_MS` has elapsed — or the `HARD_CEILING_MS` (~6.5s) safety cap fires.
+- **`mountContent`** (set via `requestAnimationFrame` one frame after the overlay paints) mounts the full content tree **under the still-opaque overlay** so HeroFluid's WebGL shader can compile and Spline can init while the bar animates.
+- **`revealed`** (set by `createPreloadTracker`'s `onReady` callback) sends `beginExit=true` to Preloader. The curtain (`translateY` sweep) lifts only when **both** this flag has fired **and** the single-fill bar has completed — whichever comes last. Preloader.jsx enforces the `fillDone && beginExit` gate internally. `onReady` fires once both HeroFluid (`markFluidReady`) and the Spline robot (`markSplineReady`) are ready — or the `HARD_CEILING_MS` (~6.5s) safety cap fires. There is no separate `MIN_DISPLAY_MS` timing floor in the tracker; the bar's `FILL_DURATION_MS` (~2.6s) is the effective display floor.
+- **`heroStarted`** (set from `Preloader`'s `onRevealComplete` → `AnimatePresence onExitComplete`) starts the `HERO_SEQUENCE` cascade. This deliberately fires **after the curtain finishes sweeping up**, so the heavy Framer reconciliation spike lands on a fully clean main thread with the preloader already gone.
 
-**Do not collapse these back into one flag** — that causes a triple-whammy frame spike (two WebGL contexts + Spline init + Framer entrance all contending with the wipe).
+**Do not collapse these back into two or one flag** — separating `revealed` from `heroStarted` is what keeps the Framer spike off the preloader's visible frames. Collapsing them causes the cascade's main-thread cost to contend with the curtain sweep.
 
-**Do not gate `mountContent` on the tracker's floor** — content must mount early so both subsystems load under the opaque overlay during the cinematic window.
+**Do not gate `mountContent` on anything time-based** — content must mount early so both subsystems load under the opaque overlay during the cinematic window.
 
 The three `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
 
 ## `preloadAssets.js` Progress Model
 
-The progress bar (Preloader.jsx) is a **compositor-driven WAAPI animation** on `transform: scaleX` — it runs off the main thread, so WebGL/Spline eval under the overlay can never stutter it. `preloadAssets.js` no longer drives the bar at all; it only tracks *when the reveal may happen* via `markFluidReady()` / `markSplineReady()`. `MIN_DISPLAY_MS = 1500` is the shared cinematic floor exported from `preloadAssets.js` and imported by `Preloader.jsx` as the WAAPI ramp duration. The old `setInterval` ramp, `RAMP_CEILING`, and per-integer React re-renders are gone.
+The progress bar (Preloader.jsx) is a **single compositor-driven WAAPI animation** on `transform: scaleX` from 0→1 over `FILL_DURATION_MS` (~2.6s) with a near-linear ease — it runs off the main thread, so nothing that runs under the overlay can ever stutter it. `preloadAssets.js` does not drive the bar at all; it only tracks *when the reveal may happen* via `markFluidReady()` / `markSplineReady()`. The old two-phase ramp+race, `FILL_RAMP`, `RACE_DURATION_MS`, `MIN_DISPLAY_MS`, `rangeRef`, and `animRef` reassignment are gone.
 
 ## Lenis Momentum Scroll
 

@@ -145,6 +145,10 @@
   top: 0;
   left: 0;
   transform-style: preserve-3d;
+  /* Hint the compositor to keep these elements on their own layer.
+     preserve-3d limits full independent promotion, but this helps the
+     browser pre-allocate a layer and reduces rasterisation cost. */
+  will-change: transform;
 }
 
 /* Initial Z-pattern positions + per-box animations */

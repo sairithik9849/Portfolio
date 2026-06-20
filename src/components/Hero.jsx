@@ -14,6 +14,14 @@ import MatrixText from './MatrixText'
 import TextScramble from './TextScramble'
 import Typewriter from './Typewriter'
 import { scrollToId } from '../utils/scrollTo'
+import {
+  HERO_HEADLINE_ROLE,
+  HERO_HEADLINE_SPEC,
+  HERO_MANIFESTO,
+  HERO_FOCUS,
+  HERO_CTA_TAGLINE,
+  HERO_ROBOT_CTA,
+} from '../data/hero'
 
 const ROLES = [
   'FULL-STACK DEVELOPER',
@@ -158,12 +166,13 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
       </motion.div>
 
       {/*
-        Phase 2b — name slide+fade.
-        Each word is a single motion.span using fadeUp — SAIRITHIK at T.name,
-        KOMURAVELLY at T.name+0.12s. Individual HeroLetter spans carry only
-        whileHover (no entrance variant); the wrapper owns the entrance.
+        Phase 2b — name slide+fade, bonded with the new professional headline.
+        The .hero-identity wrapper keeps the headline visually glued to the name
+        (tight internal gap) so it reads as a title/subtitle, not a floating row.
+        Each name word uses fadeUp independently; the headline is a single fadeUp unit.
       */}
       <motion.div
+        className="hero-identity"
         style={{ position: 'relative', zIndex: 2 }}
         variants={PASSTHROUGH}
       >
@@ -178,15 +187,23 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
             <span className="hero-dot">.</span>
           </motion.span>
         </motion.h1>
+
+        {/* Phase 2c — professional identifier. Single fadeUp unit, no per-letter animation.
+            Two-tone: lime "Full-Stack Engineer" dominant; muted gray for the rest. */}
+        <motion.p className="hero-headline" variants={fade('headline')}>
+          <span className="hero-headline-role">{HERO_HEADLINE_ROLE}</span>
+          <span className="hero-headline-sep"> specializing in </span>
+          <span className="hero-headline-ai">{HERO_HEADLINE_SPEC}</span>
+        </motion.p>
       </motion.div>
 
       {/* Phase 3 — manifesto block; single .hero child wrapping body + focus line */}
       <motion.div className="manifesto-block" variants={PASSTHROUGH}>
         <motion.p className="manifesto-quote" variants={fade('manifesto')}>
-          I engineer software at the intersection of infrastructure, data, and AI. Over the past few years, I've built distributed services processing 10M+ daily requests, developed intelligent automation systems, and delivered tools that improve operational efficiency for non-technical teams.
+          {HERO_MANIFESTO}
         </motion.p>
         <motion.p className="manifesto-focus" variants={fade('focus')}>
-          My focus is simple: <span className="serif">build scalable systems that create measurable impact</span>.
+          {HERO_FOCUS.lead} <span className="serif">{HERO_FOCUS.emphasis}</span>.
         </motion.p>
       </motion.div>
 
@@ -243,7 +260,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
           {/* Phase 5 — CTA block */}
           <motion.div className="manifesto-cta" variants={fade('cta')}>
             <p className="manifesto-quote-sm">
-              Prompting is <span className="serif">syntax</span>. Architecting is <span className="serif">execution</span>.
+              {HERO_CTA_TAGLINE.promptingLead} <span className="serif">{HERO_CTA_TAGLINE.syntax}</span>. {HERO_CTA_TAGLINE.architectingLead} <span className="serif">{HERO_CTA_TAGLINE.execution}</span>.
             </p>
             <button
               type="button"
@@ -272,7 +289,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
         data-cursor="hover"
         variants={fade('robot')}
       >
-        <span className="robot-agent-cta">Click Mouse 1 to Chat</span>
+        <span className="robot-agent-cta">{HERO_ROBOT_CTA}</span>
       </motion.button>
     </motion.section>
   )

@@ -1,21 +1,13 @@
 // Readiness tracker for the preloader → hero reveal handoff.
 //
-// This no longer fakes a progress ramp. The visible bar is now a compositor-
-// driven WAAPI animation in Preloader.jsx (immune to main-thread jank), so the
-// tracker's only job is to decide *when the curtain may lift*:
+// Decides *when the curtain may lift*: once fluidReady AND splineReady are both
+// true — or the hard ceiling fires so a blocked Spline host never traps the user.
 //
-//   reveal when  (min-display floor elapsed)  AND  fluidReady  AND  splineReady
-//                — or the hard ceiling fires, so a blocked Spline domain or a
-//                  WebGL fallback never traps the user behind the overlay.
-//
-// Loading the heavy chunks (HeroFluid WebGL, Spline scene) happens under the
-// opaque overlay during the floor window — see App.jsx (content mounts one frame
-// after the overlay paints). Because the bar is compositor-driven, the old
-// ~92% main-thread eval freeze can no longer stall it.
-
-// Cinematic floor — the bar always takes at least this long to fill, even if
-// assets resolve instantly. Shared with Preloader's WAAPI ramp duration.
-export const MIN_DISPLAY_MS = 1500
+// The visible fill bar is a compositor-driven WAAPI animation in Preloader.jsx
+// (FILL_DURATION_MS), entirely independent of this tracker. The bar's duration
+// is now the effective minimum-display floor, so the tracker no longer imposes
+// a separate MIN_DISPLAY_MS timing check — it fires the moment both subsystems
+// are ready.
 
 // Safety ceiling — reveal regardless of readiness so the site is never
 // permanently hidden (slow network, blocked Spline host, WebGL unavailable).
@@ -30,7 +22,6 @@ export function createPreloadTracker({ onReady } = {}) {
   let splineReady = false
   let finished    = false
   let disposed    = false
-  const startMs   = performance.now()
 
   const finish = () => {
     if (finished || disposed) return
@@ -38,16 +29,14 @@ export function createPreloadTracker({ onReady } = {}) {
     onReady?.()
   }
 
-  // Reveal only once both heavy subsystems are live AND the floor has elapsed.
+  // Reveal as soon as both heavy subsystems are live.
   const tryFinish = () => {
     if (finished || disposed) return
-    if (fluidReady && splineReady && performance.now() - startMs >= MIN_DISPLAY_MS) {
+    if (fluidReady && splineReady) {
       finish()
     }
   }
 
-  // Covers the assets-ready-before-floor case: re-check when the floor passes.
-  const minTimer     = setTimeout(tryFinish, MIN_DISPLAY_MS)
   const ceilingTimer = setTimeout(finish, HARD_CEILING_MS)
 
   return {
@@ -61,7 +50,6 @@ export function createPreloadTracker({ onReady } = {}) {
     },
     dispose() {
       disposed = true
-      clearTimeout(minTimer)
       clearTimeout(ceilingTimer)
     },
   }
