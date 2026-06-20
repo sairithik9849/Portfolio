@@ -278,8 +278,8 @@
 /* ---- hero bottom two-column row ---- */
 .hero-bottom-row {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: clamp(64px, 9vw, 160px);
   width: 100%;
   position: relative;
@@ -287,12 +287,23 @@
   pointer-events: none;
 }
 
+/* Terminal is pulled out of the flex flow and anchored to .hero (position:relative).
+   It centers on the robot using the same --robot-left / --robot-translate tokens
+   that .hero-spline and .robot-agent-hotspot already consume, so it tracks the robot
+   across every breakpoint automatically. */
 .hero-bottom-row .sub {
-  flex: 0 1 460px;
-  max-width: 460px;
-  margin-top: 0;
-  padding-bottom: 0;
-  transform: translateX(max(0px, calc((100vw - 1440px) / 2)));
+  position: absolute;
+  bottom: clamp(20px, 3vh, 36px);
+  /* Robot center ≈ 78vw from the viewport left (derived from token values:
+     R_L=0.48, R_T=0.08 → center = R_L + (1-R_L)×(R_T+0.5) = 78.16% of hero width ≈ 78vw).
+     `left` is relative to .hero-bottom-row, which starts at hero's padding-left from the
+     viewport. Centering baked into `left` directly — not via translateX — because Framer
+     Motion sets `transform: none` inline which would override any CSS transform. */
+  left: calc(78vw - min(270px, 21vw) - max(40px, (100vw - 1440px) / 2));
+  width: min(540px, 42vw);
+  max-width: 540px;
+  z-index: 3;
+  pointer-events: auto;
 }
 
 .hero-bottom-row .sub .terminal {
@@ -303,6 +314,7 @@
 /* ---- hero manifesto (left column) ---- */
 .hero-manifesto {
   flex: 1 1 0;
+  max-width: clamp(520px, 58%, 768px); /* wide enough for all metric labels to show untruncated at desktop widths */
   display: flex;
   flex-direction: column;
   gap: clamp(16px, 2.6vh, 28px);
@@ -635,7 +647,7 @@
 /* terminal widget */
 .terminal {
   border: 1px solid var(--line-2);
-  background: linear-gradient(180deg, rgba(20, 20, 20, 0.32), rgba(7, 7, 7, 0.46));
+  background: linear-gradient(180deg, rgba(20, 20, 20, 0.18), rgba(7, 7, 7, 0.22));
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   font-family: var(--mono);
@@ -647,7 +659,7 @@
   transition: box-shadow 220ms ease, border-color 220ms ease;
 }
 
-.terminal::after {
+.terminal .bar::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -696,14 +708,16 @@
 }
 
 .terminal .bar {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 5px 12px;
   border-bottom: 1px solid rgba(237, 237, 223, 0.12);
   background:
     linear-gradient(180deg, rgba(237, 237, 223, 0.055), transparent 58%),
-    rgba(7, 7, 7, 0.36);
+    rgba(7, 7, 7, 0.24);
   box-shadow: inset 0 1px 0 rgba(237, 237, 223, 0.08);
   color: var(--muted);
   font-size: var(--text-sm);
@@ -732,7 +746,7 @@
     0 0 6px rgba(232, 196, 122, 0.7),
     0 0 16px rgba(232, 196, 122, 0.32);
 }
-.terminal .body { padding: 14px 14px 24px; }
+.terminal .body { padding: 8px 14px 0; }
 
 .terminal .ln {
   display: flex;
@@ -755,6 +769,204 @@
 }
 
 @keyframes blink { 50% { opacity: 0; } }
+
+/* ─── Terminal console — prompt, output, status, pills ───────────────────── */
+
+/* Tone utilities — colour the right text in the right tone */
+.tone-accent { color: var(--accent); }
+.tone-gold   { color: var(--accent-2); }
+.tone-muted  { color: var(--muted); }
+.tone-strong { color: var(--fg); }
+
+/* Active prompt line */
+.term-prompt {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+}
+.term-prompt .cur { margin-left: 4px; }
+
+/* Output container — min-height prevents layout jumps when switching commands */
+.term-output { min-height: 120px; margin-bottom: 4px; }
+
+/* Individual output line */
+.term-line {
+  color: var(--fg-2);
+  margin-bottom: 3px;
+  line-height: 1.45;
+}
+
+/* Blank spacer between output groups */
+.term-blank { height: 4px; }
+
+/* ─── Systems architecture viz ─────────────────────────────────────────────── */
+.sys-viz {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.sys-node {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: rgba(201, 245, 88, 0.06);
+  border: 1px solid rgba(201, 245, 88, 0.20);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  transition: background 200ms ease, border-color 200ms ease;
+}
+.sys-node::before { content: '['; color: var(--accent); margin-right: 2px; }
+.sys-node::after  { content: ']'; color: var(--accent); margin-left: 2px;  }
+.sys-node:hover {
+  background: rgba(201, 245, 88, 0.12);
+  border-color: rgba(201, 245, 88, 0.38);
+}
+
+.sys-arrow {
+  color: var(--accent);
+  opacity: 0.55;
+  font-size: var(--text-sm);
+  user-select: none;
+}
+
+/* ─── Project lines ─────────────────────────────────────────────────────────── */
+.term-project { display: flex; flex-wrap: wrap; align-items: baseline; }
+.project-name { color: var(--fg-2); }
+.project-sep,
+.project-purpose { font-size: var(--text-sm); }
+
+/* ─── Contact link rows ─────────────────────────────────────────────────────── */
+.term-links {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.term-link {
+  display: flex;
+  align-items: center;
+  color: var(--fg-2);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+.term-link:hover .term-link-label { color: var(--accent); }
+.term-link-label {
+  min-width: 9ch;
+  color: var(--fg-2);
+  transition: color 150ms ease;
+}
+.term-link-sep,
+.term-link-purpose { color: var(--muted); }
+
+/* ─── Help rows ─────────────────────────────────────────────────────────────── */
+
+/* ─── Status / hover-preview line ──────────────────────────────────────────── */
+
+/* ─── Command pill row ──────────────────────────────────────────────────────── */
+.term-cmds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 6px 14px 10px;
+  border-top: 1px solid var(--line);
+  margin: 0 -14px;   /* flush to terminal left/right borders */
+}
+
+.cmd-pill {
+  font-family: var(--mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--muted-2);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 120ms ease,
+    box-shadow 150ms ease;
+}
+.cmd-pill:hover {
+  color: var(--fg-2);
+  border-color: var(--line-2);
+  transform: translateY(-1px);
+}
+.cmd-pill:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Home pill — slightly more prominent at rest */
+.cmd-home {
+  color: var(--fg-2);
+  border-color: var(--line-2);
+}
+.cmd-home:hover { border-color: var(--fg-2); }
+
+/* Featured pills: impact / systems / philosophy */
+.cmd-pill.is-featured {
+  color: var(--fg-2);
+  border-color: rgba(201, 245, 88, 0.22);
+}
+.cmd-pill.is-featured:hover {
+  color: var(--fg);
+  border-color: rgba(201, 245, 88, 0.48);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(201, 245, 88, 0.08);
+}
+
+/* Active pill — lime fill */
+.cmd-pill.is-active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: none;
+}
+.cmd-pill.is-active:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─── Pronunciation play button — active/playing state ─────────────────────── */
+.terminal .play.is-playing {
+  background: rgba(201, 245, 88, 0.18);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(201, 245, 88, 0.28);
+}
+.wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 9px;
+  pointer-events: none;
+}
+.wave span {
+  display: block;
+  width: 2px;
+  height: 100%;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: wave-bar 0.6s ease-in-out infinite;
+}
+.wave span:nth-child(2) { animation-delay: 0.12s; }
+.wave span:nth-child(3) { animation-delay: 0.24s; }
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50%       { transform: scaleY(1);   }
+}
+
+/* Reduced-motion: collapse all terminal-specific animations */
+@media (prefers-reduced-motion: reduce) {
+  .wave span { animation: none; transform: scaleY(0.6); }
+}
 
 /* ---- responsive ---- */
 
@@ -814,8 +1026,11 @@
   }
 
   .hero-bottom-row .sub {
-    flex: 0 1 400px;
-    max-width: 400px;
+    /* sub is now absolutely positioned — flex-item constraints are irrelevant;
+       keep the terminal width in proportion to the narrower viewport */
+    width: min(500px, 42vw);
+    max-width: 500px;
+    left: calc(80% - min(250px, 21vw));
   }
 
   .terminal {
@@ -977,15 +1192,39 @@
   .hero-bottom-row { flex-direction: column; align-items: stretch; gap: 24px; }
   .hero-manifesto { max-width: none; }
   .manifesto-metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .hero-bottom-row .sub { max-width: 100%; flex: 1 1 auto; }
+  /* Revert terminal to in-flow stacking on mobile — absolute positioning not appropriate
+     when the hero is height:auto and the robot fades out. */
+  .hero-bottom-row .sub {
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    width: 100%;
+    max-width: 560px;
+    flex: 1 1 auto;
+  }
   .robot-agent-cta { min-height: 32px; max-width: 166px; padding: 8px 10px; font-size: var(--text-xs); letter-spacing: var(--tracking-wider); }
   .terminal { max-width: 100%; }
 }
 
 @media (max-width: 768px) {
-  .hero-bottom-row .sub { display: none; }
+  /* Terminal now visible on mobile — simplified layout */
+  .hero-bottom-row .sub { display: block; }
   .manifesto-metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .manifesto-cta { flex-direction: column; align-items: flex-start; }
+  .terminal { font-size: var(--text-sm); }
+  .terminal .bar { padding: 4px 10px; }
+  .terminal .body { padding: 6px 10px 0; }
+  .term-output { min-height: 96px; }
+  .term-cmds {
+    padding: 5px 10px 8px;
+    margin: 0 -10px;
+    gap: 4px;
+  }
+  .cmd-pill { font-size: 9px; padding: 3px 7px; }
+  /* Systems viz stacks vertically on narrow widths */
+  .sys-viz { flex-direction: column; align-items: flex-start; gap: 3px; }
+  .sys-arrow { transform: rotate(90deg); margin-left: 8px; }
 }
 
 @media (pointer: coarse), (hover: none) {

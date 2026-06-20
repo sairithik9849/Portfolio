@@ -129,3 +129,21 @@ export const WID_DRAW = {
 // The "at rest" animate target for all ambient elements.
 // Each viz's ambient element transitions to this when isActive becomes false.
 export const WID_AMBIENT_REST = { opacity: 0 }
+
+// ─── Terminal output swap variants ──────────────────────────────────────────
+// Used by Terminal.jsx for the per-command output enter/exit stagger.
+// Exit: the whole output block fades out quickly (0.10s).
+// Enter: the parent fades in and staggers child lines (0.06s gap, 0.22s per line).
+export const TERM_OUTPUT_PARENT = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0 },
+  },
+  exit: { opacity: 0, transition: { duration: 0.10, ease: 'easeIn' } },
+}
+
+export const TERM_OUTPUT_LINE = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.22, ease: 'easeOut' } },
+}
