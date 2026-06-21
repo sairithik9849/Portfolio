@@ -15,6 +15,8 @@ const SYS_NODE_STEP       = 0.09
 // Kept short — this is perceived responsiveness, not actual loading.
 const EXEC_DELAY = 250
 
+const normalizeCommandInput = (value) => value.trim().toLowerCase()
+
 const sysNodeTransition = (i, instant) => ({
   duration: instant ? 0 : 0.22,
   delay:    instant ? 0 : SYS_NODE_BASE_DELAY + i * SYS_NODE_STEP,
@@ -269,8 +271,16 @@ export default function Terminal() {
 
   // ─── Derived ─────────────────────────────────────────────────────────────
 
-  // Always show the full command list regardless of what is typed.
-  const suggestions = useMemo(() => [...COMMAND_IDS], [])
+  const normalizedQuery = normalizeCommandInput(query)
+
+  // Empty input and exact commands intentionally show the full list. Partial
+  // input narrows the list so autocomplete tracks what the user is typing.
+  const suggestions = useMemo(() => {
+    if (!normalizedQuery || COMMAND_IDS.includes(normalizedQuery)) {
+      return [...COMMAND_IDS]
+    }
+    return COMMAND_IDS.filter((id) => id.startsWith(normalizedQuery))
+  }, [normalizedQuery])
 
   const activeLines = useMemo(() => {
     if (active === 'whoami') return WHOAMI
@@ -334,7 +344,7 @@ export default function Terminal() {
   const handleKeyDown = useCallback((e) => {
     // For every key we handle, stop native propagation so the global window
     // listener (useHotkey in App.jsx / AIDrawer.jsx) never sees the event.
-    if (suggestOpen) {
+    if (suggestOpen && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         e.nativeEvent.stopPropagation()
@@ -359,9 +369,11 @@ export default function Terminal() {
     if (e.key === 'Enter') {
       e.preventDefault()
       e.nativeEvent.stopPropagation()
-      const target = suggestOpen
-        ? suggestions[highlightIndex]
-        : query.trim().toLowerCase()
+      const normalizedTarget = normalizeCommandInput(query)
+      let target = normalizedTarget
+      if (!COMMAND_IDS.includes(normalizedTarget) && suggestOpen && suggestions.length > 0) {
+        target = suggestions[highlightIndex]
+      }
       runCommand(target)
       return
     }
@@ -439,7 +451,9 @@ export default function Terminal() {
                 aria-controls="term-suggest-list"
                 aria-label="Terminal command input"
                 aria-activedescendant={
-                  suggestOpen ? `suggest-${suggestions[highlightIndex]}` : undefined
+                  suggestOpen && suggestions.length > 0
+                    ? `suggest-${suggestions[highlightIndex]}`
+                    : undefined
                 }
               />
             </div>
@@ -451,7 +465,7 @@ export default function Terminal() {
           {/* Autocomplete dropdown — absolutely positioned so it overlays the output
               without adding height to the terminal body. */}
           <AnimatePresence>
-            {suggestOpen && (
+            {suggestOpen && suggestions.length > 0 && (
               <motion.div
                 ref={suggestRef}
                 id="term-suggest-list"
