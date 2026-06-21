@@ -19,7 +19,6 @@ const L2_LAG = 0.08
 const CYCLE_DURATION        = 4.5
 const CYCLE_TIMES           = [0, 0.2889, 0.622, 0.889, 1]
 const CYCLE_DURATION_ACTIVE = 5.0
-const CYCLE_TIMES_ACTIVE    = [0, 0.30, 0.56, 0.70, 1]
 
 // ── Per-path pulse timing — varied durations + offsets for organic data flow ──
 const PULSE_CFG = [
@@ -41,9 +40,12 @@ const BORDER_FINAL = {
   l3: 'rgba(232, 196, 122, 0.52)',
   l4: 'rgba(232, 196, 122, 0.58)',
 }
+// Edge-lighting (inset highlights + drop shadows) is baked into the Framer
+// boxShadow string because Framer's inline boxShadow fully overrides CSS
+// box-shadow — there is no merging. L3/L4 use CSS box-shadow (no Framer override).
 const GLOW_FINAL = {
-  l1: '0 0 10px rgba(232, 196, 122, 0.14)',
-  l2: '0 0 10px rgba(232, 196, 122, 0.17)',
+  l1: 'inset 0 1px 0 rgba(237, 237, 223, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 10px rgba(232, 196, 122, 0.14)',
+  l2: 'inset 0 1px 0 rgba(237, 237, 223, 0.09), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 8px 18px rgba(0, 0, 0, 0.42), 0 0 10px rgba(232, 196, 122, 0.17)',
   l3: '0 0 10px rgba(232, 196, 122, 0.20)',
 }
 
@@ -83,9 +85,12 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
       t.set(1)
       return
     }
-    const keyframes = isActive ? [1, 1, 0, 0, 1] : [0, 1, 1, 0, 0]
+    // Both active and inactive start from 0 (flat/combined) so entering the
+    // section always resets to the stacked state before revealing the anatomy.
+    // Active runs slightly slower (5.0s) to dwell longer at the expanded reveal.
+    const keyframes = [0, 1, 1, 0, 0]
     const duration  = isActive ? CYCLE_DURATION_ACTIVE : CYCLE_DURATION
-    const times     = isActive ? CYCLE_TIMES_ACTIVE    : CYCLE_TIMES
+    const times     = CYCLE_TIMES
     const controls = animate(t, keyframes, {
       duration,
       times,
@@ -146,17 +151,27 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   // ── Pulse — fires sharply as layers reach peak separation ─────────────────
   const pulseT = useTransform(t, [0, 0.65, 1], [0, 0, 1], { clamp: true })
 
-  // Background glow
-  const glowOp = useTransform(pulseT, [0, 1], [0.25, 0.95])
-  const glowSc = useTransform(pulseT, [0, 1], [0.88, 1.26])
+  // Background glow — tightened so it hugs the stack rather than filling the panel.
+  // Peak scale pulled in from 1.26→1.08; opacity from 0.95→0.70 to keep the
+  // stack itself (not atmospheric haze) as the visual hero at peak.
+  const glowOp = useTransform(pulseT, [0, 1], [0.25, 0.70])
+  const glowSc = useTransform(pulseT, [0, 1], [0.88, 1.08])
 
   // Widget layer
   const widgetOp   = useTransform(pulseT, [0, 1], [0.72, 1.0])
   const sparkShift = useTransform(pulseT, [0, 1], [0, -6])
 
+  // ── Layer tag opacity — fades in as the stack opens (earlier than pulse) ──
+  // Ramps 0→1 between t=0.2 and t=0.7 so labels arrive with the Z-separation,
+  // not after it, making slabs feel immediately labeled as they peel apart.
+  const labelOp = useTransform(t, [0.2, 0.7], [0, 1], { clamp: true })
+
   // ── Layer peel opacity ────────────────────────────────────────────────────
-  const l4PeelOp = useTransform(t, [0.35, 1], [1, 0.28], { clamp: true })
-  const l3PeelOp = useTransform(t, [0.35, 1], [1, 0.88], { clamp: true })
+  // L4 stays dominant (0.92) at peak — the glass is the hero, not the void.
+  // Physical Z-separation (200px translateZ) reveals the slabs below at the
+  // isometric tilt without requiring transparency to do the work.
+  const l4PeelOp = useTransform(t, [0.35, 1], [1, 0.75], { clamp: true })
+  const l3PeelOp = useTransform(t, [0.35, 1], [1, 0.96], { clamp: true })
   const l3Op     = useTransform([l3PeelOp, widgetOp], ([peel, widget]) => peel * widget)
 
   // ── Light blob — persistent once layers open (t-driven) ──────────────────
@@ -181,9 +196,16 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   const l2BorderColor = useTransform(l2BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
   const l4BorderColor = useTransform(l4BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
 
-  // Outer glow for inner layers (L1/L2) — L3 uses CSS-only border; L4 has its own CSS box-shadow
-  const l1Glow = useTransform(l1BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.37).toFixed(3)})`)
-  const l2Glow = useTransform(l2BorderOp, v => `0 0 10px rgba(232, 196, 122, ${(v * 0.38).toFixed(3)})`)
+  // Framer inline boxShadow fully overrides CSS box-shadow, so edge lighting
+  // (inset highlights + drop shadows) is composed here alongside the gold glow.
+  // At t=0: edge lights are static; the gold term is transparent. At t=1: gold
+  // blooms in to match GLOW_FINAL. L3 uses CSS box-shadow (no Framer override).
+  const l1Glow = useTransform(l1BorderOp, v =>
+    `inset 0 1px 0 rgba(237, 237, 223, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 10px rgba(232, 196, 122, ${(v * 0.37).toFixed(3)})`
+  )
+  const l2Glow = useTransform(l2BorderOp, v =>
+    `inset 0 1px 0 rgba(237, 237, 223, 0.09), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 8px 18px rgba(0, 0, 0, 0.42), 0 0 10px rgba(232, 196, 122, ${(v * 0.38).toFixed(3)})`
+  )
 
   // ── Data particle — rises through layers at pulse peak ────────────────────
   const particleY  = useTransform(pulseT, [0, 1], ['78%', '12%'])
@@ -205,8 +227,8 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
         className="wifc-glow"
         aria-hidden="true"
         style={{
-          opacity: isFinal ? 0.9  : glowOp,
-          scale:   isFinal ? 1.22 : glowSc,
+          opacity: isFinal ? 0.70 : glowOp,
+          scale:   isFinal ? 1.06 : glowSc,
         }}
       />
 
@@ -247,6 +269,14 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
             <div className="wifc-raw-track" aria-hidden="true">
               <div className="wifc-raw-field" />
             </div>
+            {/* Layer identity tag — fades in as the stack opens */}
+            <motion.span
+              className="wifc-layer-tag"
+              aria-hidden="true"
+              style={{ opacity: isFinal ? 1 : labelOp }}
+            >
+              {DATA.layerTags[0]}
+            </motion.span>
           </motion.div>
 
           {/* ── Cast shadow ──────────────────────────────────────────────── */}
@@ -301,6 +331,13 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
                 />
               ))}
             </svg>
+            <motion.span
+              className="wifc-layer-tag"
+              aria-hidden="true"
+              style={{ opacity: isFinal ? 1 : labelOp }}
+            >
+              {DATA.layerTags[1]}
+            </motion.span>
           </motion.div>
 
           {/* ── LAYER 3 — Insight Widgets ─────────────────────────────────
@@ -309,7 +346,7 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
             className="wifc-layer wifc-layer--widgets"
             style={{
               translateZ: isFinal ? `${PEAK_Z_L3}px` : zL3,
-              opacity:    isFinal ? 0.88 : l3Op,
+              opacity:    isFinal ? 0.96 : l3Op,
             }}
           >
             {/* Sparkline — rolls with live data */}
@@ -349,16 +386,26 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
                 <span className="wifc-ring-title">{DATA.ringTitle}</span>
               </div>
             </div>
+
+            <motion.span
+              className="wifc-layer-tag"
+              aria-hidden="true"
+              style={{ opacity: isFinal ? 1 : labelOp }}
+            >
+              {DATA.layerTags[2]}
+            </motion.span>
           </motion.div>
 
           {/* ── LAYER 4 — Glass control ───────────────────────────────────
                 CSS already supplies border: 1px solid var(--line-2).
-                borderColor inline overrides just the color at runtime. ── */}
+                borderColor inline overrides just the color at runtime.
+                Opacity stays at 0.92 at peak — hierarchy lives in Z-separation,
+                not in making the hero layer transparent. ── */}
           <motion.div
             className="wifc-layer wifc-layer--glass"
             style={{
               translateZ:  isFinal ? `${PEAK_Z_L4}px` : zL4,
-              opacity:     isFinal ? 0.30 : l4PeelOp,
+              opacity:     isFinal ? 0.75 : l4PeelOp,
               borderColor: isFinal ? BORDER_FINAL.l4 : l4BorderColor,
             }}
           >
@@ -367,6 +414,14 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
               aria-hidden="true"
               style={{ opacity: isFinal ? 0.75 : lightBlobOp }}
             />
+            {/* Hero layer tag — lime accent to match its top-of-hierarchy status */}
+            <motion.span
+              className="wifc-layer-tag wifc-layer-tag--hero"
+              aria-hidden="true"
+              style={{ opacity: isFinal ? 1 : labelOp }}
+            >
+              {DATA.layerTags[3]}
+            </motion.span>
 
             <div className="wifc-glass-inner">
               <div className="wifc-glass-row wifc-glass-row--head">

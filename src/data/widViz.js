@@ -180,6 +180,10 @@ export const WID_VIZ = {
     ringLabel: '73%',
     ringTitle: 'GPU',
 
+    // ── Layer identity tags — fade in at peak to label each slab as an
+    // engineered component. Index order matches DOM stacking: L1→L4.
+    layerTags: ['01·RAW', '02·LOGIC', '03·INSIGHT', '04·INTERFACE'],
+
     // ── Layer 4 — Glass control panel
     panelTitle:   '// motion-first',   // Sai's actual design philosophy
     fpsTarget:    '60',

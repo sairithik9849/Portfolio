@@ -916,11 +916,13 @@
 .wifc-glow {
   position: absolute;
   inset: 0;
+  /* Tighter falloff — illumination hugs the card instead of washing out the panel.
+     Core is slightly brighter to compensate for the smaller footprint. */
   background: radial-gradient(ellipse at 50% 52%,
-    rgba(201, 245, 88, 0.22) 0%,
-    rgba(201, 245, 88, 0.06) 38%,
-    rgba(232, 196, 122, 0.04) 55%,
-    transparent 72%
+    rgba(201, 245, 88, 0.28) 0%,
+    rgba(201, 245, 88, 0.08) 26%,
+    rgba(232, 196, 122, 0.04) 42%,
+    transparent 58%
   );
   pointer-events: none;
   will-change: opacity, transform;
@@ -977,9 +979,15 @@
 
 /* ── LAYER 1 — Raw Data Stream (chaos) ─────────────────────────────────────
    Single track div scrolls a repeating SVG background-image tile to simulate
-   a waterfall of data packets — zero per-glyph DOM nodes. ──────────────────── */
+   a waterfall of data packets — zero per-glyph DOM nodes.
+   Substrate: darkest of the four slabs — the foundation that everything builds
+   up from. Visible through gaps in the data-tile at the isometric tilt. ──── */
 .wifc-layer--raw {
-  background: transparent;
+  background: linear-gradient(
+    to bottom,
+    rgba(7, 7, 7, 0.72),
+    rgba(7, 7, 7, 0.58)
+  );
   overflow: hidden;
 }
 
@@ -1031,6 +1039,34 @@
   will-change: transform, opacity;
 }
 
+/* ── Layer identity tags — mono labels that fade in as slabs peel apart ─────
+   Positioned at the bottom-left of each inner slab (the leading corner facing
+   the viewer at the isometric tilt). The L4 hero tag uses top-right so it
+   doesn't collide with the glass-inner layout. Opacity driven by Framer labelOp
+   (t: 0.2→0.7); isFinal renders them at opacity:1. Decorative, aria-hidden. */
+.wifc-layer-tag {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  will-change: opacity;
+}
+
+/* Hero tag on L4 glass — lime accent, top-right to clear the panel content */
+.wifc-layer-tag--hero {
+  bottom: auto;
+  left: auto;
+  top: 8px;
+  right: 10px;
+  color: var(--accent);
+}
+
 /* ── LAYER 2 — Logic & Orchestration Grid (filter) ─────────────────────────
    Wireframe SVG circuit paths + structural node dots. The lime data pulse
    travels the paths via CSS animation; --pulse-op gates its opacity so it
@@ -1038,6 +1074,14 @@
    line weights uniform despite the preserveAspectRatio="none" stretch. ──── */
 .wifc-layer--logic {
   /* --pulse-op set by Framer; 0=invisible at flat, 1=fully visible at peak */
+  /* Substrate: slightly lighter than L1, darker than L3. The circuit SVG and
+     pulse comets render on top; the substrate floor makes the slab read as a
+     solid panel rather than an empty wireframe at the isometric tilt. */
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 10, 0.64),
+    rgba(10, 10, 10, 0.50)
+  );
 }
 
 .wifc-logic-svg {
@@ -1092,9 +1136,21 @@
 
 /* ── LAYER 3 — Insight Widgets (synthesis) ──────────────────────────────────
    Three floating UI widgets. Their layer is Z-staggered between L2 and L4.
-   Framer ties opacity to pulseT; sparkline gets a small translateX nudge. ── */
+   Framer ties opacity to pulseT; sparkline gets a small translateX nudge.
+   Substrate: lightest of the inner slabs; edge-lit box-shadow here (no Framer
+   boxShadow override on this layer, so CSS applies cleanly). ── */
 .wifc-layer--widgets {
-  /* opacity driven by Framer widgetOp (0.6 at rest → 1 at pulse peak) */
+  /* opacity driven by Framer l3Op (peel × widgetOp) */
+  background: linear-gradient(
+    to bottom,
+    rgba(12, 12, 12, 0.60),
+    rgba(12, 12, 12, 0.44)
+  );
+  /* Edge lighting: lit top rim + dark trailing rim + grounding contact shadow */
+  box-shadow:
+    inset 0 1px 0 rgba(237, 237, 223, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
+    0 10px 22px rgba(0, 0, 0, 0.38);
 }
 
 /* Base widget — absolute positioned within the layer */
@@ -1246,11 +1302,15 @@
    the semi-transparent background + .wifc-light-blob still read as glass.
    .wifc-light-blob is a radial-gradient — NO filter:blur (repaint-heavy). ── */
 .wifc-layer--glass {
-  background: rgba(14, 14, 14, 0.82);
+  background: rgba(14, 14, 14, 0.85);
   border: 1px solid rgba(237, 237, 223, 0.18);
+  /* Stronger top-rim highlight than the inner slabs — glass sits proudest of the
+     stack and earns a brighter lit edge. Deep drop shadow grounds and separates it
+     from the layers behind. */
   box-shadow:
-    inset 0 1px 0 rgba(237, 237, 223, 0.08),
-    0 2px 24px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 rgba(237, 237, 223, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 14px 36px rgba(0, 0, 0, 0.70);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }

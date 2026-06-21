@@ -22,3 +22,10 @@ export const HERO_CTA_TAGLINE = {
 
 // Phase 8 — robot hotspot label
 export const HERO_ROBOT_CTA = 'Click Mouse 1 to Chat'
+
+// Hero meta-row social links — icon keys map to inline SVGs in Hero.jsx
+export const HERO_SOCIALS = [
+  { label: 'GitHub',   icon: 'github',   href: 'https://github.com/sairithik9849' },
+  { label: 'LinkedIn', icon: 'linkedin', href: 'https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/' },
+  { label: 'Resume',   icon: 'resume',   href: 'https://drive.google.com/file/d/1KCAnYaT8Bo8mKDy8ydTlMxF37h0sDvIQ/view?usp=drive_link' },
+]

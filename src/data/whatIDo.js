@@ -22,8 +22,8 @@ export const WHAT_I_DO = [
     id: 'interface',
     word: 'INTERFACE',
     blurb:
-      "Engineering immersive, motion-driven visual experiences that make dense data interfaces effortless to navigate and intuitively functional.",
-    blurbMarks: ['effortless to navigate'],
+      "Transforming complex data and AI systems into interfaces people can understand, trust, and act on.",
+    blurbMarks: ['understand, trust, and act on'],
   },
   {
     id: 'agents',
