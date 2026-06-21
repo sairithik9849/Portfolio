@@ -6,13 +6,20 @@
 //   { tone, text }                         single-toned line
 //   { segments: [{ text, tone }] }         mixed-tone line
 //   { type: 'pron',    label, value }      pronunciation line + play button
+//   { type: 'metric',  value, suffix, label } count-up metric (e.g. impact)
 //   { type: 'systems', nodes }             architecture viz
 //   { type: 'project', name, purpose }     project name + supporting line
 //   { type: 'links',   links: [...] }      contact link rows
+//   { type: 'command-link', label, command, prefix } internal command link
 //
 // Tones: accent | gold | muted | strong
 
 export const PROMPT = '~/sairithik'
+
+// Ordered list of all runnable commands — drives autocomplete (no 'help').
+// Derived from COMMANDS below; 'whoami' is prepended as the home command.
+// Exported here so COMMANDS is the single source of truth.
+export const COMMAND_IDS = ['whoami', 'impact', 'projects', 'systems', 'philosophy', 'journey', 'contact']
 
 // ─── Default state ─────────────────────────────────────────────────────────────
 export const WHOAMI = [
@@ -54,6 +61,8 @@ export const WHOAMI = [
       { text: '"Seeking New Grad SWE Roles"', tone: 'accent' },
     ],
   },
+  { type: 'command-link', prefix: 'connect = ', label: 'Contact Me', command: 'contact' },
+  '',
 ]
 
 // ─── Commands ──────────────────────────────────────────────────────────────────
@@ -66,7 +75,7 @@ export const COMMANDS = [
     preview: '10M+ requests/day',
     featured: true,
     lines: [
-      { tone: 'accent', text: '10M+ requests processed daily.' },
+      { type: 'metric', value: 10, suffix: 'M+', label: 'requests processed daily.' },
       '',
       'Built systems used in production,',
       'where performance and reliability matter.',
@@ -145,10 +154,26 @@ export const COMMANDS = [
       {
         type: 'links',
         links: [
-          { label: 'GitHub',   purpose: 'code',       href: 'https://github.com/sairithik9849' },
-          { label: 'LinkedIn', purpose: 'experience',  href: 'https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/' },
-          { label: 'Resume',   purpose: 'PDF',         href: 'https://drive.google.com/file/d/1KCAnYaT8Bo8mKDy8ydTlMxF37h0sDvIQ/view?usp=drive_link' },
-          { label: 'Email',    purpose: 'say hello',   href: 'mailto:sairithik8639@gmail.com' },
+          {
+            label: 'GitHub',
+            display: 'github.com/sairithik9849',
+            href: 'https://github.com/sairithik9849',
+          },
+          {
+            label: 'LinkedIn',
+            display: 'linkedin.com/in/sairithik-komuravelly-8348b124b',
+            href: 'https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/',
+          },
+          {
+            label: 'Resume',
+            display: 'drive.google.com/file/d/1KCAnYaT8Bo8mKDy8ydTlMxF37h0sDvIQ',
+            href: 'https://drive.google.com/file/d/1KCAnYaT8Bo8mKDy8ydTlMxF37h0sDvIQ/view?usp=drive_link',
+          },
+          {
+            label: 'Email',
+            display: 'sairithik8639@gmail.com',
+            href: 'mailto:sairithik8639@gmail.com',
+          },
         ],
       },
     ],

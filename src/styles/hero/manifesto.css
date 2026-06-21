@@ -1,7 +1,7 @@
 /* ---- hero manifesto (left column) ---- */
 .hero-manifesto {
   flex: 1 1 0;
-  max-width: clamp(520px, 58%, 768px); /* wide enough for all metric labels to show untruncated at desktop widths */
+  max-width: clamp(581px, 54.9vw, 791px);
   display: flex;
   flex-direction: column;
   gap: clamp(16px, 2.6vh, 28px);
@@ -221,12 +221,11 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--fg-2);
-  line-height: 1;
+  line-height: 1.25;
   margin-top: 0;
   padding-top: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .manifesto-cta {
@@ -377,10 +376,14 @@
 
 @media (max-width: 980px) {
   .hero-manifesto { max-width: none; }
-  .manifesto-metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .manifesto-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 }
 
 @media (max-width: 768px) {
-  .manifesto-metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .manifesto-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .manifesto-cta { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 460px) {
+  .manifesto-metrics { grid-template-columns: 1fr; }
 }

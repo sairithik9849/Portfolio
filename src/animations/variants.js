@@ -147,3 +147,11 @@ export const TERM_OUTPUT_LINE = {
   hidden: { opacity: 0, x: -8 },
   show: { opacity: 1, x: 0, transition: { duration: 0.22, ease: 'easeOut' } },
 }
+
+// Autocomplete suggestion dropdown — opacity + small upward nudge only.
+// No height animation (respects the transform/opacity-only rule).
+export const TERM_SUGGEST = {
+  hidden: { opacity: 0, y: -4 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.14, ease: 'easeOut' } },
+  exit:   { opacity: 0, y: -4, transition: { duration: 0.10, ease: 'easeIn' } },
+}

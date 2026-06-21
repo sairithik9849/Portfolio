@@ -6,8 +6,8 @@
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   font-family: var(--mono);
   font-size: var(--text-base);
-  max-width: 560px;
-  width: min(100%, 560px);
+  max-width: 504px;
+  width: min(100%, 504px);
   position: relative;
   overflow: hidden;
   transition: box-shadow 220ms ease, border-color 220ms ease;
@@ -132,13 +132,19 @@
 .tone-muted  { color: var(--muted); }
 .tone-strong { color: var(--fg); }
 
+/* Prompt group — relative container so the dropdown can float on top */
+.term-prompt-group {
+  position: relative;
+  margin-bottom: 14px;
+}
+
 /* Active prompt line */
 .term-prompt {
   display: flex;
   align-items: center;
-  margin-bottom: 6px;
   font-size: var(--text-sm);
   letter-spacing: var(--tracking-wide);
+  cursor: text;
 }
 .term-prompt .cur { margin-left: 4px; }
 
@@ -204,6 +210,7 @@
 }
 .term-link {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   color: var(--fg-2);
   text-decoration: none;
@@ -216,73 +223,35 @@
   transition: color 150ms ease;
 }
 .term-link-sep,
-.term-link-purpose { color: var(--muted); }
-
-/* ─── Command pill row ──────────────────────────────────────────────────────── */
-.term-cmds {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding: 6px 14px 10px;
-  border-top: 1px solid var(--line);
-  margin: 0 -14px;   /* flush to terminal left/right borders */
-}
-
-.cmd-pill {
-  font-family: var(--mono);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
+.term-link-purpose,
+.term-link-display {
   color: var(--muted);
+}
+.term-link-display {
+  overflow-wrap: anywhere;
+}
+
+.term-command-link {
+  display: inline;
+  padding: 0;
+  border: 0;
   background: transparent;
-  border: 1px solid var(--muted-2);
-  padding: 3px 8px;
+  color: var(--accent);
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 245, 88, 0.45);
+  text-underline-offset: 3px;
   cursor: pointer;
-  transition:
-    color 150ms ease,
-    background 150ms ease,
-    border-color 150ms ease,
-    transform 120ms ease,
-    box-shadow 150ms ease;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
 }
-.cmd-pill:hover {
-  color: var(--fg-2);
-  border-color: var(--line-2);
-  transform: translateY(-1px);
+.term-command-link:hover {
+  color: var(--fg);
+  text-decoration-color: var(--accent);
 }
-.cmd-pill:focus-visible {
+.term-command-link:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: 2px;
-}
-
-/* Home pill — slightly more prominent at rest */
-.cmd-home {
-  color: var(--fg-2);
-  border-color: var(--line-2);
-}
-.cmd-home:hover { border-color: var(--fg-2); }
-
-/* Featured pills: impact / systems / philosophy */
-.cmd-pill.is-featured {
-  color: var(--fg-2);
-  border-color: rgba(201, 245, 88, 0.22);
-}
-.cmd-pill.is-featured:hover {
-  color: var(--fg);
-  border-color: rgba(201, 245, 88, 0.48);
-  transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(201, 245, 88, 0.08);
-}
-
-/* Active pill — lime fill */
-.cmd-pill.is-active {
-  color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: none;
-}
-.cmd-pill.is-active:hover {
-  transform: none;
-  box-shadow: none;
 }
 
 /* ─── Pronunciation play button — active/playing state ─────────────────────── */
@@ -313,23 +282,186 @@
   50%       { transform: scaleY(1);   }
 }
 
+/* ─── Auto-sizing input wrapper — CSS grid mirror trick ─────────────────────── */
+/* The ::after mirrors data-text so the grid cell is exactly as wide as the
+   typed characters. size={1} on the <input> prevents the browser default 20ch
+   from overriding the ::after-driven cell width. */
+.term-input-sizer {
+  display: inline-grid;
+}
+.term-input-sizer::after {
+  content: attr(data-text);
+  visibility: hidden;
+  white-space: pre;
+  font-family: var(--mono);
+  font-size: inherit;
+  letter-spacing: var(--tracking-wide);
+  grid-area: 1 / 1;
+  padding: 0;
+  /* Minimum 1-char wide so the cursor has a landing spot when query is empty */
+  min-width: 1ch;
+}
+
+/* ─── Editable input — fills the sizer grid cell ───────────────────────────── */
+.term-input {
+  grid-area: 1 / 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: inherit;
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent);
+  caret-color: var(--accent);
+}
+
+/* ─── Autocomplete suggestion dropdown ──────────────────────────────────────── */
+/* Floats on top of the output — no extra height added to the terminal body.
+   overscroll-behavior:contain ensures mouse scroll stays inside the list
+   instead of propagating to the page. */
+.term-suggest {
+  position: absolute;
+  top: 100%;
+  left: -14px;   /* cancel .body padding so the dropdown is flush to the edges */
+  right: -14px;
+  z-index: 20;
+  max-height: 66px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+  background: rgba(10, 10, 10, 0.97);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-2) transparent;
+}
+.term-suggest::-webkit-scrollbar { width: 4px; }
+.term-suggest::-webkit-scrollbar-track { background: transparent; }
+.term-suggest::-webkit-scrollbar-thumb {
+  background: var(--muted-2);
+  border-radius: 2px;
+}
+
+.suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 6px;
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: color 100ms ease, background 100ms ease;
+}
+
+.suggest-item:hover,
+.suggest-item.is-highlight {
+  color: var(--fg-2);
+  background: var(--accent-dim);
+}
+
+.suggest-arrow { font-size: var(--text-2xs); flex-shrink: 0; }
+
+/* ─── Execution interstitial ────────────────────────────────────────────────── */
+.term-exec { min-height: 120px; margin-bottom: 4px; }
+
+/* ─── Animated loading dots ─────────────────────────────────────────────────── */
+.term-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.term-dots span {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.2;
+  animation: term-dot 1.4s infinite;
+}
+.term-dots span:nth-child(2) { animation-delay: 0.2s; }
+.term-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes term-dot {
+  0%, 60%, 100% { opacity: 0.2; }
+  30%            { opacity: 0.8; }
+}
+
+/* ─── Title bar shimmer — executing state only ───────────────────────────────── */
+@keyframes term-shimmer {
+  from { background-position: 100% center; }
+  to   { background-position: 0% center; }
+}
+
+/* Overrides the default bar-shell color/text-shadow while executing.
+   background-clip:text is incompatible with text-shadow, so both are cleared. */
+.terminal .bar-shell.is-exec {
+  color: transparent;
+  text-shadow: none;
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(
+    90deg,
+    var(--fg-2) 0%,
+    var(--fg-2) 35%,
+    var(--accent-2) 50%,
+    var(--fg-2) 65%,
+    var(--fg-2) 100%
+  );
+  background-repeat: no-repeat;
+  animation: term-shimmer 1.2s linear infinite;
+}
+
+/* ─── Metric count-up (impact command) ──────────────────────────────────────── */
+.term-metric { display: inline; }
+.metric-value {
+  color: var(--accent);
+  font-size: 1.3em;
+  font-weight: 500;
+}
+
 /* Reduced-motion: collapse all terminal-specific animations */
 @media (prefers-reduced-motion: reduce) {
   .wave span { animation: none; transform: scaleY(0.6); }
+  .term-dots span { animation: none; opacity: 0.7; }
+  .terminal .bar-shell.is-exec {
+    animation: none;
+    color: var(--fg-2);
+    text-shadow: none;
+    background-image: none;
+    background-clip: unset;
+    -webkit-background-clip: unset;
+  }
 }
 
 /* ---- responsive ---- */
 
 @media (max-width: 1280px) and (min-width: 981px) {
   .terminal {
-    max-width: 580px;
+    max-width: 522px;
     font-size: var(--text-sm);
   }
 }
 
 @media (max-height: 720px) and (min-width: 769px) {
   .terminal {
-    max-width: 540px;
+    max-width: 486px;
     font-size: var(--text-sm);
   }
 
@@ -351,13 +483,10 @@
   .terminal .bar { padding: 4px 10px; }
   .terminal .body { padding: 6px 10px 0; }
   .term-output { min-height: 96px; }
-  .term-cmds {
-    padding: 5px 10px 8px;
-    margin: 0 -10px;
-    gap: 4px;
-  }
-  .cmd-pill { font-size: 9px; padding: 3px 7px; }
+  .term-exec   { min-height: 96px; }
   /* Systems viz stacks vertically on narrow widths */
   .sys-viz { flex-direction: column; align-items: flex-start; gap: 3px; }
   .sys-arrow { transform: rotate(90deg); margin-left: 8px; }
+  /* Suggestions tighten to match narrow layout */
+  .suggest-item { padding: 2px 4px; font-size: 9px; }
 }

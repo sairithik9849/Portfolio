@@ -117,9 +117,9 @@
      `left` is relative to .hero-bottom-row, which starts at hero's padding-left from the
      viewport. Centering baked into `left` directly — not via translateX — because Framer
      Motion sets `transform: none` inline which would override any CSS transform. */
-  left: calc(78vw - min(270px, 21vw) - max(40px, (100vw - 1440px) / 2));
-  width: min(540px, 42vw);
-  max-width: 540px;
+  left: calc(78vw - min(243px, 18.9vw) - max(40px, (100vw - 1440px) / 2));
+  width: min(486px, 37.8vw);
+  max-width: 486px;
   z-index: 3;
   pointer-events: auto;
 }
@@ -172,9 +172,9 @@
   .hero-bottom-row .sub {
     /* sub is now absolutely positioned — flex-item constraints are irrelevant;
        keep the terminal width in proportion to the narrower viewport */
-    width: min(500px, 42vw);
-    max-width: 500px;
-    left: calc(80% - min(250px, 21vw));
+    width: min(450px, 37.8vw);
+    max-width: 450px;
+    left: calc(80% - min(225px, 18.9vw));
   }
 }
 
@@ -225,7 +225,7 @@
     bottom: auto;
     transform: none;
     width: 100%;
-    max-width: 560px;
+    max-width: 504px;
     flex: 1 1 auto;
   }
 }
