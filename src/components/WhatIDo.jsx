@@ -446,16 +446,39 @@ export default function WhatIDo() {
         style={{ opacity: active === N - 1 ? captionFade : 1 }}
       >
         <AnimatePresence mode="wait">
-          <motion.p
+          <motion.div
             key={active}
-            className="wid-caption-text"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            className="wid-caption-block"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={{
+              hidden:   {},
+              visible:  { transition: { staggerChildren: 0.2, delayChildren: 0.05 } },
+              exit:     { opacity: 0, transition: { duration: 0.15 } },
+            }}
           >
-            {highlightText(activeItem?.blurb ?? '', activeItem?.blurbMarks ?? [])}
-          </motion.p>
+            {/* Green bar — scales down from top, finishes before text begins */}
+            <motion.div
+              className="wid-caption-bar"
+              variants={{
+                hidden:  { scaleY: 0, opacity: 0 },
+                visible: { scaleY: 1, opacity: 1,
+                           transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } },
+              }}
+            />
+            {/* Text — slides out rightward from the bar */}
+            <motion.p
+              className="wid-caption-text"
+              variants={{
+                hidden:  { x: -10, opacity: 0 },
+                visible: { x: 0,   opacity: 1,
+                           transition: { duration: 0.32, ease: [0.2, 0, 0, 1] } },
+              }}
+            >
+              {highlightText(activeItem?.blurb ?? '', activeItem?.blurbMarks ?? [])}
+            </motion.p>
+          </motion.div>
         </AnimatePresence>
       </motion.div>
 

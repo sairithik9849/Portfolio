@@ -192,6 +192,24 @@
   }
 }
 
+/* Slide-in block: bar + text sit side-by-side in a row */
+.wid-caption-block {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+}
+
+/* Animated green bar — grows from top before the text slides in */
+.wid-caption-bar {
+  width: 1.5px;
+  flex-shrink: 0;
+  background: rgba(201, 245, 88, 0.5);
+  box-shadow: 0 0 8px rgba(201, 245, 88, 0.28);
+  transform-origin: top center;
+  align-self: stretch;
+}
+
 .wid-caption-text {
   font-size: clamp(12px, 0.95vw, 13.5px);
   font-family: var(--mono);
@@ -202,9 +220,11 @@
   text-align: left;
   letter-spacing: var(--tracking-normal);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.7);
-  /* Accent bar — 1.5px lime left border, softly glowing */
-  border-left: 1.5px solid rgba(201, 245, 88, 0.5);
   padding-left: 14px;
+  /* Allow users to select and copy the blurb text */
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
   /* Shimmer sweep — faint lime gradient slides through the text every 6s */
   background: linear-gradient(
     105deg,
@@ -217,35 +237,16 @@
   animation: wid-caption-shimmer 6s ease-in-out infinite 1.8s;
 }
 
-/* Blinking block cursor — appears inline at the end of the last text line */
-.wid-caption-text::after {
-  content: '▌';
-  color: var(--accent);
-  font-size: 0.8em;
-  margin-left: 2px;
-  vertical-align: baseline;
-  animation: wid-cursor-blink 1.15s step-end infinite;
-}
-
 @keyframes wid-caption-shimmer {
   0%, 55%  { background-position: 160% center; }
   85%      { background-position: -60% center; }
   100%     { background-position: 160% center; }
 }
 
-@keyframes wid-cursor-blink {
-  0%, 100% { opacity: 0.8; }
-  50%      { opacity: 0;   }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .wid-caption-text {
     animation: none;
     background: none;
-  }
-  .wid-caption-text::after {
-    animation: none;
-    opacity: 0.8;
   }
 }
 
