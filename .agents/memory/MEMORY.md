@@ -1,0 +1,1 @@
+- [AgentsViz design decisions](agentsviz-design.md) — geometry cleanup + CSS redesign for the autonomous-factory viz; what was removed and why

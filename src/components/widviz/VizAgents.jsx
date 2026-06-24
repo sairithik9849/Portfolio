@@ -118,62 +118,31 @@ const CAP_SET = new Set([4.5, 145.5])
 const CONDUIT_TOP = `M ${CORE_X},${BANDS.intake.y1} L ${CORE_X},${BANDS.planning.y2 - 3}`
 const CONDUIT_BOT = `M ${CORE_X},${BANDS.verification.y1 + 0} L ${CORE_X},${BANDS.output.y2}`
 
-// A. Downward chevron ticks along the top spine (Discovery zone y≈10–20) and bottom (Shipping)
-// V-shape: apex at (50,y+1), two arms angling up-left and up-right
-const makeChevronDown = (cx, cy, half = 2.5, rise = 1.5) =>
+// A. Downward chevron ticks — larger for directional clarity (half=3.2, rise=1.8)
+// Three on the top spine (discovery zone), two on the bottom (shipping zone)
+const makeChevronDown = (cx, cy, half = 3.2, rise = 1.8) =>
   `M ${cx - half},${cy - rise} L ${cx},${cy} L ${cx + half},${cy - rise}`
 
 const SPINE_CHEVRONS_DOWN = [
-  makeChevronDown(CORE_X, 10),
-  makeChevronDown(CORE_X, 17),
-  makeChevronDown(CORE_X, 133),
-  makeChevronDown(CORE_X, 140),
+  makeChevronDown(CORE_X,  9),
+  makeChevronDown(CORE_X, 14.5),
+  makeChevronDown(CORE_X, 20),
+  makeChevronDown(CORE_X, 132),
+  makeChevronDown(CORE_X, 139),
 ]
 
-// A. Rework upward chevrons — centered on RW_GUTTER_X along the vertical run
-const makeChevronUp = (cx, cy, half = 1.8, rise = 1.2) =>
+// A. Rework upward chevrons — slightly larger for the retry bus (half=2.2, rise=1.5)
+const makeChevronUp = (cx, cy, half = 2.2, rise = 1.5) =>
   `M ${cx - half},${cy + rise} L ${cx},${cy} L ${cx + half},${cy + rise}`
 
 const REWORK_CHEVRONS = [
-  makeChevronUp(RW_GUTTER_X, 85),
-  makeChevronUp(RW_GUTTER_X, 70),
+  makeChevronUp(RW_GUTTER_X, 88),
+  makeChevronUp(RW_GUTTER_X, 76),
+  makeChevronUp(RW_GUTTER_X, 64),
 ]
 
-// B. Discovery convergence feeders — 3 lines from each upright converging to spine mid-point
-// Left feeders: from (FRAME_X1, y) → (CORE_X - 6, midY)
-// Right feeders: from (FRAME_X2, y) → (CORE_X + 6, midY)
+// B. Discovery mid-Y — used by renderSim for token positioning
 const DISC_MID_Y = (BANDS.discovery.y1 + BANDS.discovery.y2) / 2  // 14.25
-const FEEDER_YS = [7.5, 12, 16.5]  // evenly spaced in discovery band
-const FEEDER_END_X_L = CORE_X - 5  // 45 — left feeders converge just left of spine
-const FEEDER_END_X_R = CORE_X + 5  // 55 — right feeders converge just right of spine
-const FEEDER_END_Y   = DISC_MID_Y  // 14.25
-
-const FEEDERS_LEFT  = FEEDER_YS.map(y =>
-  `M ${FRAME_X1},${y} L ${FEEDER_END_X_L},${FEEDER_END_Y}`
-)
-const FEEDERS_RIGHT = FEEDER_YS.map(y =>
-  `M ${FRAME_X2},${y} L ${FEEDER_END_X_R},${FEEDER_END_Y}`
-)
-
-// B. Memory bank — 2 cols × 4 rows of small cells, right side of Discovery
-// Anchored at right of band, leaving labels on the left
-const MB_X0   = 60    // left edge of bank
-const MB_CW   = 4.5   // cell width
-const MB_CH   = 2.8   // cell height
-const MB_GAP  = 0.8   // gap between cells
-const MB_COLS = 2
-const MB_ROWS = 4
-// cells lit: those whose index (row*cols+col) < approximate MEM_HIT fraction
-const MB_LIT_COUNT = 6  // ~75% of 8 cells, implies memory warm
-const MEM_CELLS = Array.from({ length: MB_ROWS }, (_, row) =>
-  Array.from({ length: MB_COLS }, (_, col) => {
-    const idx  = row * MB_COLS + col
-    const x    = MB_X0 + col * (MB_CW + MB_GAP)
-    const y    = BANDS.discovery.y1 + 1.5 + row * (MB_CH + MB_GAP)
-    const lit  = idx < MB_LIT_COUNT
-    return { x, y, w: MB_CW, h: MB_CH, lit }
-  })
-).flat()
 
 // C. Planning manifold chamber
 // Top edge (input): narrow throat centered on spine
@@ -195,84 +164,23 @@ const MANIFOLD_PATH = [
 ].join(' ')
 
 // Manifold ribs: 4 lines from a point near top-center to 4 equally spaced bottom exits
-// Bottom exits align with the 4 lane centers projected onto the manifold base
 const MF_INPUT_X = CORE_X   // 50 — single spine entry point
 const MF_INPUT_Y = MF_TOP_Y + 1  // just below top edge
 const MF_EXIT_YS = MF_BOT_Y
-// lane centers are at [18.5,39.5,60.5,81.5]; the manifold base spans 32–68
-// map lane centers into manifold base range
 const MF_EXIT_XS = LANE_CENTERS.map(lx => {
-  // linear map: lx in [FRAME_X1=8 .. FRAME_X2=92] → manifold base [MF_BOT_X1=32 .. MF_BOT_X2=68]
   const t = (lx - FRAME_X1) / USABLE_W
   return MF_BOT_X1 + t * (MF_BOT_X2 - MF_BOT_X1)
 })
-// → [32 + 0.125*36, 32 + 0.375*36, 32 + 0.625*36, 32 + 0.875*36]
-// → [36.5, 45.5, 54.5, 63.5]
 
 const MANIFOLD_RIBS = MF_EXIT_XS.map(ex =>
   `M ${MF_INPUT_X},${MF_INPUT_Y} L ${ex},${MF_EXIT_YS}`
 )
 
-// E. Verification checkpoint band geometry
-// Gate bar spans slightly inside the uprights, centered on the verification band
-const VER_GATE_Y = BANDS.verification.y1 + (BANDS.verification.y2 - BANDS.verification.y1) * 0.55 // ~116.5
-// Hatch strips: thin angled lines inside the band on both sides
-// Left hatch strip: x range [FRAME_X1 .. FRAME_X1+7], y range [verification.y1 .. verification.y2]
-// 5 diagonal lines within the strip
-const HATCH_W   = 7    // width of hatch strip (in VB units)
-const HATCH_STEP = 7   // line spacing — sparser (noise reduction)
-const makeHatchLines = (x0, x1, y0, y1, step) => {
-  const lines = []
-  for (let d = 0; d <= (x1 - x0) + (y1 - y0); d += step) {
-    const ax = Math.min(x0 + d, x1)
-    const ay = Math.max(y0, y0 + d - (x1 - x0))
-    const bx = Math.max(x0, x0 + d - (y1 - y0))
-    const by = Math.min(y1, y0 + d)
-    if (ax !== bx || ay !== by)
-      lines.push(`M ${ax},${ay} L ${bx},${by}`)
-  }
-  return lines
-}
-const HATCH_LEFT  = makeHatchLines(
-  FRAME_X1, FRAME_X1 + HATCH_W,
-  BANDS.verification.y1 + 1, BANDS.verification.y2 - 1,
-  HATCH_STEP
-)
-// HATCH_RIGHT removed — right gutter cleared for rework retry bus
-// Gate bar: full-width across verification at gate Y
-const GATE_BAR_X1 = FRAME_X1 + HATCH_W + 2  // leave room after hatch
-const GATE_BAR_X2 = FRAME_X2 - HATCH_W - 2
-// Pass tick: small V above gate center
-const GATE_TICK = makeChevronDown(CORE_X, VER_GATE_Y - 1.5, 2.0, 1.2)
-
-// F. Chassis rivets: cap corners only — inner tie-bar rivets removed (noise reduction)
-const RIVET_RADIUS = 0.7
-const RIVET_POSITIONS = [
-  { cx: FRAME_X1, cy: 4.5   },
-  { cx: FRAME_X2, cy: 4.5   },
-  { cx: FRAME_X1, cy: 145.5 },
-  { cx: FRAME_X2, cy: 145.5 },
-]
-
-// G. Core coordination spokes — from core center to midpoint of each lane rail
-// Lane rails run x=lx, y from execution.y1+3=48 to execution.y2-3=102; mid y=75=CORE_Y
-// Spokes: core(50,75) → (lx, 75) — pure horizontal taps to each rail
-const CORE_SPOKES = LANE_CENTERS.map(lx => `M ${CORE_X},${CORE_Y} L ${lx},${CORE_Y}`)
-
-// G. Core housing — octagonal bracket (approximated as small rect with cut corners)
-const CH_R = 4.5  // half-size of housing frame
-const CH_CUT = 1.5  // corner cut amount
-const CORE_HOUSING_PATH = [
-  `M ${CORE_X - CH_R + CH_CUT},${CORE_Y - CH_R}`,
-  `L ${CORE_X + CH_R - CH_CUT},${CORE_Y - CH_R}`,
-  `L ${CORE_X + CH_R},${CORE_Y - CH_R + CH_CUT}`,
-  `L ${CORE_X + CH_R},${CORE_Y + CH_R - CH_CUT}`,
-  `L ${CORE_X + CH_R - CH_CUT},${CORE_Y + CH_R}`,
-  `L ${CORE_X - CH_R + CH_CUT},${CORE_Y + CH_R}`,
-  `L ${CORE_X - CH_R},${CORE_Y + CH_R - CH_CUT}`,
-  `L ${CORE_X - CH_R},${CORE_Y - CH_R + CH_CUT}`,
-  `Z`,
-].join(' ')
+// E. Verification gate bar — full-span, no hatch dependency
+// Centered at 55% down the verification band (same as before)
+const VER_GATE_Y  = BANDS.verification.y1 + (BANDS.verification.y2 - BANDS.verification.y1) * 0.55
+const GATE_BAR_X1 = FRAME_X1 + 2   // nearly full width — no hatch strips
+const GATE_BAR_X2 = FRAME_X2 - 2
 
 // Execution station (separate from the other four; rendered as a lane grid)
 const EXEC_STATION   = DATA.stations.find(s => s.id === 'execution')
@@ -740,12 +648,6 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
             />
           ))}
 
-
-          {/* ── F. Mounting rivets at upright/cap intersections ──────────── */}
-          {RIVET_POSITIONS.map((r, i) => (
-            <circle key={i} cx={r.cx} cy={r.cy} r={RIVET_RADIUS} className="wagnt-rivet" />
-          ))}
-
           {/* ── Intake port dot + spine stub ─────────────────────────────── */}
           <circle cx={CORE_X} cy={BANDS.intake.y1 + 1.5} r={1.4} className="wagnt-port-dot wagnt-port-dot--in" style={{ '--port-i': 0 }} />
           <line
@@ -754,32 +656,19 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
             className="wagnt-spine"
           />
 
-          {/* ── A. Downward flow chevrons on the top spine ───────────────── */}
+          {/* ── A. Downward flow chevrons — directional cues on the spine ── */}
           {SPINE_CHEVRONS_DOWN.map((d, i) => (
             <path key={i} d={d} className="wagnt-flow-chevron" style={{ '--chev-i': i }} />
-          ))}
-
-          {/* ── B. Discovery: convergence feeders ────────────────────────── */}
-          {FEEDERS_LEFT.map((d, i)  => <path key={`fl${i}`} d={d} className="wagnt-feeder" />)}
-          {FEEDERS_RIGHT.map((d, i) => <path key={`fr${i}`} d={d} className="wagnt-feeder" />)}
-
-          {/* ── B. Discovery: memory bank cells ──────────────────────────── */}
-          {MEM_CELLS.map((c, i) => (
-            <rect
-              key={i}
-              x={c.x} y={c.y} width={c.w} height={c.h}
-              className={`wagnt-membank-cell${c.lit ? ' wagnt-membank-cell--lit' : ''}`}
-            />
           ))}
 
           {/* ── C. Planning: splitter manifold ───────────────────────────── */}
           <path d={MANIFOLD_PATH} className="wagnt-manifold" />
           {MANIFOLD_RIBS.map((d, i) => <path key={i} d={d} className="wagnt-manifold-rib" />)}
 
-          {/* ── Fan-out: planning → 4 lane tops (Phase 2 target) ─────────── */}
+          {/* ── Fan-out: planning → 4 lane tops ──────────────────────────── */}
           {FAN_OUT.map((d, i) => <path key={i} d={d} className="wagnt-fanout" />)}
 
-          {/* ── Lane centerline rails — tokens animate along these in Phase 2 */}
+          {/* ── Lane centerline rails — tokens animate along these ───────── */}
           {LANE_CENTERS.map((lx, i) => (
             <line
               key={i}
@@ -789,22 +678,15 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
             />
           ))}
 
-          {/* ── G. Core coordination spokes ──────────────────────────────── */}
-          {CORE_SPOKES.map((d, i) => <path key={i} d={d} className="wagnt-core-spoke" />)}
-
-          {/* ── Reconverge: 4 lane bottoms → verification (Phase 2 target) ── */}
+          {/* ── Reconverge: 4 lane bottoms → verification ────────────────── */}
           {RECONVERGE.map((d, i) => <path key={i} d={d} className="wagnt-reconverge" />)}
 
-          {/* ── E. Verification: hatch strip (left only; right cleared for rework bus) ── */}
-          {HATCH_LEFT.map((d, i)  => <path key={`hl${i}`} d={d} className="wagnt-checkpoint-hatch" />)}
-
-          {/* ── E. Verification: inspection gate bar + pass tick ─────────── */}
+          {/* ── E. Verification: inspection gate bar ─────────────────────── */}
           <line
             x1={GATE_BAR_X1} y1={VER_GATE_Y}
             x2={GATE_BAR_X2} y2={VER_GATE_Y}
             className="wagnt-gate-bar"
           />
-          <path d={GATE_TICK} className="wagnt-gate-tick" />
 
           {/* ── Spine: verification bottom → shipping → output ───────────── */}
           <line
@@ -819,17 +701,14 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           />
           <circle cx={CORE_X} cy={BANDS.output.y2 - 1.5} r={1.4} className="wagnt-port-dot wagnt-port-dot--out" style={{ '--port-i': 1 }} />
 
-          {/* ── G. Core housing octagon ───────────────────────────────────── */}
-          <path d={CORE_HOUSING_PATH} className="wagnt-core-housing" />
+          {/* ── Core SVG ring — silent backdrop for the HTML nucleus ─────── */}
+          <circle cx={CORE_X} cy={CORE_Y} r={8} className="wagnt-core-ring" />
 
-          {/* ── Core ring (HTML nucleus overlaid on top) ──────────────────── */}
-          <circle cx={CORE_X} cy={CORE_Y} r={7} className="wagnt-core-ring" />
-
-          {/* ── Rework retry bus — engineered orthogonal, right gutter ──────── */}
+          {/* ── Rework retry bus — engineered orthogonal, right gutter ───── */}
           <path ref={reworkPathRef} d={REWORK} className="wagnt-rework" />
           <polygon points={REWORK_ARROW} className="wagnt-rework-arrow" />
 
-          {/* ── Rework direction chevrons (right gutter, upward) ─────────────── */}
+          {/* ── Rework direction chevrons (upward, right gutter) ─────────── */}
           {REWORK_CHEVRONS.map((d, i) => <path key={i} d={d} className="wagnt-rework-chevron" style={{ '--chev-rw-i': i }} />)}
         </svg>
 
@@ -923,15 +802,12 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           </div>
         </div>
 
-        {/* ── Core nucleus — layered HTML rings, stays crisp over SVG stretch ── */}
+        {/* ── Core nucleus — three HTML layers: glow bloom, ring, nucleus ── */}
         <div
           className="wagnt-core"
           style={{ left: xp(CORE_X), top: yp(CORE_Y) }}
         >
-          <div className="wagnt-core-glow-wide" />
           <div className="wagnt-core-glow" />
-          <div className="wagnt-core-ring-outer" />
-          <div className="wagnt-core-ring-tick" />
           <div className="wagnt-core-ring-inner" />
           <div className="wagnt-core-nucleus" />
           <div className="wagnt-core-ack" />
