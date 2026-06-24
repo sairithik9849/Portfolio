@@ -347,6 +347,13 @@ export default function WhatIDo() {
     }
   }
 
+  const activeItem = WHAT_I_DO[active]
+  const captionClassName = [
+    'wid-caption',
+    activeItem?.id === 'systems' ? 'wid-caption--systems' : '',
+    active === N - 1 ? 'wid-caption--agents' : '',
+  ].filter(Boolean).join(' ')
+
   return (
     <section ref={sectionRef} id="what-i-do" className="what-i-do">
       <SectionHead idx="03" title="What I" em="Do." right="" />
@@ -434,7 +441,7 @@ export default function WhatIDo() {
           All other words (0–3) keep opacity 1 — captionFade is 1 whenever
           agentsProgress < 0.9, which is the case for all non-Agents words. */}
       <motion.div
-        className="wid-caption"
+        className={captionClassName}
         aria-live="polite"
         style={{ opacity: active === N - 1 ? captionFade : 1 }}
       >
@@ -447,7 +454,7 @@ export default function WhatIDo() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {highlightText(WHAT_I_DO[active]?.blurb ?? '', WHAT_I_DO[active]?.blurbMarks ?? [])}
+            {highlightText(activeItem?.blurb ?? '', activeItem?.blurbMarks ?? [])}
           </motion.p>
         </AnimatePresence>
       </motion.div>

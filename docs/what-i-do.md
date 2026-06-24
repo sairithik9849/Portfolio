@@ -61,7 +61,7 @@ Two identical word stacks share the same JS-set `y` so glyphs register pixel-per
 | `backend` | `VizBackend.jsx` | Live |
 | `data` | `VizData.jsx` | Live |
 | `interface` | `VizInterface.jsx` | Live (4-layer autonomous isometric breathing card: raw data stream → logic grid → insight widgets → glass control panel) |
-| `agents` | `VizAgents.jsx` | **Placeholder (`return null`)** — animation not yet built; blurb in `whatIDo.js` is an empty string |
+| `agents` | `VizAgents.jsx` | Live — Phase 1.5 static frame + Phase 2A ambient motion + Phase 2B/2C/2D autonomous simulation complete. Full job lifecycle: goal intake → discovery → planning (fan-out) → parallel execution (staggered lanes) → reconverge → verification → shipping. ~18% fail rate triggers gold rework arc (self-correction). Telemetry PASS/CONF couples to outcomes. One unified RAF clock, refs-only, zero re-renders. |
 
 All five layers render absolutely stacked and cross-dissolve via opacity; each receives `progress`, `index`, `isActive`, `reduced`, `frozen`.
 

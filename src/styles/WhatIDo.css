@@ -177,6 +177,21 @@
   z-index: 5;
 }
 
+/* Agents word only — reposition caption to the left column so it doesn't
+   overlap the factory viz. Mirrors .wid-stage geometry: shell left edge is
+   max(0px, 50vw - 720px), right edge stops at var(--viz-left). */
+.wid-caption--agents {
+  left: max(0px, 50vw - 720px);
+  right: calc(100% - var(--viz-left));
+  padding: 0 48px 88px 24px;
+}
+
+@media (max-height: 900px) and (min-width: 981px) {
+  .wid-caption--systems {
+    padding-bottom: 56px;
+  }
+}
+
 .wid-caption-text {
   font-size: clamp(12px, 0.95vw, 13.5px);
   font-family: var(--mono);
