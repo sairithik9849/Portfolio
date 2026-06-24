@@ -23,8 +23,8 @@ export const WHAT_I_DO = [
     id: 'interface',
     word: 'INTERFACE',
     blurb:
-      "Transforming complex data and AI systems into interfaces people can understand, trust, and act on.",
-    blurbMarks: ['understand, trust, and act on'],
+      "Complex systems are only valuable if people can understand them. I design interfaces that transform backend infrastructure, data, and AI into experiences people can understand, trust, and confidently act on.",
+    blurbMarks: ['experiences', 'confidently'],
   },
   {
     id: 'agents',
