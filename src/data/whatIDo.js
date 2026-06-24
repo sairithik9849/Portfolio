@@ -10,6 +10,7 @@ export const WHAT_I_DO = [
     word: 'BACKEND',
     blurb:
       "I build backend infrastructure that remains stable under real production traffic: engineering APIs, caching strategies, and fault-tolerant services that prioritize reliability over complexity. The best backend systems aren't the loudest; they're the ones users never have to think about.",
+    blurbMarks: ['stable', 'real production traffic', 'reliability'],
   },
   {
     id: 'data',
