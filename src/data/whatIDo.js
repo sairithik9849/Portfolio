@@ -16,7 +16,7 @@ export const WHAT_I_DO = [
     id: 'data',
     word: 'DATA',
     blurb:
-      "Postgres, Redis, Snowflake, and millions of raw rows a day of noise. I can roll it up into the one signal a human can read.",
+      "Behind every dashboard is a pipeline that has to be fast, reliable, and trustworthy. I build data workflows that turn millions of raw rows into the one signal that actually matters.",
     blurbMarks: ['millions', 'one signal'],
   },
   {
