@@ -82,23 +82,30 @@ const RECONVERGE = LANE_CENTERS.map(lx => {
   return `M ${lx},${ly} C ${lx},${vy - 1} ${CORE_X},${vy - 1} ${CORE_X},${vy}`
 })
 
-// Rework arc: verification left side → planning left side, routed up the left gutter.
-// Phase 2 animation target — DO NOT MODIFY.
-const GUTTER_X      = FRAME_X1 - 3    // x = 5, inside the left margin
-const REWORK_ENTRY  = FRAME_X1 + 5    // x = 13, horizontal entry/exit from stations
-const REWORK_IN_Y   = BANDS.verification.y1 + 7   // 112 — exits verification left wall
-const REWORK_OUT_Y  = BANDS.planning.y2 - 7        // 38  — enters planning left wall
-const REWORK = (
-  `M ${REWORK_ENTRY},${REWORK_IN_Y} ` +
-  `C ${GUTTER_X},${REWORK_IN_Y} ${GUTTER_X},${REWORK_OUT_Y} ${REWORK_ENTRY},${REWORK_OUT_Y}`
-)
+// Rework retry bus — engineered orthogonal path, right side of factory.
+// Exits verification right wall → rounded corner into right gutter → runs up → rounded corner
+// back into planning. Orthogonal routing with Q fillets reads as an intentional retry bus.
+// Token driven by getPointAtLength(reworkPathRef) — no mirrored control-point duplication.
+const RW_GUTTER_X  = FRAME_X2 + 3    // x = 95, vertical run in right gutter
+const RW_ENTRY_X   = FRAME_X2 - 5    // x = 87, horizontal stub into / out of stations
+const RW_CORNER_R  = 3               // fillet radius (vb units) for engineered joins
+const RW_IN_Y      = BANDS.verification.y1 + 7   // 112 — exit from verification
+const RW_OUT_Y     = BANDS.planning.y2 - 7        // 38  — entry into planning
+// Orthogonal path: H-stub → Q corner → V-run → Q corner → H-stub
+const REWORK = [
+  `M ${RW_ENTRY_X},${RW_IN_Y}`,
+  `L ${RW_GUTTER_X - RW_CORNER_R},${RW_IN_Y}`,
+  `Q ${RW_GUTTER_X},${RW_IN_Y} ${RW_GUTTER_X},${RW_IN_Y - RW_CORNER_R}`,
+  `L ${RW_GUTTER_X},${RW_OUT_Y + RW_CORNER_R}`,
+  `Q ${RW_GUTTER_X},${RW_OUT_Y} ${RW_GUTTER_X - RW_CORNER_R},${RW_OUT_Y}`,
+  `L ${RW_ENTRY_X},${RW_OUT_Y}`,
+].join(' ')
 
-// Rework arrowhead — equilateral triangle pointing up into planning
-const ARW_TIP_Y  = REWORK_OUT_Y - 2
+// Arrowhead — small filled triangle pointing left into planning
 const REWORK_ARROW = [
-  `${REWORK_ENTRY - 1.5},${REWORK_OUT_Y + 0.5}`,
-  `${REWORK_ENTRY + 1.5},${REWORK_OUT_Y + 0.5}`,
-  `${REWORK_ENTRY},${ARW_TIP_Y}`,
+  `${RW_ENTRY_X},${RW_OUT_Y - 1.5}`,
+  `${RW_ENTRY_X},${RW_OUT_Y + 1.5}`,
+  `${RW_ENTRY_X - 2.5},${RW_OUT_Y}`,
 ].join(' ')
 
 // Tie-bar Y positions — first and last are "cap" bars, inner are station dividers
@@ -123,13 +130,13 @@ const SPINE_CHEVRONS_DOWN = [
   makeChevronDown(CORE_X, 140),
 ]
 
-// A. Rework upward chevrons (two, centered on the rework arc left gutter x=5)
+// A. Rework upward chevrons — centered on RW_GUTTER_X along the vertical run
 const makeChevronUp = (cx, cy, half = 1.8, rise = 1.2) =>
   `M ${cx - half},${cy + rise} L ${cx},${cy} L ${cx + half},${cy + rise}`
 
 const REWORK_CHEVRONS = [
-  makeChevronUp(GUTTER_X, 78),
-  makeChevronUp(GUTTER_X, 69),
+  makeChevronUp(RW_GUTTER_X, 85),
+  makeChevronUp(RW_GUTTER_X, 70),
 ]
 
 // B. Discovery convergence feeders — 3 lines from each upright converging to spine mid-point
@@ -213,7 +220,7 @@ const VER_GATE_Y = BANDS.verification.y1 + (BANDS.verification.y2 - BANDS.verifi
 // Left hatch strip: x range [FRAME_X1 .. FRAME_X1+7], y range [verification.y1 .. verification.y2]
 // 5 diagonal lines within the strip
 const HATCH_W   = 7    // width of hatch strip (in VB units)
-const HATCH_STEP = 4   // line spacing
+const HATCH_STEP = 7   // line spacing — sparser (noise reduction)
 const makeHatchLines = (x0, x1, y0, y1, step) => {
   const lines = []
   for (let d = 0; d <= (x1 - x0) + (y1 - y0); d += step) {
@@ -231,30 +238,20 @@ const HATCH_LEFT  = makeHatchLines(
   BANDS.verification.y1 + 1, BANDS.verification.y2 - 1,
   HATCH_STEP
 )
-const HATCH_RIGHT = makeHatchLines(
-  FRAME_X2 - HATCH_W, FRAME_X2,
-  BANDS.verification.y1 + 1, BANDS.verification.y2 - 1,
-  HATCH_STEP
-)
+// HATCH_RIGHT removed — right gutter cleared for rework retry bus
 // Gate bar: full-width across verification at gate Y
 const GATE_BAR_X1 = FRAME_X1 + HATCH_W + 2  // leave room after hatch
 const GATE_BAR_X2 = FRAME_X2 - HATCH_W - 2
 // Pass tick: small V above gate center
 const GATE_TICK = makeChevronDown(CORE_X, VER_GATE_Y - 1.5, 2.0, 1.2)
 
-// F. Chassis rivets: 4 cap corners + 8 tie-bar/upright intersections
+// F. Chassis rivets: cap corners only — inner tie-bar rivets removed (noise reduction)
 const RIVET_RADIUS = 0.7
 const RIVET_POSITIONS = [
-  // Cap corners (4)
   { cx: FRAME_X1, cy: 4.5   },
   { cx: FRAME_X2, cy: 4.5   },
   { cx: FRAME_X1, cy: 145.5 },
   { cx: FRAME_X2, cy: 145.5 },
-  // Tie-bar / upright intersections (inner bars only: y=24,45,105,126)
-  { cx: FRAME_X1, cy: 24  },  { cx: FRAME_X2, cy: 24  },
-  { cx: FRAME_X1, cy: 45  },  { cx: FRAME_X2, cy: 45  },
-  { cx: FRAME_X1, cy: 105 },  { cx: FRAME_X2, cy: 105 },
-  { cx: FRAME_X1, cy: 126 },  { cx: FRAME_X2, cy: 126 },
 ]
 
 // G. Core coordination spokes — from core center to midpoint of each lane rail
@@ -310,14 +307,6 @@ const RECONVERGE_PTS = LANE_CENTERS.map(lx => {
   return [{ x: lx, y: ly }, { x: lx, y: vy-1 }, { x: CORE_X, y: vy-1 }, { x: CORE_X, y: vy }]
 })
 
-// Rework arc control points — match REWORK d-string exactly
-const REWORK_PTS = [
-  { x: REWORK_ENTRY, y: REWORK_IN_Y  },
-  { x: GUTTER_X,     y: REWORK_IN_Y  },
-  { x: GUTTER_X,     y: REWORK_OUT_Y },
-  { x: REWORK_ENTRY, y: REWORK_OUT_Y },
-]
-
 // Execution rail travel bounds
 const EXEC_RAIL_Y1 = BANDS.execution.y1 + 3  // 48
 const EXEC_RAIL_Y2 = BANDS.execution.y2 - 3  // 102
@@ -367,6 +356,7 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
   // Phase 2B: simulation
   const fieldRef        = useRef(null)
   const fieldSizeRef    = useRef({ w: 100, h: 150 })  // px, updated by ResizeObserver
+  const reworkPathRef   = useRef(null)   // SVG <path> element — sampled via getPointAtLength
   const leadRef         = useRef(null)
   const childRefs       = useRef([])   // length 4, one per lane
   const slot1Refs       = useRef([])   // length 4, module fill for slot[1] per lane
@@ -579,11 +569,15 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           break
         }
         case 'rework': {
-          // Gold lead travels UP the rework arc — communicates self-correction
-          const [p0, p1, p2, p3] = REWORK_PTS
-          const pt = cubicBezierPt(p0, p1, p2, p3, ease)
-          lead.classList.add('wagnt-packet--fail')
-          placeToken(lead, pt.x, pt.y)
+          // Gold lead travels up the right-side retry bus.
+          // getPointAtLength samples SVG viewBox coords directly → vbPx().
+          const pathEl = reworkPathRef.current
+          if (pathEl) {
+            const totalLen = pathEl.getTotalLength()
+            const pt = pathEl.getPointAtLength(ease * totalLen)
+            lead.classList.add('wagnt-packet--fail')
+            placeToken(lead, pt.x, pt.y)
+          }
           children.forEach(hideToken)
           break
         }
@@ -801,9 +795,8 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           {/* ── Reconverge: 4 lane bottoms → verification (Phase 2 target) ── */}
           {RECONVERGE.map((d, i) => <path key={i} d={d} className="wagnt-reconverge" />)}
 
-          {/* ── E. Verification: hatch strips ────────────────────────────── */}
+          {/* ── E. Verification: hatch strip (left only; right cleared for rework bus) ── */}
           {HATCH_LEFT.map((d, i)  => <path key={`hl${i}`} d={d} className="wagnt-checkpoint-hatch" />)}
-          {HATCH_RIGHT.map((d, i) => <path key={`hr${i}`} d={d} className="wagnt-checkpoint-hatch" />)}
 
           {/* ── E. Verification: inspection gate bar + pass tick ─────────── */}
           <line
@@ -832,11 +825,11 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           {/* ── Core ring (HTML nucleus overlaid on top) ──────────────────── */}
           <circle cx={CORE_X} cy={CORE_Y} r={7} className="wagnt-core-ring" />
 
-          {/* ── Rework arc — gold dashed, up the left gutter ─────────────── */}
-          <path d={REWORK} className="wagnt-rework" />
+          {/* ── Rework retry bus — engineered orthogonal, right gutter ──────── */}
+          <path ref={reworkPathRef} d={REWORK} className="wagnt-rework" />
           <polygon points={REWORK_ARROW} className="wagnt-rework-arrow" />
 
-          {/* ── A. Rework upward direction chevrons ──────────────────────── */}
+          {/* ── Rework direction chevrons (right gutter, upward) ─────────────── */}
           {REWORK_CHEVRONS.map((d, i) => <path key={i} d={d} className="wagnt-rework-chevron" style={{ '--chev-rw-i': i }} />)}
         </svg>
 
@@ -930,21 +923,26 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           </div>
         </div>
 
-        {/* ── Core nucleus — HTML div stays round over SVG stretch ─────── */}
+        {/* ── Core nucleus — layered HTML rings, stays crisp over SVG stretch ── */}
         <div
           className="wagnt-core"
           style={{ left: xp(CORE_X), top: yp(CORE_Y) }}
         >
+          <div className="wagnt-core-glow-wide" />
           <div className="wagnt-core-glow" />
+          <div className="wagnt-core-ring-outer" />
+          <div className="wagnt-core-ring-tick" />
+          <div className="wagnt-core-ring-inner" />
           <div className="wagnt-core-nucleus" />
+          <div className="wagnt-core-ack" />
         </div>
 
-        {/* ── Rework label — rotated in left gutter ────────────────────── */}
+        {/* ── Rework label — horizontal, right gutter near top bend ─────── */}
         <div
           className="wagnt-rework-label"
           style={{
-            top:  yp((REWORK_IN_Y + REWORK_OUT_Y) / 2),
-            left: xp(GUTTER_X - 2),
+            top:   yp(RW_OUT_Y - 7),
+            right: '0',
           }}
         >
           REWORK

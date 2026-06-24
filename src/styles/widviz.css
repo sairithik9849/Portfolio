@@ -1647,7 +1647,7 @@
   fill: none;
   stroke: var(--line-2);
   stroke-width: 2.0;
-  opacity: 0.18;
+  opacity: 0.10;
   vector-effect: non-scaling-stroke;
 }
 
@@ -1719,13 +1719,13 @@
   vector-effect: non-scaling-stroke;
 }
 
-/* Rework arc — gold dashed, up the left gutter (strengthened Phase 1.5) */
+/* Rework retry bus — engineered orthogonal path, right gutter */
 .wagnt-rework {
   fill: none;
   stroke: var(--accent-2);
-  stroke-width: 0.7;
-  stroke-dasharray: 1.5 1;
-  opacity: 0.6;
+  stroke-width: 0.9;
+  stroke-dasharray: 2 1;
+  opacity: 0.5;
   vector-effect: non-scaling-stroke;
 }
 
@@ -1862,18 +1862,17 @@
 .wagnt-port-label--in  { color: var(--accent);  opacity: 0.45; }
 .wagnt-port-label--out { color: var(--accent);  opacity: 0.3;  }
 
-/* ── Rework label — rotated vertically in left gutter ───────────────────────── */
+/* ── Rework label — horizontal, right gutter near top bend (no rotation) ────── */
 .wagnt-rework-label {
   position: absolute;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: center center;
   font-family: var(--mono);
   font-size: var(--text-4xs);
   letter-spacing: var(--tracking-wider);
   color: var(--accent-2);
-  opacity: 0.4;
+  opacity: 0.45;
   white-space: nowrap;
   pointer-events: none;
+  text-align: right;
 }
 
 /* ── Shared telemetry pair (used in station + global header) ─────────────────── */
@@ -2034,6 +2033,70 @@
   background: radial-gradient(circle, rgba(201, 245, 88, 0.1) 0%, transparent 70%);
 }
 
+/* Wide ambient halo — larger radial falloff for a richer core presence */
+.wagnt-core-glow-wide {
+  position: absolute;
+  inset: -22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 245, 88, 0.04) 0%, transparent 70%);
+}
+
+/* Outer structural ring — large, very faint, layered depth */
+.wagnt-core-ring-outer {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 245, 88, 0.10);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Inner ring — closer halo, partners the SVG ring for layering */
+.wagnt-core-ring-inner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 245, 88, 0.22);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Tick ring — conic-gradient ticks clipped to a ring annulus; rotates slowly */
+.wagnt-core-ring-tick {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(
+    rgba(201, 245, 88, 0.30) 0deg 3deg,
+    transparent 3deg 24deg
+  );
+  mask: radial-gradient(circle, transparent 6.5px, black 7px, black 9px, transparent 9.5px);
+  -webkit-mask: radial-gradient(circle, transparent 6.5px, black 7px, black 9px, transparent 9.5px);
+  opacity: 0.55;
+}
+
+/* Acknowledgement ripple — expands outward on dispatch (fanout) and merge (reconverge) */
+.wagnt-core-ack {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── Phase 2A — Ambient factory motion ─────────────────────────────────────────
    All animation declarations are scoped under .wagnt-live, which is applied only
    when isActive && !isFinal (i.e. AGENTS is the active snap word and motion is
@@ -2117,10 +2180,22 @@
   to   { stroke-dashoffset: -2.5; }
 }
 
-/* 13. Rework chevron cascade — staggered opacity wave up the left gutter */
+/* 13. Rework chevron cascade — staggered opacity wave up the right gutter */
 @keyframes wagnt-rework-chevron-cascade {
   0%, 100% { opacity: 0.55; }
   50%       { opacity: 0.95; }
+}
+
+/* 14. Core tick ring — slow continuous rotation (reactor feel) */
+@keyframes wagnt-tick-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg);   }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 15. Core acknowledgement ripple — expand + fade on dispatch and merge */
+@keyframes wagnt-core-ack-ripple {
+  0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.65; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0;    }
 }
 
 /* ── Live-state animations (only when .wagnt-live is applied) ────────────── */
@@ -2141,6 +2216,45 @@
 .wagnt-live .wagnt-core-ring {
   animation: wagnt-ring-pulse 2.6s ease-in-out infinite;
   animation-delay: -0.3s;
+}
+
+/* Wide glow — slow companion breathe, slightly out of phase */
+.wagnt-live .wagnt-core-glow-wide {
+  animation: wagnt-glow-breathe 4.2s ease-in-out infinite;
+  animation-delay: -2.1s;
+}
+
+/* Outer ring — slow structural pulse */
+.wagnt-live .wagnt-core-ring-outer {
+  animation: wagnt-ring-pulse 3.8s ease-in-out infinite;
+  animation-delay: -1.2s;
+}
+
+/* Inner ring — breathing complement to nucleus peak */
+.wagnt-live .wagnt-core-ring-inner {
+  animation: wagnt-ring-pulse 2.6s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+/* Tick ring — slow rotation (reactor / coordination signal) */
+.wagnt-live .wagnt-core-ring-tick {
+  animation: wagnt-tick-rotate 18s linear infinite;
+  will-change: transform;
+}
+
+/* Acknowledgement ripple — fires once on dispatch and once on merge */
+.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-core-ack,
+.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-core-ack {
+  animation: wagnt-core-ack-ripple 0.7s ease-out forwards;
+}
+
+/* Core spokes — hidden except during execution where they show core↔lane links */
+.wagnt-live .wagnt-core-spoke {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-core-spoke {
+  opacity: 0.25;
 }
 
 /* Flow chevrons — staggered downward wave (--chev-i set in JSX for each chevron) */
@@ -2187,7 +2301,11 @@
 @media (prefers-reduced-motion: reduce) {
   .wagnt-live .wagnt-core-nucleus,
   .wagnt-live .wagnt-core-glow,
+  .wagnt-live .wagnt-core-glow-wide,
   .wagnt-live .wagnt-core-ring,
+  .wagnt-live .wagnt-core-ring-outer,
+  .wagnt-live .wagnt-core-ring-inner,
+  .wagnt-live .wagnt-core-ring-tick,
   .wagnt-live .wagnt-flow-chevron,
   .wagnt-live .wagnt-lane-rail,
   .wagnt-live .wagnt-fanout,
@@ -2202,12 +2320,14 @@
   .wagnt-live .wagnt-reconverge {
     stroke-dasharray: none;
   }
-  /* Phase 3: also disable gate scan/reject, rework arc flow, and chevron cascade */
+  /* Phase 3: also disable gate scan/reject, rework arc flow, chevron cascade, and core ack */
   .wagnt-live .wagnt-field[data-phase="verification"] .wagnt-gate-bar,
   .wagnt-live .wagnt-field[data-phase="verification"] .wagnt-gate-tick,
   .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-gate-bar,
   .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-chevron {
+  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-chevron,
+  .wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-core-ack,
+  .wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-core-ack {
     animation: none;
   }
 }
@@ -2355,56 +2475,102 @@
 .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-port-dot--out { opacity: 1.0; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   PHASE 3 — Narrative Amplification: focal-recede + per-phase emphasis
-   When any phase is active, all station bays recede to ~0.42. Per-phase rules
-   restore the focal bay to full opacity so the viewer always knows where work
-   is. The `data-phase` attribute is present only during active (non-rest)
-   phases; during rest it is removed, all bays return to 1.0.
+   PHASE 3 — Narrative Amplification: three-tier focal hierarchy
+   Three tiers: ACTIVE (1.0) · ADJACENT (0.55) · DISTANT (0.22 base recede).
+   The viewer's eye always knows where the work is without consciously searching.
+   Typography uplift: active station label brightens to --fg; inactive dims to --fg-2.
+   `data-phase` is present only during active phases; absent during rest → all at 1.0.
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Transitions for station bays + lane rails ─────────────────────────── */
-.wagnt-live .wagnt-station   { transition: opacity 0.35s ease; }
-.wagnt-live .wagnt-exec-band { transition: opacity 0.35s ease; }
-.wagnt-live .wagnt-lane-rail { transition: opacity 0.3s ease; }
+/* ── Transitions for station bays, labels, and lane rails ─────────────────── */
+.wagnt-live .wagnt-station      { transition: opacity 0.35s ease; }
+.wagnt-live .wagnt-exec-band    { transition: opacity 0.35s ease; }
+.wagnt-live .wagnt-lane-rail    { transition: opacity 0.3s ease; }
+.wagnt-live .wagnt-station-label  { transition: color 0.35s ease; }
+.wagnt-live .wagnt-station-index  { transition: opacity 0.35s ease; }
 
-/* ── Base recede: dim all bays when any phase is active ────────────────── */
+/* ── Base recede: deeply dim all bays — distant tier ──────────────────────── */
 .wagnt-live .wagnt-field[data-phase] .wagnt-station,
 .wagnt-live .wagnt-field[data-phase] .wagnt-exec-band {
-  opacity: 0.42;
+  opacity: 0.22;
 }
 
-/* ── Intake — goal arrives; discovery bay warms first ──────────────────── */
-.wagnt-live .wagnt-field[data-phase="intake"]      .wagnt-station--discovery    { opacity: 1; }
+/* ── Per-phase three-tier hierarchy ─────────────────────────────────────────── */
+/* ACTIVE=1.0 · ADJACENT=0.55 · DISTANT=0.22 (base, no override needed)         */
 
-/* ── Discovery — context parsing + memory read ─────────────────────────── */
-.wagnt-live .wagnt-field[data-phase="discovery"]   .wagnt-station--discovery    { opacity: 1; }
+/* intake: discovery=ACTIVE, planning=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-station--discovery      { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-station--planning       { opacity: 0.55; }
 
-/* ── Planning — decomposition focal; fan-out lines pre-warm ─────────────── */
-.wagnt-live .wagnt-field[data-phase="planning"]    .wagnt-station--planning     { opacity: 1; }
-.wagnt-live .wagnt-field[data-phase="planning"]    .wagnt-fanout {
+/* discovery: discovery=ACTIVE, planning=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="discovery"] .wagnt-station--discovery   { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="discovery"] .wagnt-station--planning    { opacity: 0.55; }
+
+/* planning: planning=ACTIVE, discovery=ADJACENT, execution=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-station--planning     { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-station--discovery    { opacity: 0.55; }
+.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-exec-band             { opacity: 0.55; }
+.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-fanout {
   stroke: var(--accent);
   opacity: 0.45;
 }
 
-/* ── Fan-out — children diverge; planning remains focal ─────────────────── */
-.wagnt-live .wagnt-field[data-phase="fanout"]      .wagnt-station--planning     { opacity: 1; }
+/* fanout: planning=ACTIVE, execution=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-station--planning       { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-exec-band               { opacity: 0.55; }
 
-/* ── Execution — parallel work; exec-band is the sole focal element ──────── */
-.wagnt-live .wagnt-field[data-phase="execution"]   .wagnt-exec-band             { opacity: 1; }
-.wagnt-live .wagnt-field[data-phase="execution"]   .wagnt-lane-rail             { opacity: 0.70; }
+/* execution: exec=ACTIVE, planning=ADJACENT, verification=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-exec-band            { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-station--planning    { opacity: 0.55; }
+.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-station--verification { opacity: 0.55; }
+.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-lane-rail            { opacity: 0.70; }
 
-/* ── Reconverge — lanes returning; verification begins to warm ──────────── */
-.wagnt-live .wagnt-field[data-phase="reconverge"]  .wagnt-station--verification { opacity: 0.72; }
+/* reconverge: verification=ADJACENT-anticipation, execution=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-station--verification { opacity: 0.80; }
+.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-exec-band           { opacity: 0.55; }
 
-/* ── Verification — evaluation gate focal ───────────────────────────────── */
+/* verification: verification=ACTIVE, execution=ADJACENT, shipping=ADJACENT */
 .wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-exec-band         { opacity: 0.55; }
+.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--shipping { opacity: 0.55; }
 
-/* ── Shipping — result exits; shipping bay focal ─────────────────────────── */
-.wagnt-live .wagnt-field[data-phase="shipping"]    .wagnt-station--shipping     { opacity: 1; }
+/* shipping: shipping=ACTIVE, verification=ADJACENT */
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-station--shipping     { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-station--verification { opacity: 0.55; }
 
-/* ── Rework — self-correction: planning re-activates to receive the retry ── */
-.wagnt-live .wagnt-field[data-phase="rework"]      .wagnt-station--planning     { opacity: 1; }
-.wagnt-live .wagnt-field[data-phase="rework"]      .wagnt-station--verification { opacity: 0.60; }
+/* rework: planning=ACTIVE (receives retry), verification=ADJACENT (just rejected) */
+.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-station--planning       { opacity: 1; }
+.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-station--verification   { opacity: 0.55; }
+
+/* ── Typography uplift — active station label brightens to --fg ────────────── */
+.wagnt-live .wagnt-field[data-phase="intake"]       .wagnt-station--discovery   .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="discovery"]    .wagnt-station--discovery   .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="planning"]     .wagnt-station--planning    .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="fanout"]       .wagnt-station--planning    .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="reconverge"]   .wagnt-station--verification .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="shipping"]     .wagnt-station--shipping    .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="rework"]       .wagnt-station--planning    .wagnt-station-label {
+  color: var(--fg);
+}
+
+/* Active station index tag — full opacity */
+.wagnt-live .wagnt-field[data-phase="intake"]       .wagnt-station--discovery   .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="discovery"]    .wagnt-station--discovery   .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="planning"]     .wagnt-station--planning    .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="fanout"]       .wagnt-station--planning    .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="reconverge"]   .wagnt-station--verification .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="shipping"]     .wagnt-station--shipping    .wagnt-station-index,
+.wagnt-live .wagnt-field[data-phase="rework"]       .wagnt-station--planning    .wagnt-station-index {
+  opacity: 1;
+}
+
+/* Execution label uplift during execution and fanout phases */
+.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-exec-band .wagnt-station-label,
+.wagnt-live .wagnt-field[data-phase="fanout"]    .wagnt-exec-band .wagnt-station-label {
+  color: var(--fg);
+}
 
 /* ── Extended reduced-motion: neutralize tokens + phase highlights ──────── */
 @media (prefers-reduced-motion: reduce) {
@@ -2427,7 +2593,9 @@
   /* Phase 3: also remove bay-focus transitions so recede/focal snaps instantly */
   .wagnt-live .wagnt-station,
   .wagnt-live .wagnt-exec-band,
-  .wagnt-live .wagnt-lane-rail {
+  .wagnt-live .wagnt-lane-rail,
+  .wagnt-live .wagnt-station-label,
+  .wagnt-live .wagnt-station-index {
     transition: none;
   }
 }

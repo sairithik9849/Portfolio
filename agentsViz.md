@@ -18,6 +18,22 @@ A vertical autonomous-factory animation inside the AGENTS panel (word 05) of the
 
 ---
 
+## Visual refinement pass (Tier 1 — June 2026)
+
+| Area | Change |
+|---|---|
+| Rework path | Moved to **right gutter**. Engineered orthogonal bus: H-stub → Q fillet → V-run → Q fillet → H-stub. `RW_GUTTER_X=95`, `RW_ENTRY_X=87`. Token uses `reworkPathRef.current.getPointAtLength()` — no mirrored control-point duplication. |
+| Rework label | Horizontal (no rotation), right-aligned, above top bend (`top: yp(RW_OUT_Y - 7); right: 0`). |
+| Rivets | Reduced to 4 cap corners only; 8 inner tie-bar rivets removed. |
+| HATCH_RIGHT | Removed (cleared right gutter for rework bus). `HATCH_STEP` increased 4→7. |
+| Visual hierarchy | Three-tier focal system: ACTIVE=1.0 · ADJACENT=0.55 · DISTANT=0.22 (was binary 1.0 / 0.42). |
+| Core | Layered HTML rings: `wagnt-core-glow-wide`, `wagnt-core-ring-outer`, `wagnt-core-ring-tick` (rotating conic ticks), `wagnt-core-ring-inner`, `wagnt-core-ack` (one-shot dispatch/merge ripple). |
+| Core spokes | Hidden in live mode except during `execution` phase (`.wagnt-live .wagnt-core-spoke { opacity:0 }`). |
+| Conduit | Base opacity 0.18→0.10. |
+| Typography | `wagnt-station-label` brightens to `--fg` for active station; transitions added to label and index. |
+
+---
+
 ## Layout
 
 ```
@@ -67,7 +83,7 @@ Single RAF clock drives everything. No React state. All DOM writes via refs.
 | `reconverge` | 0.7s | Children follow RECONVERGE beziers back to verification |
 | `verification` | 1.0s | Lead dwells at gate; pass/fail decided on exit |
 | `shipping` | 0.8s | Lead exits down spine, fades out |
-| `rework` | 1.2s | Gold lead travels UP rework arc → re-enters planning |
+| `rework` | 1.2s | Gold lead travels UP the right-side retry bus → re-enters planning |
 | `rest` | 1.0s | All tokens hidden; cycle resets |
 
 **Rework cadence:** no back-to-back fails; ~18% chance after 2+ consecutive passes; forced fail after 6 consecutive passes. A reworked cycle always passes second verification.
@@ -82,6 +98,7 @@ Single RAF clock drives everything. No React state. All DOM writes via refs.
 | `slot1Refs` | Array[4] of `.wagnt-module-fill` (slot[1] per lane) — live width during execution |
 | `driftElsRef` | Map of telemetry spans with drift config |
 | `fieldSizeRef` | `{w,h}` px — updated by ResizeObserver, used by `vbPx()` |
+| `reworkPathRef` | `<path className="wagnt-rework">` — sampled via `getTotalLength()` / `getPointAtLength()` for token motion |
 
 ### Phase activation (CSS declarative system)
 
@@ -118,9 +135,9 @@ wagnt-port-dot        intake/output circles (wagnt-port-dot--in / --out)
 wagnt-fanout          planning→lane beziers
 wagnt-lane-rail       execution lane centerlines (dashed)
 wagnt-reconverge      lane→verification beziers
-wagnt-rework          gold dashed arc up left gutter
-wagnt-rework-chevron  upward V-marks on rework arc (--chev-rw-i for cascade delay)
-wagnt-rework-arrow    arrowhead at top of rework arc
+wagnt-rework          gold dashed orthogonal retry bus, right gutter (ref: reworkPathRef)
+wagnt-rework-chevron  upward V-marks on retry bus right gutter (--chev-rw-i for cascade delay)
+wagnt-rework-arrow    arrowhead pointing left into planning at top of retry bus
 wagnt-core-ring       SVG ring behind HTML nucleus
 wagnt-core-housing    dashed octagon around core
 wagnt-feeder          discovery context feeder lines
@@ -161,7 +178,12 @@ wagnt-module-fill--done  completed fill (higher opacity)
 
 wagnt-core            core container div (centered at 50,75)
 wagnt-core-nucleus    6px lime dot
-wagnt-core-glow       radial glow div behind nucleus
+wagnt-core-glow       inner radial glow behind nucleus
+wagnt-core-glow-wide  wider ambient halo (slower breathe)
+wagnt-core-ring-outer large outer structural ring (28px, faint)
+wagnt-core-ring-inner inner layered ring (14px, medium)
+wagnt-core-ring-tick  rotating conic-gradient tick ring (20px, 18s rotation)
+wagnt-core-ack        one-shot ripple on fanout and reconverge transitions
 
 wagnt-packet          data packet token (7px, lime border+fill, box-shadow halo)
 wagnt-packet--lead    goal unit — 9px, stronger halo
@@ -170,7 +192,7 @@ wagnt-packet--fail    gold variant for rework phase
 wagnt-packet-tick     inner corner mark
 
 wagnt-port-label      GOAL IN / OUTPUT text (--in / --out variants)
-wagnt-rework-label    rotated REWORK text in left gutter
+wagnt-rework-label    horizontal REWORK text, right-aligned, right gutter near top bend
 ```
 
 ---
@@ -180,8 +202,9 @@ wagnt-rework-label    rotated REWORK text in left gutter
 | Keyframe | Target | Period | Effect |
 |---|---|---|---|
 | `wagnt-core-beat` | nucleus | 2.6s | scale 1→1.08→1 |
-| `wagnt-glow-breathe` | glow div | 2.6s | opacity 0.45→0.80 |
-| `wagnt-ring-pulse` | core ring | 2.6s | opacity 0.18→0.30 |
+| `wagnt-glow-breathe` | glow / glow-wide | 2.6s / 4.2s | opacity breath, offset phases |
+| `wagnt-ring-pulse` | SVG ring, ring-outer, ring-inner | various | opacity breath at different rates |
+| `wagnt-tick-rotate` | ring-tick | 18s | full 360° rotation (reactor signal) |
 | `wagnt-chevron-wave` | flow chevrons | 2.4s | opacity 0.08→0.32, staggered by `--chev-i` |
 | `wagnt-rail-march` | lane rails | 1.6s | dashoffset march |
 | `wagnt-arc-flow` | fanout (2.0s) / reconverge (2.4s) | — | dashoffset flow |
@@ -195,24 +218,27 @@ wagnt-rework-label    rotated REWORK text in left gutter
 |---|---|---|
 | `wagnt-gate-scan` | `verification` | gate bar+tick pulse 0.80→1.0 at 0.9s |
 | `wagnt-gate-reject` | `rework` | gate bar one-shot flash on fail |
-| `wagnt-rework-flow` | `rework` | rework arc dashes flow upward |
+| `wagnt-rework-flow` | `rework` | retry bus dashes flow upward |
 | `wagnt-rework-chevron-cascade` | `rework` | chevrons cascade 0.55→0.95, staggered by `--chev-rw-i` |
+| `wagnt-core-ack-ripple` | `fanout`, `reconverge` | one-shot ring expands scale 1→4, fades out |
 
 ---
 
-## Focal / recede system
+## Focal / recede system — three-tier hierarchy
 
-When any phase is active, all `.wagnt-station` and `.wagnt-exec-band` elements dim to **opacity 0.42**. Per-phase rules restore the focal bay to **opacity 1**. Transitions: 0.35s ease on stations, 0.3s ease on lane rails.
+Three tiers: **ACTIVE** (1.0) · **ADJACENT** (0.55) · **DISTANT** (0.22, base recede). Base recede changed from 0.42 → 0.22 so the story has real depth. Active station label also brightens to `--fg` (transitions on `wagnt-station-label` and `wagnt-station-index`).
 
-| Phase(s) | Focal element |
-|---|---|
-| `intake`, `discovery` | `.wagnt-station--discovery` |
-| `planning`, `fanout` | `.wagnt-station--planning` |
-| `execution` | `.wagnt-exec-band` |
-| `reconverge` | `.wagnt-station--verification` at 0.72 |
-| `verification` | `.wagnt-station--verification` |
-| `shipping` | `.wagnt-station--shipping` |
-| `rework` | `.wagnt-station--planning` at 1.0; `.wagnt-station--verification` at 0.60 |
+| Phase | ACTIVE | ADJACENT |
+|---|---|---|
+| `intake` | discovery | planning |
+| `discovery` | discovery | planning |
+| `planning` | planning | discovery, execution |
+| `fanout` | planning | execution |
+| `execution` | exec-band | planning, verification |
+| `reconverge` | verification at 0.80 | execution |
+| `verification` | verification | execution, shipping |
+| `shipping` | shipping | verification |
+| `rework` | planning | verification |
 
 SVG elements are NOT inside station/exec-band divs — they are never receded.
 
