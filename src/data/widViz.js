@@ -60,36 +60,32 @@ export const WID_VIZ = {
 
     // ── Node graph — positions as % of the 0–100 field SVG / field div.
     // Layout: vertical trunk EDGE(top-center) → API(center) → symmetric Y-fork
-    // to CACHE(lower-left) and DB(lower-right). Nodes shifted down to leave
-    // the top 18% clear for the EQ bar visualizer.
+    // to CACHE(lower-left) and DB(lower-right). Triangle shifted up by 10pp to
+    // leave breathing room above the latency graph at 59%.
     nodes: [
-      { id: 'edge',  label: 'EDGE',  tag: 'TLS',      x: 50, y: 22 },
-      { id: 'api',   label: 'API',   tag: 'NODE',     x: 50, y: 40 },
-      { id: 'cache', label: 'CACHE', tag: 'REDIS',    x: 28, y: 60 },
-      { id: 'db',    label: 'DB',    tag: 'POSTGRES', x: 72, y: 60 },
+      { id: 'edge',  label: 'EDGE',  tag: 'TLS',      x: 50, y: 14 },
+      { id: 'api',   label: 'API',   tag: 'NODE',     x: 50, y: 32 },
+      { id: 'cache', label: 'CACHE', tag: 'REDIS',    x: 30, y: 50 },
+      { id: 'db',    label: 'DB',    tag: 'POSTGRES', x: 70, y: 50 },
     ],
 
     // ── Edges — d-strings for the stretched preserveAspectRatio="none" field SVG.
     edges: [
-      { id: 'edge-api',  d: 'M50,22 L50,40' },
-      { id: 'api-cache', d: 'M50,40 L28,60' },
-      { id: 'api-db',    d: 'M50,40 L72,60' },
+      { id: 'edge-api',  d: 'M50,14 L50,32' },
+      { id: 'api-cache', d: 'M50,32 L30,50' },
+      { id: 'api-db',    d: 'M50,32 L70,50' },
     ],
 
-    // ── Flow dash overlay paths (must match edge d-strings above exactly)
-    flowPathDb:    'M50,40 L72,60',
-    flowPathCache: 'M50,40 L28,60',
+    // ── Flow dash overlay paths (match edge d-strings exactly)
+    flowPathDb:    'M50,32 L70,50',
+    flowPathCache: 'M50,32 L30,50',
 
-    // ── BREAKER chip — midpoint of api→db edge: ((50+72)/2, (40+60)/2) = (61, 50)
+    // ── BREAKER chip — midpoint of api→db edge: ((50+70)/2, (32+50)/2) = (60, 41)
     breakerLabel:  'BREAKER',
     breakerOpen:   'OPEN',
     breakerClosed: 'CLOSED',
-    breakerX: 61,
-    breakerY: 50,
-
-    // ── State captions
-    stressState: 'DB SATURATING',
-    calmState:   'CACHE WARM',
+    breakerX: 60,
+    breakerY: 41,
 
     // ── Readout labels
     latencyLabel: 'p95 LATENCY',
@@ -100,8 +96,23 @@ export const WID_VIZ = {
     hitRateLo:    '31%',
     hitRateHi:    '96%',
 
-    reqLabel: 'REQ / DAY',
-    rpsLabel: '10M',
+    // ── Sparkline sample arrays — 44 points each (must stay equal-length).
+    // STRESSED: climbs toward p99 ceiling with erratic spikes.
+    // CALM: flat-low around p50 with gentle heartbeat bumps.
+    traceStressed: [
+       4,  4,  5,  5,  6,  7,  8,  9, 11, 13,
+      15, 17, 20, 22, 25, 26, 27, 28, 28, 27,
+      26, 28, 29, 30, 28, 26, 28, 30, 28, 27,
+      26, 24, 25, 27, 28, 28, 27, 26, 25, 24,
+      26, 27, 28, 28,
+    ],
+    traceCalm: [
+       4,  4,  4,  4,  4,  5,  4,  4,  4,  4,
+       4,  4,  4,  5,  5,  8, 10,  8,  5,  4,
+       4,  4,  4,  4,  4,  4,  4,  4,  5,  5,
+       8, 10,  8,  5,  4,  4,  4,  4,  4,  4,
+       4,  4,  5,  4,
+    ],
   },
 
   data: {

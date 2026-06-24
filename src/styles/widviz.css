@@ -40,8 +40,7 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: BACKEND — resilience narrative (redesign)
-   EQ spectrum bars at top show request throughput.
+   VIZ: BACKEND — resilience narrative
    STRESSED: DB pressured — amber rings + particle flow, high latency.
    RESOLVED: CACHE absorbs load — lime bloom + particle flow, latency drops.
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -64,96 +63,6 @@
   pointer-events: none;
   mask-image: radial-gradient(ellipse 90% 75% at 50% 38%, black 20%, transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse 90% 75% at 50% 38%, black 20%, transparent 75%);
-}
-
-/* ── EQ bars — request throughput visualizer ───────────────────────────────── */
-.wbk-bars {
-  position: absolute;
-  top: 3%;
-  left: 5%;
-  right: 5%;
-  height: 13%;
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  pointer-events: none;
-  opacity: clamp(0, calc((var(--enter, 1) - 0.05) * 8), 1);
-}
-
-.wbk-bar {
-  flex: 1;
-  min-width: 0;
-  height: calc(12% + var(--seed, 0.5) * 88%);
-  transform-origin: bottom;
-  border-radius: 1px 1px 0 0;
-  background: var(--accent-2);
-  opacity: 0.68;
-  box-shadow: 0 -2px 8px rgba(232, 196, 122, 0.38);
-  animation: wbk-bar-bounce calc(0.13s + var(--seed, 0.5) * 0.2s) ease-in-out infinite alternate;
-  animation-delay: calc(var(--i, 0) * -0.035s + var(--seed, 0) * -0.07s);
-}
-
-.wbk-bars--resolved .wbk-bar {
-  background: var(--accent);
-  box-shadow: 0 -2px 6px rgba(201, 245, 88, 0.28);
-  animation-duration: calc(0.44s + var(--seed, 0.5) * 0.42s);
-  opacity: 0.58;
-}
-
-@keyframes wbk-bar-bounce {
-  0%   { transform: scaleY(0.07); }
-  100% { transform: scaleY(1);    }
-}
-
-/* ── Status row — live state label ─────────────────────────────────────────── */
-.wbk-status-row {
-  position: absolute;
-  top: 18%;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  pointer-events: none;
-  opacity: clamp(0, calc((var(--enter, 1) - 0.1) * 8), 1);
-}
-
-.wbk-status-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent-2);
-  animation: wbk-status-pulse 1.1s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-.wbk-status-row--resolved .wbk-status-dot {
-  background: var(--accent);
-  animation: wbk-status-pulse-calm 2s ease-in-out infinite;
-}
-
-.wbk-status-label {
-  font-family: var(--mono);
-  font-size: var(--text-3xs);
-  letter-spacing: var(--tracking-widest);
-  color: var(--accent-2);
-  text-transform: uppercase;
-  transition: color 0.4s;
-}
-
-.wbk-status-row--resolved .wbk-status-label {
-  color: var(--accent);
-}
-
-@keyframes wbk-status-pulse {
-  0%, 100% { opacity: 1;   }
-  50%       { opacity: 0.2; }
-}
-
-@keyframes wbk-status-pulse-calm {
-  0%, 100% { opacity: 1;   }
-  50%       { opacity: 0.5; }
 }
 
 /* ── Mesh SVG ──────────────────────────────────────────────────────────────── */
@@ -404,61 +313,109 @@
   color: var(--accent-2);
 }
 
-/* ── Bottom metrics bar ─────────────────────────────────────────────────────── */
-.wbk-metrics {
-  position: absolute;
-  top: 75%;
-  left: 4%;
-  right: 4%;
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--line);
-  background: rgba(7, 7, 7, 0.55);
-  border-radius: 3px;
-  overflow: hidden;
-  pointer-events: none;
-  backdrop-filter: blur(6px);
-}
-
-.wbk-metric {
-  flex: 1;
+/* ── EKG latency graph ──────────────────────────────────────────────────────── */
+.wbk-graph {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 8px 10px;
+  gap: 6px;
+  width: 300px;
+  pointer-events: none;
 }
 
-.wbk-metric-sep {
-  width: 1px;
-  background: var(--line);
-  flex-shrink: 0;
-}
-
-.wbk-metric-label {
+.wbk-graph-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
   font-family: var(--mono);
-  font-size: var(--text-3xs);
+}
+
+.wbk-graph-title {
+  font-size: var(--text-2xs);
   letter-spacing: var(--tracking-widest);
-  color: var(--muted);
+  color: var(--accent-2);
+  opacity: 0.8;
   text-transform: uppercase;
 }
 
-.wbk-metric-val {
-  font-family: var(--mono);
+.wbk-graph-val {
   font-size: var(--text-sm);
-  font-weight: 500;
   letter-spacing: var(--tracking-wide);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
-  transition: color 0.35s;
+  transition: color 0.3s;
 }
 
-/* Latency metric turns amber when stressed */
-.wbk-metric--stressed .wbk-metric-val {
+.wbk-graph-svg {
+  width: 300px;
+  height: 58px;
+  display: block;
+  overflow: visible;
+}
+
+/* p99 ceiling — dashed amber reference line */
+.wbk-graph-ceil {
+  stroke: var(--accent-2);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 3;
+  opacity: 0.32;
+}
+
+/* p50 baseline — faint lime floor */
+.wbk-graph-base {
+  stroke: var(--accent);
+  stroke-width: 0.5;
+  opacity: 0.18;
+}
+
+/* Latency trace — lime resolved, amber stressed */
+.wbk-graph-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 2px rgba(201, 245, 88, 0.45));
+  transition: stroke 0.3s, filter 0.3s;
+}
+
+/* Sweep dot — lime always (trace color handles the stressed signal) */
+.wbk-graph-dot {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.85));
+  transition: fill 0.3s, filter 0.3s;
+}
+
+/* STRESSED state — JS adds wbk-graph--stressed when phase < 0.5 */
+.wbk-graph--stressed .wbk-graph-line {
+  stroke: var(--accent-2);
+  filter: drop-shadow(0 0 3px rgba(232, 196, 122, 0.75));
+}
+.wbk-graph--stressed .wbk-graph-dot {
+  fill: var(--accent-2);
+  filter: drop-shadow(0 0 3px rgba(232, 196, 122, 0.85));
+}
+.wbk-graph--stressed .wbk-graph-val {
   color: var(--accent-2);
 }
 
-.wbk-metric-val--req {
-  color: var(--fg-2);
+/* Graph legend — cache hit % left, label right */
+.wbk-graph-legend {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--muted);
+}
+
+.wbk-hit-val {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wbk-hit-label {
+  color: var(--accent-2);
+  opacity: 0.7;
 }
 
 
@@ -2760,11 +2717,11 @@
 }
 
 /* Frozen BACKEND: field needs explicit height for absolute positioned children.
-   Nodes reach y:60% (≈186px in 310px field), metrics bar at y:75% (≈232px) +
-   ~40px bar height + 12px bottom clearance = ~284px. Use 310px for comfort. */
+   Nodes at y:50% + graph at 59% + legend ~80px below = ~265px. 295px gives
+   comfortable clearance so the legend doesn't crowd the blurb text. */
 .widviz-panel--frozen .wbk-field {
   position: relative;
-  height: 310px;
+  height: 295px;
   overflow: hidden;
 }
 

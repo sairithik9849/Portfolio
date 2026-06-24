@@ -15,14 +15,55 @@ const PATH_DUR       = 1.5
 
 const NODE_I = rank => rank * 0.15
 
-// Deterministic bar seeds — sine hash so they're stable across renders
-const BAR_COUNT = 16
-const BAR_SEEDS = Array.from({ length: BAR_COUNT }, (_, i) => {
-  const v = Math.sin(i * 127.1 + 311.7) * 43758.5453
-  return +(v - Math.floor(v)).toFixed(3)
-})
+// ── Sparkline constants ───────────────────────────────────────────────────────
+const GW     = 300
+const PAD_L  = 6
+const PAD_R  = 14
+const PLOT_T = 8
+const PLOT_B = 42
+const P50_MS = 4
+const P99_MS = 28
+const MAX_MS = 34
+const GRAPH_TOP = '59%'
 
-// ── FlowDot — one particle along a fixed from→to path ─────────────────────────
+const msToY = ms => {
+  const clamped = Math.min(Math.max(ms, 0), MAX_MS)
+  return PLOT_B - (clamped / MAX_MS) * (PLOT_B - PLOT_T)
+}
+
+const xAt = (i, n) => PAD_L + (i / Math.max(n - 1, 1)) * (GW - PAD_L - PAD_R)
+
+const TENSION = 0.4
+const buildTrace = samples => {
+  const n = samples.length
+  if (n < 2) {
+    const x = xAt(0, Math.max(n, 1))
+    const y = msToY(samples[0] ?? P50_MS)
+    return { d: `M${x.toFixed(1)} ${y.toFixed(1)}`, lastX: x, lastY: y }
+  }
+  const pts = samples.map((ms, i) => [xAt(i, n), msToY(ms)])
+  let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = pts[Math.max(i - 1, 0)]
+    const [x1, y1] = pts[i]
+    const [x2, y2] = pts[i + 1]
+    const [x3, y3] = pts[Math.min(i + 2, n - 1)]
+    const cp1x = x1 + (x2 - x0) * TENSION / 2
+    const cp1y = y1 + (y2 - y0) * TENSION / 2
+    const cp2x = x2 - (x3 - x1) * TENSION / 2
+    const cp2y = y2 - (y3 - y1) * TENSION / 2
+    d += ` C${cp1x.toFixed(1)} ${cp1y.toFixed(1)},${cp2x.toFixed(1)} ${cp2y.toFixed(1)},${x2.toFixed(1)} ${y2.toFixed(1)}`
+  }
+  return { d, lastX: pts[n - 1][0], lastY: pts[n - 1][1] }
+}
+
+const lerpSamples = (stressed, calm, t) =>
+  stressed.map((s, i) => s + (calm[i] - s) * t)
+
+const INITIAL_CALM_TRACE   = buildTrace(DATA.traceCalm)
+const INITIAL_STRESS_TRACE = buildTrace(DATA.traceStressed)
+
+// ── FlowDot — one particle along a fixed from→to path ────────────────────────
 function FlowDot({ clock, dotIndex, total, from, to, colorClass }) {
   const offset  = dotIndex / total
   const t       = useTransform(clock, v => (v + offset) % 1)
@@ -42,12 +83,12 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
 
   const { dissolveIn, enterIn } = widSlice(index, N)
 
-  const dissolve   = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
-  const scale      = useTransform(dissolve, [0, 1], [0.985, 1])
-  const enter      = useTransform(progress, enterIn, [0, 1], { clamp: true })
-  const metricsOp  = useTransform(enter, [0.55, 0.82], [0, 1], { clamp: true })
+  const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
+  const enter     = useTransform(progress, enterIn, [0, 1], { clamp: true })
+  const graphOp   = useTransform(enter, [0.55, 0.82], [0, 1], { clamp: true })
 
-  // ── Flow clocks ──────────────────────────────────────────────────────────────
+  // ── Flow clocks ───────────────────────────────────────────────────────────
   const trunkClock = useMotionValue(0)
   const pathClock  = useMotionValue(0)
 
@@ -67,34 +108,33 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinal])
 
-  // ── Phase MotionValue — 0=STRESSED, 1=RESOLVED ───────────────────────────────
+  // ── Phase MotionValue — 0=STRESSED, 1=RESOLVED ────────────────────────────
   const phase      = useMotionValue(isFinal ? 1 : 0)
   const dbStrobeMV = useMotionValue(1)
   const packetOpMV = useMotionValue(0)
   const packetT    = useMotionValue(0)
 
-  // Phase-derived opacities for path-flow particle groups
+  // Phase-derived opacities for the two path-flow particle groups
   const dbPathOp    = useTransform(phase, [0, 0.45], [1, 0])
   const cachePathOp = useTransform(phase, [0.55, 1], [0, 1])
   const dbFlowOp    = useTransform(phase, [0, 0.45], [1, 0])
   const cacheFlowOp = useTransform(phase, [0.55, 1], [0, 1])
 
-  // ── DOM refs ─────────────────────────────────────────────────────────────────
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const lineRef       = useRef(null)
+  const dotRef        = useRef(null)
+  const graphRef      = useRef(null)
   const breakerRef    = useRef(null)
   const breakerRowRef = useRef(null)
   const latValRef     = useRef(null)
   const hitValRef     = useRef(null)
   const dbNodeRef     = useRef(null)
   const dbRingsRef    = useRef(null)
-  const barsRef       = useRef(null)
-  const statusRowRef  = useRef(null)
-  const statusLblRef  = useRef(null)
-  const latMetricRef  = useRef(null)
 
   const packetRouteRef = useRef('db')
   const loopRef        = useRef(null)
 
-  // ── Narrative clock ───────────────────────────────────────────────────────────
+  // ── Narrative clock ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!isActive || isFinal) {
       animate(packetOpMV, 0, { duration: 0.25 })
@@ -115,43 +155,13 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     const setHitRate = text => { if (hitValRef.current) hitValRef.current.textContent = text }
 
     const setStressed = isStressed => {
-      // DB node — stressed class
       if (dbNodeRef.current) {
         if (isStressed) dbNodeRef.current.classList.add('wbk-node--stressed')
         else            dbNodeRef.current.classList.remove('wbk-node--stressed')
       }
-      // Pressure rings
       if (dbRingsRef.current) {
         if (isStressed) dbRingsRef.current.classList.add('wbk-rings--active')
         else            dbRingsRef.current.classList.remove('wbk-rings--active')
-      }
-      // EQ bars color
-      if (barsRef.current) {
-        if (isStressed) {
-          barsRef.current.classList.add('wbk-bars--stressed')
-          barsRef.current.classList.remove('wbk-bars--resolved')
-        } else {
-          barsRef.current.classList.remove('wbk-bars--stressed')
-          barsRef.current.classList.add('wbk-bars--resolved')
-        }
-      }
-      // Status row
-      if (statusRowRef.current) {
-        if (isStressed) {
-          statusRowRef.current.classList.add('wbk-status-row--stressed')
-          statusRowRef.current.classList.remove('wbk-status-row--resolved')
-        } else {
-          statusRowRef.current.classList.remove('wbk-status-row--stressed')
-          statusRowRef.current.classList.add('wbk-status-row--resolved')
-        }
-      }
-      // Status label text
-      if (statusLblRef.current)
-        statusLblRef.current.textContent = isStressed ? DATA.stressState : DATA.calmState
-      // Latency metric color
-      if (latMetricRef.current) {
-        if (isStressed) latMetricRef.current.classList.add('wbk-metric--stressed')
-        else            latMetricRef.current.classList.remove('wbk-metric--stressed')
       }
     }
 
@@ -164,7 +174,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
       await animate(packetOpMV, 1, { duration: 0.2 })
 
       while (!cancelled) {
-        // ── STRESSED ───────────────────────────────────────────────────────────
+        // ── STRESSED ─────────────────────────────────────────────────────────
         phase.set(0)
         packetRouteRef.current = 'db'
         setBreaker(DATA.breakerClosed, false)
@@ -188,7 +198,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         await wait(1400)
         if (cancelled) { strobeCtrl.stop(); break }
 
-        // ── BREAKER OPEN ───────────────────────────────────────────────────────
+        // ── BREAKER OPEN ──────────────────────────────────────────────────────
         setBreaker(DATA.breakerOpen, true)
         setStressed(false)
         strobeCtrl.stop()
@@ -196,7 +206,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         await wait(480)
         if (cancelled) break
 
-        // ── RESOLVED ───────────────────────────────────────────────────────────
+        // ── RESOLVED ──────────────────────────────────────────────────────────
         packetRouteRef.current = 'cache'
         setBreaker(DATA.breakerClosed, false)
         setLatency(DATA.latencyLo)
@@ -215,7 +225,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         await wait(2000)
         if (cancelled) break
 
-        // ── RESET ──────────────────────────────────────────────────────────────
+        // ── RESET ─────────────────────────────────────────────────────────────
         await animate(phase, 0, { duration: 0.38, ease: 'easeIn' })
         if (cancelled) break
         await wait(350)
@@ -230,7 +240,23 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isFinal])
 
-  // ── DB strobe ─────────────────────────────────────────────────────────────────
+  // ── Sparkline morph ───────────────────────────────────────────────────────
+  useMotionValueEvent(phase, 'change', t => {
+    const samples = lerpSamples(DATA.traceStressed, DATA.traceCalm, t)
+    const { d, lastX, lastY } = buildTrace(samples)
+    lineRef.current?.setAttribute('d', d)
+    if (dotRef.current) {
+      dotRef.current.setAttribute('cx', lastX.toFixed(1))
+      dotRef.current.setAttribute('cy', lastY.toFixed(1))
+    }
+    const stressed = t < 0.5
+    if (graphRef.current) {
+      if (stressed) graphRef.current.classList.add('wbk-graph--stressed')
+      else          graphRef.current.classList.remove('wbk-graph--stressed')
+    }
+  })
+
+  // ── DB strobe ─────────────────────────────────────────────────────────────
   const dbNodeOpacity = useTransform(
     [phase, dbStrobeMV],
     ([p, strobe]) => {
@@ -239,7 +265,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     }
   )
 
-  // ── Edge color transforms ─────────────────────────────────────────────────────
+  // ── Edge color transforms ─────────────────────────────────────────────────
   const LINE_2 = 'rgba(237,237,223,0.16)'
   const LIME   = '#c9f558'
   const AMBER  = '#e8c47a'
@@ -252,7 +278,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
 
   const cacheGlowOp = useTransform(phase, [0, 1], [0, 1])
 
-  // ── Packet position ───────────────────────────────────────────────────────────
+  // ── Packet position ───────────────────────────────────────────────────────
   const packetX = useTransform(packetT, t => {
     const from = NODE_POS.api
     const to   = packetRouteRef.current === 'cache' ? NODE_POS.cache : NODE_POS.db
@@ -264,6 +290,8 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     return `${(from.y + (to.y - from.y) * t).toFixed(1)}%`
   })
 
+  const initialTrace = isFinal ? INITIAL_CALM_TRACE : INITIAL_STRESS_TRACE
+
   return (
     <motion.div
       className="widviz-layer widviz-backend"
@@ -274,35 +302,10 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         style={{ '--enter': isFinal ? 1 : enter }}
       >
 
-        {/* ── Dot-grid background ───────────────────────────────────────────── */}
+        {/* ── Dot-grid background ─────────────────────────────────────────── */}
         <div className="wbk-bg-grid" />
 
-        {/* ── EQ bars — request throughput visualizer ──────────────────────── */}
-        <div
-          ref={barsRef}
-          className={`wbk-bars ${isFinal ? 'wbk-bars--resolved' : 'wbk-bars--stressed'}`}
-        >
-          {BAR_SEEDS.map((seed, i) => (
-            <div
-              key={i}
-              className="wbk-bar"
-              style={{ '--seed': seed, '--i': i }}
-            />
-          ))}
-        </div>
-
-        {/* ── Status row ───────────────────────────────────────────────────── */}
-        <div
-          ref={statusRowRef}
-          className={`wbk-status-row ${isFinal ? 'wbk-status-row--resolved' : 'wbk-status-row--stressed'}`}
-        >
-          <span className="wbk-status-dot" />
-          <span ref={statusLblRef} className="wbk-status-label">
-            {isFinal ? DATA.calmState : DATA.stressState}
-          </span>
-        </div>
-
-        {/* ── SVG mesh: base edges ─────────────────────────────────────────── */}
+        {/* ── SVG mesh: base edges ───────────────────────────────────────── */}
         <svg
           className="wbk-mesh-svg"
           viewBox="0 0 100 100"
@@ -341,7 +344,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           />
         </svg>
 
-        {/* ── DB pressure rings ─────────────────────────────────────────────── */}
+        {/* ── DB pressure rings ─────────────────────────────────────────── */}
         <div
           ref={dbRingsRef}
           className="wbk-rings"
@@ -352,7 +355,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           ))}
         </div>
 
-        {/* ── CACHE glow bloom ─────────────────────────────────────────────── */}
+        {/* ── CACHE glow bloom ──────────────────────────────────────────── */}
         <motion.div
           className="wbk-cache-glow"
           style={{
@@ -362,7 +365,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           }}
         />
 
-        {/* ── Trunk flow dots: EDGE→API ─────────────────────────────────────── */}
+        {/* ── Trunk flow dots: EDGE→API ──────────────────────────────────── */}
         {!isFinal && Array.from({ length: NUM_TRUNK_DOTS }, (_, i) => (
           <FlowDot
             key={`trunk-${i}`}
@@ -375,7 +378,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           />
         ))}
 
-        {/* ── Path flow dots: API→DB (stressed) ───────────────────────────── */}
+        {/* ── Path flow dots: API→DB (stressed) ─────────────────────────── */}
         {!isFinal && (
           <motion.div
             style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: dbPathOp }}
@@ -394,7 +397,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           </motion.div>
         )}
 
-        {/* ── Path flow dots: API→CACHE (resolved) ────────────────────────── */}
+        {/* ── Path flow dots: API→CACHE (resolved) ──────────────────────── */}
         {!isFinal && (
           <motion.div
             style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: cachePathOp }}
@@ -413,7 +416,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           </motion.div>
         )}
 
-        {/* ── Node chips ────────────────────────────────────────────────────── */}
+        {/* ── Node chips ────────────────────────────────────────────────── */}
         {DATA.nodes.map((node, i) => (
           <div
             key={node.id}
@@ -434,7 +437,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           </div>
         ))}
 
-        {/* ── BREAKER chip ─────────────────────────────────────────────────── */}
+        {/* ── BREAKER chip ──────────────────────────────────────────────── */}
         <div
           ref={breakerRowRef}
           className="wbk-breaker"
@@ -446,7 +449,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           </span>
         </div>
 
-        {/* ── Hero request packet ───────────────────────────────────────────── */}
+        {/* ── Hero request packet ───────────────────────────────────────── */}
         {!isFinal && (
           <motion.div
             className="wbk-packet"
@@ -454,30 +457,71 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
           />
         )}
 
-        {/* ── Metrics bar ───────────────────────────────────────────────────── */}
-        <motion.div
-          className="wbk-metrics"
-          style={{ opacity: isFinal ? 1 : metricsOp }}
+        {/* ── EKG latency graph — 1:1 viewBox SVG, centered ────────────── */}
+        <div
+          style={{
+            position:       'absolute',
+            top:            GRAPH_TOP,
+            left:           0,
+            right:          0,
+            display:        'flex',
+            justifyContent: 'center',
+            pointerEvents:  'none',
+          }}
         >
-          <div ref={latMetricRef} className={`wbk-metric ${isFinal ? '' : 'wbk-metric--stressed'}`}>
-            <span className="wbk-metric-label">{DATA.latencyLabel}</span>
-            <span ref={latValRef} className="wbk-metric-val">
-              {isFinal ? DATA.latencyLo : DATA.latencyHi}
-            </span>
-          </div>
-          <div className="wbk-metric-sep" />
-          <div className="wbk-metric">
-            <span className="wbk-metric-label">{DATA.hitRateLabel}</span>
-            <span ref={hitValRef} className="wbk-metric-val">
-              {isFinal ? DATA.hitRateHi : DATA.hitRateLo}
-            </span>
-          </div>
-          <div className="wbk-metric-sep" />
-          <div className="wbk-metric">
-            <span className="wbk-metric-label">{DATA.reqLabel}</span>
-            <span className="wbk-metric-val wbk-metric-val--req">{DATA.rpsLabel}</span>
-          </div>
-        </motion.div>
+          <motion.div
+            ref={graphRef}
+            className="wbk-graph"
+            style={{ opacity: isFinal ? 1 : graphOp }}
+          >
+            <div className="wbk-graph-head">
+              <span className="wbk-graph-title">{DATA.latencyLabel}</span>
+              <span ref={latValRef} className="wbk-graph-val">
+                {isFinal ? DATA.latencyLo : DATA.latencyHi}
+              </span>
+            </div>
+
+            <svg
+              className="wbk-graph-svg"
+              viewBox={`0 0 ${GW} 50`}
+              aria-hidden="true"
+            >
+              {/* p99 ceiling — dashed amber reference line */}
+              <line
+                className="wbk-graph-ceil"
+                x1={PAD_L} x2={GW - PAD_R}
+                y1={msToY(P99_MS)} y2={msToY(P99_MS)}
+              />
+              {/* p50 baseline — faint lime floor */}
+              <line
+                className="wbk-graph-base"
+                x1={PAD_L} x2={GW - PAD_R}
+                y1={msToY(P50_MS)} y2={msToY(P50_MS)}
+              />
+              {/* Latency trace — redrawn by sparkline morph handler */}
+              <path
+                ref={lineRef}
+                className="wbk-graph-line"
+                d={initialTrace.d}
+              />
+              {/* Round sweep dot at the leading edge */}
+              <circle
+                ref={dotRef}
+                className="wbk-graph-dot"
+                r="2.4"
+                cx={initialTrace.lastX.toFixed(1)}
+                cy={initialTrace.lastY.toFixed(1)}
+              />
+            </svg>
+
+            <div className="wbk-graph-legend">
+              <span ref={hitValRef} className="wbk-hit-val">
+                {isFinal ? DATA.hitRateHi : DATA.hitRateLo}
+              </span>
+              <span className="wbk-hit-label">{DATA.hitRateLabel}</span>
+            </div>
+          </motion.div>
+        </div>
 
       </motion.div>
     </motion.div>
