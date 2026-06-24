@@ -9,7 +9,7 @@ export const WHAT_I_DO = [
     id: 'backend',
     word: 'BACKEND',
     blurb:
-      "Node services that shrug off 10M requests a day. When the database buckles, a Redis cache and a circuit breaker hold p95 latency 60% lower — boring on purpose.",
+      "I build backend infrastructure that remains stable under real production traffic: engineering APIs, caching strategies, and fault-tolerant services that prioritize reliability over complexity. The best backend systems aren't the loudest; they're the ones users never have to think about.",
   },
   {
     id: 'data',

@@ -2740,9 +2740,11 @@
 }
 
 
-/* Mobile container — sits above the blurb in .wid-mobile-blurb-item */
+/* Mobile container — sits above the blurb in .wid-mobile-blurb-item.
+   No extra margin here; parent gap:20px already spaces all three elements
+   (kicker, viz, blurb) uniformly. */
 .wid-mobile-viz {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
