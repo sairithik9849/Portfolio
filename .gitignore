@@ -33,3 +33,7 @@ prompts/
 # Replit environment — not project config
 .replit
 replit.nix
+
+# Local agent memory and scratch assets
+.agents/
+attached_assets/
