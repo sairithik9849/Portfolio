@@ -460,6 +460,21 @@ export default function Terminal() {
             {/* Cursor lives outside the sizer so it appears directly after the text.
                 Hidden when focused — the native caret inside the input takes over. */}
             {isIdle && <span className="cur" aria-hidden="true" />}
+            {/* First-visit affordance: fades in after output settles, vanishes on any interaction. */}
+            <AnimatePresence>
+              {isIdle && active === 'whoami' && (
+                <motion.span
+                  className="term-hint"
+                  aria-hidden="true"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: instant ? 0 : 1.2, duration: 0.4, ease: 'easeOut' }}
+                >
+                  — click to run a command
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Autocomplete dropdown — absolutely positioned so it overlays the output
