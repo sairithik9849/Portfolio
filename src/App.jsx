@@ -18,6 +18,7 @@ import Preloader    from './components/Preloader'
 import { createPreloadTracker } from './utils/preloadAssets'
 import { useHotkey } from './hooks/useHotkey'
 import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 // Register ScrollTrigger once at module level.
 gsap.registerPlugin(ScrollTrigger)
@@ -259,8 +260,9 @@ export default function App() {
       {/* Cursor always mounted — provides CURSOR_X/Y for the preloader monolith */}
       <Cursor />
 
-      {/* Vercel Analytics — unconditional, renders nothing visible */}
+      {/* Vercel Analytics + Speed Insights — unconditional, render nothing visible */}
       <Analytics />
+      <SpeedInsights />
     </>
   )
 }
