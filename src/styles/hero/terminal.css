@@ -158,6 +158,15 @@
 }
 .term-prompt .cur { margin-left: 4px; }
 
+/* Invalid command feedback */
+.term-error {
+  color: var(--fg-2);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+.term-error-cmd { color: var(--accent-2); }
+
 /* Output container — min-height prevents layout jumps when switching commands */
 .term-output { min-height: 120px; margin-bottom: 4px; }
 

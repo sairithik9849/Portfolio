@@ -237,6 +237,7 @@ export default function Terminal() {
   const [inputFocused,   setInputFocused]   = useState(false)
   const [suggestOpen,    setSuggestOpen]    = useState(false)
   const [isPlaying,      setIsPlaying]      = useState(false)
+  const [invalidCmd,     setInvalidCmd]     = useState(null)
 
   const audioRef     = useRef(null)
   const inputRef     = useRef(null)
@@ -315,13 +316,13 @@ export default function Terminal() {
 
   // ─── Command execution ────────────────────────────────────────────────────
   // All interaction paths (typing, pill clicks, suggestion clicks) funnel here.
-  // Invalid commands are silently ignored — no error line emitted.
   const runCommand = useCallback((id) => {
     if (!COMMAND_IDS.includes(id)) return
     clearTimeout(execTimerRef.current)
     setQuery(id)
     setSuggestOpen(false)
     setHighlightIndex(0)
+    setInvalidCmd(null)
     setActive(id)
     if (instant) {
       // Skip the interstitial under reduced motion.
@@ -339,6 +340,7 @@ export default function Terminal() {
     setQuery(val)
     setHighlightIndex(0)
     setSuggestOpen(true)
+    setInvalidCmd(null)
   }, [])
 
   const handleKeyDown = useCallback((e) => {
@@ -373,6 +375,11 @@ export default function Terminal() {
       let target = normalizedTarget
       if (!COMMAND_IDS.includes(normalizedTarget) && suggestOpen && suggestions.length > 0) {
         target = suggestions[highlightIndex]
+      }
+      if (!COMMAND_IDS.includes(target)) {
+        if (query.trim()) setInvalidCmd(query.trim())
+        setSuggestOpen(true)
+        return
       }
       runCommand(target)
       return
@@ -512,6 +519,24 @@ export default function Terminal() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Invalid command error — shown when Enter is pressed with unrecognised input. */}
+        <AnimatePresence>
+          {invalidCmd && (
+            <motion.div
+              key="term-error"
+              className="term-error"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              <span className="tone-muted">bash: </span>
+              <span className="term-error-cmd">{invalidCmd}</span>
+              <span className="tone-muted">: command not found</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Command output — executing interstitial or live output.
             Keyed so AnimatePresence can exit the exec block and enter the output block.
