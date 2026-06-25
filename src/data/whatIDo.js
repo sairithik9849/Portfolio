@@ -4,6 +4,7 @@ export const WHAT_I_DO = [
     word: 'SYSTEMS',
     blurb:
       "I managed and automated operations for a fleet of over 50 workstations—authoring software deployments, ensuring strict system compliance, and keeping critical hardware running seamlessly. I take that exact same rigorous, low-level operational discipline and apply it to the software side, engineering scalable, resilient backend infrastructure built to handle massive data loads without breaking a sweat.",
+    blurbMarks: ['managed', 'automated', 'low-level operational'],
   },
   {
     id: 'backend',

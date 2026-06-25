@@ -1,4 +1,4 @@
-import { motion, useMotionValue } from 'framer-motion'
+import { motion, useMotionValue, useTransform } from 'framer-motion'
 import { WID_PANEL_REVEAL } from '../animations/variants'
 import { WHAT_I_DO } from '../data/whatIDo'
 import VizSystems   from './widviz/VizSystems'
@@ -24,6 +24,15 @@ export default function WidVisual({ progress, agentsProgress, active = 0, reduce
   const frozenSnap     = frozenIdx / (N - 1)
   // Seeded at the snap point so frozen child vizzes resolve to their final state.
   const frozenProgress = useMotionValue(frozenSnap)
+
+  // Fade the agents viz out over the trailing dwell, mirroring captionFade in WhatIDo.
+  // frozenProgress is the fallback when agentsProgress is not passed (frozen mode) —
+  // hooks must be called unconditionally, but exitFade is only consumed in the
+  // non-frozen return path below where agentsProgress is always a live MotionValue.
+  const exitFade = useTransform(
+    agentsProgress ?? frozenProgress,
+    [0.5, 1], [1, 0], { clamp: true }
+  )
 
   const revealProps = reduced || frozen
     ? { style: { opacity: 1 } }
@@ -59,18 +68,28 @@ export default function WidVisual({ progress, agentsProgress, active = 0, reduce
       <div className="widviz-body">
         {WHAT_I_DO.map((entry, i) => {
           const Viz = VIZ[entry.id]
+          const viz = Viz && (
+            <Viz
+              progress={progress}
+              agentsProgress={agentsProgress}
+              index={i}
+              isActive={active === i}
+              reduced={reduced}
+              frozen={false}
+            />
+          )
+          // Agents wrapper gets exitFade so the viz clears alongside the caption.
+          // CSS opacity multiplies: wrapper(exitFade) × VizAgents(dissolve) = compound fade.
+          if (entry.id === 'agents' && !reduced) {
+            return (
+              <motion.div key={entry.id} className="widviz-layer" style={{ opacity: exitFade }}>
+                {viz}
+              </motion.div>
+            )
+          }
           return (
             <div key={entry.id} className="widviz-layer">
-              {Viz && (
-                <Viz
-                  progress={progress}
-                  agentsProgress={agentsProgress}
-                  index={i}
-                  isActive={active === i}
-                  reduced={reduced}
-                  frozen={false}
-                />
-              )}
+              {viz}
             </div>
           )
         })}
