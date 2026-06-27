@@ -24,7 +24,10 @@ dist-ssr
 *.sw?
 
 # Claude Code local settings
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/hooks/
 .codex/
 package-lock.json
 .playwright-mcp/

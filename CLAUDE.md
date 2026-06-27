@@ -19,33 +19,9 @@ vercel              # preview deploy
 vercel --prod       # production deploy
 ```
 
-## Production & Branch Workflow
+## Dev Server Hygiene
 
-heysai.dev is live. `main` is production — every push to `main` auto-deploys to Vercel and immediately affects real users. Never experiment on `main`; never treat it as a playground.
-
-Act as the lead engineer responsible for a live production codebase. Protecting production stability outranks delivering the next feature. (Plan-first, minimal scope, no silent regressions, and per-task file summaries are already governed by **Global Rules** and **Exploration Budget** — follow those; they are not repeated here.)
-
-**Every feature ships through a branch:**
-
-1. Start from an up-to-date `main`.
-2. Create a `feature/<scope>` branch before any implementation begins.
-3. Do all work inside that branch; keep unrelated changes out.
-4. Validate via the branch's Vercel preview deployment.
-5. Squash-merge into `main` only after the feature is complete and verified.
-
-Example branches: `feature/mobile`, `feature/ai-agent`, `feature/projects`, `feature/blog`, `feature/contact`, `feature/animation-v2`.
-
-**Git (agent-driven, human-triggered).** Implementing code and creating Git history are two separate responsibilities. The human decides when work reaches a milestone.
-
-Never perform Git operations unless explicitly instructed. Do not commit, push, merge, squash-merge, delete branches, create tags, or deploy to production — even after a feature is complete. Completing implementation does not imply permission to act on Git state.
-
-When a coding task ends, stop and report: what changed, which files were modified, any remaining work, and whether the feature appears ready to commit. Then wait.
-
-Explicit approval is required before any Git operation. Examples: *"commit this," "push this branch," "merge this," "open a PR," "deploy."* If those words have not been given, treat Git state as intentionally unchanged.
-
-When Git operations are requested: suggest branch names, write meaningful commit messages, and advise when something should or should not merge. Default merge into `main` is a **squash merge** — one clean commit per feature. Treat history as release documentation, not an autosave mechanism.
-
-**Vercel.** Preview deployments are the default review mechanism for feature branches. Production deploys happen only by merging into `main`.
+Before starting a Vite dev server, check for and kill stale/running servers to avoid port cycling. Do not spawn redundant background dev servers.
 
 ## Global Rules
 
