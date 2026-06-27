@@ -2,9 +2,9 @@
 .shell {
   position: relative;
   z-index: 3;
-  max-width: 1440px;
+  max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--space-gutter);
 }
 
 .row {

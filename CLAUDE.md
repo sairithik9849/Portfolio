@@ -35,6 +35,7 @@ These apply everywhere, regardless of the area being touched.
 - **CSS:** Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps floor.
 - **No silent regressions:** If existing styles, classes, or behavior must change, say so explicitly.
 - **Respect existing architecture:** Prefer extending existing patterns over introducing new libraries, frameworks, or architectural rewrites. When an existing system can solve the problem, use it.
+- **Architecture First:** Before modifying code, understand the repository's existing architecture. Never import external architecture wholesale. Adapt external ideas to existing repository conventions whenever practical. Only recommend architectural changes when they provide clear long-term value and are intentionally approved. (Full operating-system context: `docs/skills.md`.)
 
 ## Routing Table
 
@@ -44,10 +45,11 @@ Read the listed doc before working in each area. Read only what the task require
 | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, hotkeys, cursor, nav/footer wiring, project-card visuals | `docs/architecture.md`  |
 | Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                   | `docs/animation.md`     |
-| `src/styles/`, colors, typography, layout shell                                                                                    | `docs/design-system.md` |
+| `src/styles/`, colors, typography, spacing, radii, layout shell, interaction patterns                                              | `docs/design-system.md` |
 | `Hero.jsx`, `HeroFluid`, `SplineScene`, `InfiniteGrid`, robot, shader glow                                                         | `docs/hero.md`          |
 | `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                      | `docs/what-i-do.md`     |
 | `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                        | `docs/backend.md`       |
+| Skills, skill composition, development workflow, Architecture First, design/component intake                                        | `docs/skills.md`        |
 
 ## Extending the Docs
 

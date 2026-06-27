@@ -132,6 +132,7 @@
 .viz-spp .row-l { display: grid; grid-template-columns: 1fr 60px 60px; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
 .viz-spp .row-l b { color: var(--fg); }
 .viz-spp .row-l .pos { color: var(--accent); text-align: right; }
+/* stylelint-disable-next-line color-no-hex -- visualization-specific negative-value color; warm coral (#ff8b6e) is distinct from --accent-alert red, intentional for stock portfolio viz */
 .viz-spp .row-l .neg { color: #ff8b6e; text-align: right; }
 .viz-spp .summary { margin-top: 14px; padding: 10px; border: 1px solid var(--accent-dim); background: rgba(201, 245, 88, 0.04); display: flex; justify-content: space-between; }
 
@@ -146,7 +147,7 @@
 }
 
 .viz-ll .road { position: absolute; background: rgba(237, 237, 223, 0.06); }
-.viz-ll .pin { position: absolute; width: 18px; height: 18px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 1px solid #0a0a0a; }
+.viz-ll .pin { position: absolute; width: 18px; height: 18px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 1px solid var(--bg); }
 .viz-ll .pin.alt { background: transparent; border: 1px solid var(--accent); }
 .viz-ll .label { position: absolute; font-family: var(--mono); font-size: var(--text-2xs); color: var(--fg-2); background: rgba(7, 7, 7, 0.8); padding: 2px 5px; border: 1px solid var(--line); }
 

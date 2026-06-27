@@ -11,7 +11,7 @@
   background:
     radial-gradient(120% 60% at 50% -5%, rgba(255, 255, 255, 0.045), transparent 55%),
     radial-gradient(80% 50% at 50% 100%, rgba(201, 245, 88, 0.03), transparent 60%),
-    #050505;
+    var(--bg);
   overflow: hidden;
   /* Layer-promote the overlay so the translateY curtain sweep stays compositor */
   will-change: transform;
@@ -190,6 +190,7 @@
 
 /* Top face — lightest lime; becomes the horizontal diamond on top of the cube */
 .face-top {
+  /* stylelint-disable-next-line color-no-hex -- deliberate 3D face shade; #d8ff78 (lighter lime) and #7ab020 (darker olive) simulate lit/shadowed faces with no token equivalent */
   background: #d8ff78;
   transform: translateZ(var(--sz));
 }
@@ -207,6 +208,7 @@
    Result: face at x=sz, y=[0,sz], z=[0,sz], normal +x.
    Shares edge (sz,0,sz)-(sz,sz,sz) with face-top. */
 .face-right {
+  /* stylelint-disable-next-line color-no-hex -- deliberate 3D face shade; see face-top comment above */
   background: #7ab020;
   transform: translateX(var(--sz)) rotateY(-90deg);
 }

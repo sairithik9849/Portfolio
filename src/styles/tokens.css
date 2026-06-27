@@ -47,6 +47,22 @@
   --tracking-wide:     0.08em; /* tags, chips, links                        */
   --tracking-wider:    0.14em; /* roles, metadata labels                    */
   --tracking-widest:   0.18em; /* kickers, HUD text, section labels         */
+
+  /* ── Spacing (4px baseline) ────────────────────────────────────────────── */
+  --space-xs:          4px;    /* micro padding, icon gap                    */
+  --space-sm:          8px;    /* internal component padding, list-item gap  */
+  --space-md:          12px;   /* standard list-item spacing                 */
+  --space-lg:          24px;   /* column gap, gutter, section sub-spacing    */
+  --space-xl:          48px;   /* content block gap, card padding            */
+  --space-xxl:         120px;  /* section macro-gap (padding-top on .section-head) */
+  --space-gutter:      24px;   /* shell horizontal padding (named for intent)*/
+  --shell-max:         1440px; /* max-width for .shell containers            */
+
+  /* ── Radii ─────────────────────────────────────────────────────────────── */
+  --radius-sm:         2px;    /* status badges, input fields, terminal panels */
+  --radius-md:         6px;    /* buttons (paired with -6deg skewX)          */
+  --radius-lg:         8px;    /* cards, elevated panels                     */
+  --radius-full:       999px;  /* pill-shaped nav, suggestion chips          */
 }
 
 * { box-sizing: border-box; }

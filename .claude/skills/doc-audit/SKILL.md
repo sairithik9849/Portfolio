@@ -5,6 +5,8 @@ description: Evidence-grounded audit of CLAUDE.md and docs/*.md against the real
 
 # Doc Audit
 
+Composition & handoffs: see `docs/skills.md`. In the component-integration workflow, `doc-audit` runs after `visual-verify` (only if architecture or docs changed). On completion, hand off to `git-workflow`.
+
 You are auditing the portfolio's governance docs against the real code. The goal is a verdict — **confirmed or contradicted** — for every concrete claim, backed by `file:line` evidence. Never assume; always verify.
 
 ## Scope
@@ -53,7 +55,7 @@ Each doc's "Do Not" block states invariants. Verify the most consequential ones 
 | GSAP only in App.jsx + WhatIDo.jsx | `grep -r "gsap\." src/ --include="*.jsx" --include="*.js"` — flag any hit outside those two |
 | No layout property animation (`width`/`height`/`top`/`left` in `animate=`) | scan component files for `animate={{ width` etc. |
 | `HeroFluid` and `react-spline` are `React.lazy` | check `src/App.jsx` imports |
-| No fourth color token | `grep -r "var(--" src/styles` — flag any token not `--accent`, `--accent-2`, or `--fg` |
+| No unassigned color role | Scan `src/styles` for raw hex values — every color should be `var(--…)`; any raw hex outside WebGL/canvas JS mirrors is a violation. New accent colors must have a documented semantic role in `docs/design-system.md`. |
 | `mountContent` in IntersectionObserver deps | check `App.jsx` observer dep arrays |
 
 Report per rule: `✓ invariant holds` or `✗ violation at <file>:<line> — <quote>`.

@@ -5,6 +5,8 @@ description: Verify a UI/CSS/animation change visually in the browser before dec
 
 # Visual Verify
 
+Composition & handoffs: see `docs/skills.md`. In the component-integration workflow, `visual-verify` runs after `design-review`. On completion, hand off to `doc-audit` if docs changed.
+
 You are doing browser verification for the portfolio. The goal is a confirmed, per-viewport result before anything is called done.
 
 ## Token awareness (read first)

@@ -5,6 +5,8 @@ description: Git, branch, commit, merge, PR, and Vercel deploy workflow for this
 
 # Git & Deploy Workflow
 
+Composition & handoffs: see `docs/skills.md`. `git-workflow` is the final stage of the component-integration and design-intake workflows — runs after `doc-audit` (or `visual-verify` if docs didn't change).
+
 You are doing git/deploy work for the portfolio. Follow this workflow.
 
 ## Production context

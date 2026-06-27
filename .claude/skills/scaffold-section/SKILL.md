@@ -5,6 +5,8 @@ description: Architecture-compliant scaffolding for new portfolio sections, proj
 
 # Scaffold Section
 
+Composition & handoffs: see `docs/skills.md`. `scaffold-section` handles **net-new portfolio sections** — creating a new component, CSS partial, data file, and App.jsx wiring from scratch. Use `component-integration` instead when adapting an **external component** from a library (21st.dev, Magic UI, etc.). After scaffolding, hand off to `visual-verify`.
+
 You are adding new UI to the portfolio. Read the relevant subsystem doc first (routing table below), then follow the matching recipe. Every recipe ends with the always-on guardrails — check each one before writing any code.
 
 ## Routing table (read before starting)
