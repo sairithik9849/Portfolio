@@ -30,8 +30,7 @@ export const WHAT_I_DO = [
   {
     id: 'agents',
     word: 'AGENTS',
-    // Placeholder — replace with final copy when the real Agents viz is built.
-    blurb: 'Think. Act. Observe. Autonomous loops that reason over context, retrieve what matters, and emit only the signal worth keeping.',
-    blurbMarks: ['Think. Act. Observe.'],
+    blurb: 'Think. Act. Verify. Repeat. Autonomous systems are built on iteration, not a single prompt. I design workflows that retrieve the right context, choose the right tools, delegate work across specialized agents, critique their own results, and continuously refine until the outcome is reliable enough to ship.',
+    blurbMarks: ['Think. Act. Verify. Repeat.', 'reliable enough to ship'],
   },
 ]

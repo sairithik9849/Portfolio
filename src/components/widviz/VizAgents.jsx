@@ -268,6 +268,10 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
   const leadRef         = useRef(null)
   const childRefs       = useRef([])   // length 4, one per lane
   const slot1Refs       = useRef([])   // length 4, module fill for slot[1] per lane
+  // New motion elements — CSS-animation-driven, no RAF writes needed
+  const intakePulseRef  = useRef(null)
+  const lanePulseRefs   = useRef([])    // length 4, one per lane
+  const outPulseRef     = useRef(null)
   const simRef          = useRef({
     phase:              'rest',
     phaseStartT:        0,    // 0 → elapsed will be huge on first tick → immediate transition
@@ -275,6 +279,9 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
     failThisCycle:      false,
     consecutivePasses:  0,
     laneProgress:       [0, 0, 0, 0],
+    // Per-cycle variation: randomised each execution entry and cycle start
+    laneDurMult:        LANE_DUR_MULT,
+    phaseDurJitter:     1.0,
   })
 
   // Sync isActive to ref; clear phase marker + hide tokens when panel is off-screen
@@ -336,9 +343,12 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
     // Execution duration for the current cycle (compressed 30% for rework re-run)
     const execDur = reworked => reworked ? EXEC_BASE_DUR * 0.7 : EXEC_BASE_DUR
 
-    // Phase duration, accounting for rework-compressed execution
+    // Phase duration — execution compresses on rework; discovery/planning carry per-cycle jitter
     const getPhaseDur = sim => {
       if (sim.phase === 'execution') return execDur(sim.reworkedThisCycle)
+      if (sim.phase === 'discovery' || sim.phase === 'planning') {
+        return PHASE_DUR[sim.phase] * (sim.phaseDurJitter ?? 1.0)
+      }
       return PHASE_DUR[sim.phase]
     }
 
@@ -349,17 +359,20 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
         case 'intake':       return { ...b, phase: 'discovery' }
         case 'discovery':    return { ...b, phase: 'planning' }
         case 'planning':     return { ...b, phase: 'fanout' }
-        case 'fanout':       return { ...b, phase: 'execution', laneProgress: [0,0,0,0] }
+        case 'fanout': {
+          // Randomise which lane is the gate (1.0) and give the rest unique multipliers.
+          // Keeps the same base duration ceiling but varies completion order every cycle.
+          const gateIdx    = Math.floor(Math.random() * 4)
+          const laneDurMult = [0, 1, 2, 3].map(i =>
+            i === gateIdx ? 1.0 : 0.55 + Math.random() * 0.37
+          )
+          return { ...b, phase: 'execution', laneProgress: [0,0,0,0], laneDurMult }
+        }
         case 'execution':    return { ...b, phase: 'reconverge' }
         case 'reconverge':   return { ...b, phase: 'verification' }
         case 'verification': {
-          // Fail decision: intentional cadence, not purely random.
-          // canFail only on first-pass (not after rework which always passes).
-          // forceFail after 6 consecutive passes; random fail ~18% after 2+ passes.
-          const canFail   = !sim.reworkedThisCycle
-          const forceFail = canFail && sim.consecutivePasses >= 6
-          const randFail  = canFail && sim.consecutivePasses >= 2 && Math.random() < 0.18
-          if (forceFail || randFail) {
+          // First pass always fails → rework; second pass (after rework) always ships.
+          if (!sim.reworkedThisCycle) {
             return { ...b, phase: 'rework', failThisCycle: true, consecutivePasses: 0 }
           }
           return { ...b, phase: 'shipping' }
@@ -367,7 +380,17 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
         case 'rework':    return { ...b, phase: 'planning', reworkedThisCycle: true, failThisCycle: false }
         case 'shipping':  return { ...b, phase: 'rest', consecutivePasses: sim.consecutivePasses + 1 }
         case 'rest':
-        default:          return { phase: 'intake', phaseStartT: now, reworkedThisCycle: false, failThisCycle: false, consecutivePasses: sim.consecutivePasses, laneProgress: [0,0,0,0] }
+        default:          return {
+          phase:              'intake',
+          phaseStartT:        now,
+          reworkedThisCycle:  false,
+          failThisCycle:      false,
+          consecutivePasses:  sim.consecutivePasses,
+          laneProgress:       [0, 0, 0, 0],
+          laneDurMult:        LANE_DUR_MULT,
+          // ±10% jitter on discovery/planning duration so each loop feels subtly different
+          phaseDurJitter:     0.90 + Math.random() * 0.20,
+        }
       }
     }
 
@@ -432,11 +455,13 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           break
         }
         case 'execution': {
-          // Each lane descends at its own pace — visibly non-synchronized
+          // Each lane descends at its own pace — per-cycle random multipliers (sim.laneDurMult)
+          // ensure completion order and timing vary every loop
           hideToken(lead)
-          const dur = execDur(sim.reworkedThisCycle)
+          const dur      = execDur(sim.reworkedThisCycle)
+          const laneMult = sim.laneDurMult ?? LANE_DUR_MULT
           children.forEach((el, i) => {
-            const laneDur = LANE_DUR_MULT[i] * dur
+            const laneDur = laneMult[i] * dur
             const laneT   = Math.min(elapsed / laneDur, 1)
             const ry      = EXEC_RAIL_Y1 + (EXEC_RAIL_Y2 - EXEC_RAIL_Y1) * easeIO(laneT)
             placeToken(el, LANE_CENTERS[i], ry)
@@ -663,7 +688,7 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
 
           {/* ── C. Planning: splitter manifold ───────────────────────────── */}
           <path d={MANIFOLD_PATH} className="wagnt-manifold" />
-          {MANIFOLD_RIBS.map((d, i) => <path key={i} d={d} className="wagnt-manifold-rib" />)}
+          {MANIFOLD_RIBS.map((d, i) => <path key={i} d={d} className="wagnt-manifold-rib" style={{ '--rib-i': i }} />)}
 
           {/* ── Fan-out: planning → 4 lane tops ──────────────────────────── */}
           {FAN_OUT.map((d, i) => <path key={i} d={d} className="wagnt-fanout" />)}
@@ -719,6 +744,16 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
         >
           GOAL IN
         </div>
+
+        {/* ── Intake cycle-start pulse ring — CSS-driven, fires on [data-phase="intake"] ── */}
+        {!isFinal && (
+          <div
+            ref={intakePulseRef}
+            className="wagnt-intake-pulse"
+            style={{ top: yp(BANDS.intake.y1 + 1.5), left: xp(CORE_X) }}
+            aria-hidden="true"
+          />
+        )}
 
         {/* ── Non-execution station bays ────────────────────────────────── */}
         {OTHER_STATIONS.map(station => {
@@ -797,6 +832,16 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
                     </div>
                   ))}
                 </div>
+
+                {/* Execution lane flow pulse — CSS-driven, fires on [data-phase="execution"] */}
+                {!isFinal && (
+                  <div
+                    ref={el => { lanePulseRefs.current[i] = el }}
+                    className="wagnt-lane-pulse"
+                    style={{ '--lane-i': i }}
+                    aria-hidden="true"
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -813,12 +858,15 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
           <div className="wagnt-core-ack" />
         </div>
 
-        {/* ── Rework label — horizontal, right gutter near top bend ─────── */}
+        {/* ── Rework label — centered on vertical segment of retry bus ─── */}
+        {/* right: '-28px' pushes the label into the right gutter past the bus   */}
+        {/* line (x≈95% of the field) so text doesn't overlap the path element. */}
         <div
           className="wagnt-rework-label"
           style={{
-            top:   yp(RW_OUT_Y - 7),
-            right: '0',
+            top:       yp((RW_OUT_Y + RW_IN_Y) / 2),
+            right:     '-28px',
+            transform: 'translateY(-50%)',
           }}
         >
           REWORK
@@ -849,6 +897,16 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
               </div>
             ))}
           </>
+        )}
+
+        {/* ── Output shipping pulse ring — CSS-driven, fires on [data-phase="shipping"] ── */}
+        {!isFinal && (
+          <div
+            ref={outPulseRef}
+            className="wagnt-out-pulse"
+            style={{ top: yp(BANDS.output.y2 - 1.5), left: xp(CORE_X) }}
+            aria-hidden="true"
+          />
         )}
 
         {/* ── OUTPUT port label — floats below the field, below the chassis ── */}

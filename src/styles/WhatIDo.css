@@ -184,6 +184,14 @@
   left: max(0px, 50vw - 720px);
   right: calc(100% - var(--viz-left));
   padding: 0 48px 88px 24px;
+  /* Viewport-relative bottom offset so the blurb stays vertically centered in
+     the space below the AGENTS word across all monitor sizes. The formula
+     targets text-center ≈ 75vh from viewport top:
+       padding_bottom = 25vh − 110px
+     At ≤629px height this resolves below 88px so max() preserves the 88px
+     floor (laptop behavior is unchanged). At 1440px tall it yields ~250px,
+     lifting the text to ~79% down — visually centered below the word. */
+  padding-bottom: max(88px, calc(25vh - 110px));
 }
 
 @media (max-height: 900px) and (min-width: 981px) {
