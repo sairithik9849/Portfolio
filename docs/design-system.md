@@ -30,7 +30,7 @@ CSS is split into one partial per section/component in `src/styles/`. `global.cs
 
 ### Partials (in import order)
 
-`tokens.css`, `preloader.css`, `cursor.css`, `layout.css`, `nav.css`, then the hero sub-folder
+`tokens.css`, `preloader.css`, `layout.css`, `nav.css`, then the hero sub-folder
 (`hero/grid.css`, `hero/shell.css`, `hero/identity.css`, `hero/robot.css`, `hero/manifesto.css`,
 `hero/terminal.css`), `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, `widviz.css`,
 `journey.css`, `projects.css`, `footer.css`.

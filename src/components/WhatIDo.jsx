@@ -399,7 +399,6 @@ export default function WhatIDo() {
                 className="wid-word"
                 role="button"
                 tabIndex={0}
-                data-cursor="hover"
                 aria-label={`Go to ${c.word}`}
                 onClick={() => handleWordClick(i)}
                 onKeyDown={(e) => handleWordKeyDown(e, i)}

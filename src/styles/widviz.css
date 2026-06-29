@@ -584,9 +584,14 @@
 
 .wsys-core-bar {
   width: 100%;
+  /* Full height + scaleY replaces the animated height% — compositor-only, no reflow.
+     transform-origin:bottom means scaleY scales the bar upward from the track floor.
+     The rAF lerp provides smooth motion; no CSS transition needed. */
+  height: 100%;
+  transform-origin: center bottom;
+  will-change: transform;
   background: var(--accent);
   border-radius: 1px 1px 0 0;
-  transition: height 1.1s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 6px rgba(201, 245, 88, 0.3);
 }
 
@@ -622,9 +627,14 @@
 
 .wsys-mem-fill {
   height: 100%;
+  /* Full width + scaleX replaces the animated width% — compositor-only, no reflow.
+     transform-origin:left means scaleX grows the bar rightward from the track edge.
+     The rAF lerp provides smooth motion; no CSS transition needed. */
+  width: 100%;
+  transform-origin: left center;
+  will-change: transform;
   background: var(--accent);
   border-radius: 1px;
-  transition: width 0.9s linear;
   box-shadow: 2px 0 8px rgba(201, 245, 88, 0.4);
 }
 
@@ -662,9 +672,13 @@
 
 .wsys-queue-bar {
   width: 100%;
+  /* Full height + scaleY replaces animated height% — compositor-only, no reflow.
+     transform-origin:bottom means the bar grows upward from the track floor. */
+  height: 100%;
+  transform-origin: center bottom;
+  will-change: transform;
   background: var(--accent-2);
   border-radius: 1px 1px 0 0;
-  transition: height 0.25s ease;
   box-shadow: 0 0 5px rgba(232, 196, 122, 0.25);
 }
 
@@ -839,23 +853,25 @@
 }
 
 /* Noise dot — base position via left/top %; the rAF writes transform
-   (px offset + flare scale), opacity, and LUT colour. The signal-phase rule
-   below only matters for static final frames (reduced/frozen), where no rAF
-   runs — on the live path inline styles win. */
+   (px offset + flare scale) and opacity only. Both are composited properties
+   that never trigger style-recalc + paint.
+   Previously a COLOR_LUT wrote background per-dot per-frame (110 paint
+   invalidations per rAF). Now all dots are accent-colored; the noise→signal
+   transition is expressed entirely through the opacity range (0.3–0.95). */
 .wdat-dot {
   position: absolute;
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--muted);
+  background: var(--accent);
   transform: translate(-50%, -50%);
   opacity: 0.35;
   will-change: transform, opacity;
   pointer-events: none;
 }
 
+/* Signal phase for static final frames (reduced/frozen) where no rAF runs. */
 .wdat-field[data-phase='signal'] .wdat-dot {
-  background: var(--accent);
   opacity: 0.95;
 }
 

@@ -6,7 +6,6 @@ export default function AIOrb({ onClick, hidden = false }) {
       className="ai-orb"
       onClick={onClick}
       aria-label="Open AI agent"
-      data-cursor="hover"
       aria-hidden={hidden}
       tabIndex={hidden ? -1 : 0}
       style={{ pointerEvents: hidden ? 'none' : 'auto' }}

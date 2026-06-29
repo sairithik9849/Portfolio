@@ -194,7 +194,6 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
           <a
             href={`mailto:${EMAIL}`}
             className={`meta-email-link${copied ? ' meta-email-copied' : ''}`}
-            data-cursor="hover"
             style={{ pointerEvents: 'auto' }}
             onClick={handleEmailClick}
             aria-label="Copy email address"
@@ -212,8 +211,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
               href={s.href}
               target="_blank"
               rel="noreferrer"
-              data-cursor="hover"
-              style={{ pointerEvents: 'auto' }}
+                style={{ pointerEvents: 'auto' }}
               aria-label={s.label}
             >
               <SocialIcon name={s.icon} />
@@ -324,8 +322,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
               type="button"
               className="manifesto-cta-btn"
               onClick={handleDiscoverClick}
-              data-cursor="hover"
-            >
+              >
               <TextScramble text="Discover Me" />
             </button>
           </motion.div>
@@ -345,7 +342,6 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
         onClick={onOpenAI}
         onPointerMove={handleRobotPointerMove}
         aria-label="Open AI agent"
-        data-cursor="hover"
         variants={fade('robot')}
       >
         <span className="robot-agent-cta">{HERO_ROBOT_CTA}</span>

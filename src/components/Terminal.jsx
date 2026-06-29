@@ -211,7 +211,6 @@ function renderLine(line, i, instant) {
               className="term-link"
               target={isEmail ? undefined : '_blank'}
               rel={isEmail ? undefined : 'noreferrer'}
-              data-cursor="hover"
               variants={LINK_ITEM}
             >
               <span className="term-link-label">{label}</span>
@@ -509,7 +508,6 @@ export default function Terminal() {
                     // preventDefault prevents the input from blurring before onClick fires.
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => runCommand(id)}
-                    data-cursor="hover"
                   >
                     <span className="suggest-arrow tone-accent" aria-hidden="true">▶</span>
                     {id}
@@ -578,7 +576,6 @@ export default function Terminal() {
                         type="button"
                         className={`play${isPlaying ? ' is-playing' : ''}`}
                         onClick={pronounce}
-                        data-cursor="hover"
                         aria-label="Play name pronunciation"
                         title="Play pronunciation"
                       >
@@ -595,7 +592,6 @@ export default function Terminal() {
                         type="button"
                         className="term-command-link"
                         onClick={() => runCommand(line.command)}
-                        data-cursor="hover"
                       >
                         {line.label}
                       </button>

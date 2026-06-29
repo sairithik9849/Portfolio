@@ -74,7 +74,7 @@ function Tab({ children, setPosition, href, onClick }) {
         setPosition({ width, opacity: 1, left: ref.current.offsetLeft })
       }}
     >
-      <a href={href} data-cursor="hover" onClick={onClick}>{children}</a>
+      <a href={href} onClick={onClick}>{children}</a>
     </li>
   )
 }

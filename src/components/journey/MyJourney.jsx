@@ -28,6 +28,7 @@ export default function MyJourney() {
   const { canvasRef, activeIndex } = useJourneyEngine(scrollYProgress, {
     reduced:        prefersReducedMotion,
     staticProgress: STATIC_PROGRESS,
+    sectionRef,
   })
 
   const resolvedIndex = prefersReducedMotion ? 0 : activeIndex

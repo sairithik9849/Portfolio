@@ -51,7 +51,6 @@ export default function ReturnToTop({ hidden = false }) {
       className="return-top"
       onClick={() => scrollToId('top')}
       aria-label="Return to top"
-      data-cursor="hover"
       aria-hidden={hidden}
       tabIndex={hidden ? -1 : 0}
       style={{ pointerEvents: hidden ? 'none' : 'auto' }}

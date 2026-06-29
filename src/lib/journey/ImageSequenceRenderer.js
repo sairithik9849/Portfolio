@@ -33,7 +33,12 @@ export class ImageSequenceRenderer {
     this._lastDrawn   = -1
     this._rafId       = null
     this._destroyed   = false
+    this._paused      = false
     this._direction   = 1  // 1 = forward, -1 = backward
+    // Cached canvas dimensions — updated by _applyDpr() and resize().
+    // _drawFrame reads these to avoid a forced layout per frame.
+    this._cw          = 0
+    this._ch          = 0
 
     this._applyDpr()
     this._startRaf()
@@ -52,10 +57,11 @@ export class ImageSequenceRenderer {
   setProgress(progress) {
     if (this._destroyed) return
     const clamped = Math.max(0, Math.min(1, progress))
-    this._direction  = clamped >= this._progress ? 1 : -1
-    this._progress   = clamped
+    this._direction   = clamped >= this._progress ? 1 : -1
+    this._progress    = clamped
     this._targetFrame = Math.round(progressToFrame(clamped, this._config.count))
-    this._primeWindow(this._targetFrame)
+    // _primeWindow is coalesced into the rAF tick so Lenis sub-frame
+    // change events don't trigger redundant eviction scans + sorts.
   }
 
   /**
@@ -67,6 +73,30 @@ export class ImageSequenceRenderer {
     this._applyDpr()
     // Force a redraw by invalidating lastDrawn.
     this._lastDrawn = -1
+  }
+
+  /**
+   * Suspend the rAF loop. Safe to call when the section scrolls off-screen.
+   * Drawing resumes automatically on the next `resume()` call.
+   */
+  pause() {
+    if (this._paused || this._destroyed) return
+    this._paused = true
+    if (this._rafId !== null) {
+      cancelAnimationFrame(this._rafId)
+      this._rafId = null
+    }
+  }
+
+  /**
+   * Restart the rAF loop after a `pause()` call.
+   * Immediately re-primes the decode window so frames are ready when visible.
+   */
+  resume() {
+    if (!this._paused || this._destroyed) return
+    this._paused = false
+    this._primeWindow(this._targetFrame)
+    this._startRaf()
   }
 
   /** Cancel rAF, disconnect, and release the image cache. */
@@ -92,6 +122,10 @@ export class ImageSequenceRenderer {
     const w      = canvas.clientWidth
     const h      = canvas.clientHeight
     if (w === 0 || h === 0) return
+    // Cache the CSS dimensions so _drawFrame can read them without a
+    // per-frame forced layout (clientWidth/Height trigger style flush).
+    this._cw = w
+    this._ch = h
     canvas.width  = Math.round(w * dpr)
     canvas.height = Math.round(h * dpr)
     // setTransform resets the CTM completely, then scales up so subsequent
@@ -103,6 +137,9 @@ export class ImageSequenceRenderer {
     const tick = () => {
       if (this._destroyed) return
       if (this._targetFrame !== this._lastDrawn) {
+        // _primeWindow is coalesced here so Lenis sub-frame change events
+        // (multiple per rAF cycle) don't trigger redundant eviction scans.
+        this._primeWindow(this._targetFrame)
         this._drawFrame(this._targetFrame)
       }
       this._rafId = requestAnimationFrame(tick)
@@ -119,9 +156,10 @@ export class ImageSequenceRenderer {
     if (!img) return  // nothing decoded yet — will retry on the next rAF tick
 
     const ctx = this._ctx
-    // Drawing coordinates are in CSS pixels (the CTM handles the dpr mapping).
-    const cw  = this._canvas.clientWidth
-    const ch  = this._canvas.clientHeight
+    // Use cached dimensions from _applyDpr() — avoids a forced layout read
+    // (clientWidth/clientHeight flush style if layout is dirty) on every frame.
+    const cw  = this._cw
+    const ch  = this._ch
     if (cw === 0 || ch === 0) return
 
     const iw = img.naturalWidth

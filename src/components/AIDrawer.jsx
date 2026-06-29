@@ -85,7 +85,7 @@ export default function AIDrawer({ open, onClose }) {
                 <span className="core-sm" />
                 <span>SAIRITHIK · AGENT v0.4</span>
               </div>
-              <button className="x" onClick={onClose} aria-label="Close agent" data-cursor="hover">×</button>
+              <button className="x" onClick={onClose} aria-label="Close agent">×</button>
             </div>
 
             {/* Meta strip */}
@@ -111,7 +111,7 @@ export default function AIDrawer({ open, onClose }) {
             {/* Suggestion chips */}
             <div className="dr-suggest">
               {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => send(s)} data-cursor="hover">{s}</button>
+                <button key={s} onClick={() => send(s)}>{s}</button>
               ))}
             </div>
 
@@ -127,7 +127,7 @@ export default function AIDrawer({ open, onClose }) {
                 onChange={(e) => setInput(e.target.value)}
                 autoFocus
               />
-              <button className="send" type="submit" data-cursor="hover">SEND ↵</button>
+              <button className="send" type="submit">SEND ↵</button>
             </form>
           </motion.aside>
         </>

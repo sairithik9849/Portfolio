@@ -192,7 +192,8 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
       for (let i = 0; i < 4; i++) {
         cpuCurrents[i] += (CPU_TARGETS[i] - cpuCurrents[i]) * 0.025
         cpuSum += cpuCurrents[i]
-        if (coreRefs.current[i]) coreRefs.current[i].style.height = `${cpuCurrents[i].toFixed(1)}%`
+        // scaleY from transform-origin:bottom replaces height% — compositor-only, no reflow.
+        if (coreRefs.current[i]) coreRefs.current[i].style.transform = `scaleY(${(cpuCurrents[i] / 100).toFixed(3)})`
       }
       if (cpuValRef.current) cpuValRef.current.textContent = `${(cpuSum / 4).toFixed(0)}%`
 
@@ -207,7 +208,8 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
         memFill = Math.max(31, memFill - dt * 0.11)
         if (memFill <= 32) memGC = false
       }
-      if (memFillRef.current) memFillRef.current.style.width = `${memFill.toFixed(1)}%`
+      // scaleX from transform-origin:left replaces width% — compositor-only, no reflow.
+      if (memFillRef.current) memFillRef.current.style.transform = `scaleX(${(memFill / 100).toFixed(3)})`
       if (memValRef.current)  memValRef.current.textContent  = `${memFill.toFixed(0)}%`
 
       // ── Queue ──
@@ -223,7 +225,8 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
           log('✓ batch dispatched — workers assigned')
         }
         for (let i = 0; i < Q_BARS; i++) {
-          if (qBarRefs.current[i]) qBarRefs.current[i].style.height = `${qFills[i].toFixed(0)}%`
+          // scaleY from transform-origin:bottom replaces height% — compositor-only, no reflow.
+          if (qBarRefs.current[i]) qBarRefs.current[i].style.transform = `scaleY(${(qFills[i] / 100).toFixed(3)})`
         }
         const avg = qFills.reduce((a, b) => a + b, 0) / Q_BARS
         if (qValRef.current) qValRef.current.textContent = `${avg.toFixed(0)}%`
@@ -324,7 +327,7 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
                   <div
                     ref={el => { coreRefs.current[i] = el }}
                     className="wsys-core-bar"
-                    style={{ height: `${init}%` }}
+                    style={{ transform: `scaleY(${(init / 100).toFixed(3)})` }}
                   />
                 </div>
               ))}
@@ -347,7 +350,7 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
                 <span ref={memValRef} className="wsys-val-sm">44%</span>
               </div>
               <div className="wsys-mem-track">
-                <div ref={memFillRef} className="wsys-mem-fill" style={{ width: '44%' }} />
+                <div ref={memFillRef} className="wsys-mem-fill" style={{ transform: 'scaleX(0.44)' }} />
               </div>
               <div className="wsys-mem-scale">
                 <span>0</span><span>8 GB</span>
@@ -370,7 +373,7 @@ export default function VizSystems({ progress, index, isActive, reduced, frozen 
                   <div
                     ref={el => { qBarRefs.current[i] = el }}
                     className="wsys-queue-bar"
-                    style={{ height: '0%' }}
+                    style={{ transform: 'scaleY(0)' }}
                   />
                 </div>
               ))}

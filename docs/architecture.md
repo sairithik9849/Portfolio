@@ -2,7 +2,7 @@
 
 App-shell wiring, render order, preloader handoff, scrolling, observers, and cross-cutting singletons. Loaded on demand via the routing table in `CLAUDE.md`.
 
-**Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, cursor singleton, shader attractor, nav/footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
+**Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, shader attractor, nav/footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
 
 ## Subsystem Map
 
@@ -10,8 +10,6 @@ App-shell wiring, render order, preloader handoff, scrolling, observers, and cro
 App.jsx (orchestration root)
 ├── Preloader               src/components/Preloader.jsx
 ├── Lenis + GSAP clock      App.jsx useEffect
-├── Cursor singleton        src/utils/cursor.js  ← import CURSOR_X/Y, never prop-drill
-│
 ├── Hero subsystem          → docs/hero.md
 │   ├── Hero.jsx            (#top)
 │   ├── HeroFluid.jsx       (lazy WebGL, Three.js / R3F)
@@ -49,7 +47,7 @@ App.jsx (orchestration root)
 
 `Nav → Hero → AboutMe → WhatIDo → MyJourney → Projects → Footer`
 
-`AIOrb` + `ReturnToTop` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
+`AIOrb` + `ReturnToTop` + `AIDrawer` are fixed overlays at the end of the tree.
 
 **`<Nav />` is currently commented out in `App.jsx`** (temporarily hidden) — its import and visibility wiring remain intact; uncomment the JSX to restore it.
 
@@ -130,10 +128,6 @@ Hidden while the Hero (`#top`), the What I Do section (`#what-i-do`), **or** the
 
 `useHotkey('cmd+k', toggleAI)` in `App.jsx` (from `src/hooks/useHotkey.js`) opens the AI drawer. The hook also supports `'escape'`. Any new global shortcut belongs in `App.jsx` using this hook.
 
-## Cursor MotionValue Singleton
-
-`CURSOR_X` / `CURSOR_Y` are exported from `src/utils/cursor.js`. Any component needing pointer position imports them — never prop-drill, never duplicate `pointermove` listeners. Mark interactive elements with `data-cursor="hover"` for the hover state.
-
 ## Shader Attractor Singleton
 
 `App.jsx` owns `globalMouseRef` (viewport-normalized 0–1 + `lastMove` timestamp) passed to `HeroFluid`. The glow is **confined to `#top` and `#contact`** via `e.target.closest('#top, #contact')` in `handleGlobalPointerMove` — it does not activate over mid-page sections. Idle-decays (~1.75s) in `HeroFluid.jsx` when the pointer leaves those regions. If the fluid stops tracking the cursor, check this ref's `pointermove` listener in `App.jsx`.
@@ -199,5 +193,3 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not replace native `scrollTop` scroll with a Lenis virtual scroll container — Framer Motion's `useScroll` reads native scroll and breaks if replaced.
 - Do not reintroduce `.grid-bg`.
 - Do not add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.
-- Do not prop-drill cursor position — import `CURSOR_X`/`CURSOR_Y` from `src/utils/cursor.js`.
-- Do not duplicate `pointermove` listeners — the cursor singleton covers the whole document.

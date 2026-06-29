@@ -13,7 +13,6 @@ import Footer       from './components/Footer'
 import AIDrawer     from './components/AIDrawer'
 import AIOrb        from './components/AIOrb'
 import ReturnToTop  from './components/ReturnToTop'
-import Cursor       from './components/Cursor'
 import Preloader    from './components/Preloader'
 import { createPreloadTracker } from './utils/preloadAssets'
 import { useHotkey } from './hooks/useHotkey'
@@ -268,8 +267,7 @@ export default function App() {
       {/* Preloader — mounts immediately, exits when the reveal fires.
           beginExit: App sends true once both HeroFluid + Spline robot are ready
             (or the ~6.5s safety ceiling) → overlay translateY curtain plays,
-            HERO_SEQUENCE cascade starts. Content mounts one rAF after first paint.
-          Cursor stays outside this gate so CURSOR_X/Y update during preload. */}
+            HERO_SEQUENCE cascade starts. Content mounts one rAF after first paint. */}
       <Preloader beginExit={revealed} onRevealComplete={handleRevealComplete} />
 
       {/* Content tree — mounts one rAF after the overlay paints so the WebGL
@@ -303,9 +301,6 @@ export default function App() {
           <AIDrawer open={aiOpen} onClose={closeAI} />
         </>
       )}
-
-      {/* Cursor always mounted — provides CURSOR_X/Y for the preloader monolith */}
-      <Cursor />
 
       {/* Vercel Analytics + Speed Insights — unconditional, render nothing visible */}
       <Analytics />

@@ -31,28 +31,11 @@ const COUNTER_SPREAD  = 3_500_000  // scramble amplitude around lockValue at swe
 // Loop: hold the SIGNAL state for this long before restarting from NOISE.
 const SIGNAL_HOLD_MS = 1400
 
-// Dot colour LUT — 16 precomputed steps muted → accent so the rAF never
-// interpolates colour strings. Hex values mirror the --muted / --accent
-// tokens in tokens.css (CSS vars are not readable from the rAF without
-// a getComputedStyle round-trip).
-const MUTED_HEX  = '#6e6e66'
-const ACCENT_HEX = '#c9f558'
-const LUT_STEPS  = 16
-const hexToRgb = h => [
-  parseInt(h.slice(1, 3), 16),
-  parseInt(h.slice(3, 5), 16),
-  parseInt(h.slice(5, 7), 16),
-]
-const COLOR_LUT = (() => {
-  const a = hexToRgb(MUTED_HEX)
-  const b = hexToRgb(ACCENT_HEX)
-  return Array.from({ length: LUT_STEPS }, (_, i) => {
-    const t = i / (LUT_STEPS - 1)
-    const [r, g, bl] = a.map((v, k) => Math.round(v + (b[k] - v) * t))
-    return `rgb(${r},${g},${bl})`
-  })
-})()
-const LUT_MAX = LUT_STEPS - 1
+// Dot color: all dots render at the accent color in CSS.
+// The noise-to-signal transition is driven entirely via opacity, which is
+// a composited property and never causes a style-recalc + paint.
+// (Previously a COLOR_LUT wrote el.style.background per-dot per-frame — 110
+// background rewrites per rAF tick — causing a large paint batch.)
 
 const smooth = t => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t))
 const lerp   = (a, b, t) => a + (b - a) * t
@@ -195,11 +178,11 @@ export default function VizData({ progress, index, isActive, reduced, frozen }) 
           `translate(calc(-50% + ${offX.toFixed(1)}px), calc(-50% + ${offY.toFixed(1)}px)) scale(${s.toFixed(2)})`
 
         const noiseOp = 0.3 + 0.2 * Math.abs(Math.sin(t * 0.01 + p.ph))
-        el.style.opacity = clamp(lerp(noiseOp, 0.95, rf) + fl * 0.3, 0, 1).toFixed(2)
-
-        // Brightness overshoot at the flare peak via LUT index boost.
-        const lutIdx = Math.min(LUT_MAX, Math.round(rf * LUT_MAX + fl * 6))
-        el.style.background = COLOR_LUT[lutIdx]
+        // Opacity drives the full noise→signal transition. The flare peak boosts
+        // opacity slightly above baseline (was: also rewriting style.background per
+        // dot per frame via a COLOR_LUT — 110 background rewrites per rAF caused a
+        // large paint batch; opacity is composited and never triggers paint).
+        el.style.opacity = clamp(lerp(noiseOp, 0.95, rf) + fl * 0.4, 0, 1).toFixed(2)
       }
 
       // ── curve draw — front-synced with the sweep line ────────────────────
@@ -281,8 +264,8 @@ export default function VizData({ progress, index, isActive, reduced, frozen }) 
           >
             <defs>
               <linearGradient id="wdat-area-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor={ACCENT_HEX} stopOpacity="0.14" />
-                <stop offset="100%" stopColor={ACCENT_HEX} stopOpacity="0" />
+                <stop offset="0%"   stopColor="#c9f558" stopOpacity="0.14" />
+                <stop offset="100%" stopColor="#c9f558" stopOpacity="0" />
               </linearGradient>
             </defs>
 
