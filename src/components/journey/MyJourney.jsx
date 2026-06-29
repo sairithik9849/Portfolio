@@ -54,7 +54,7 @@ export default function MyJourney() {
               {/* Section identity strip — top of the viewport */}
               <header className="journey-header">
                 <span className="journey-header__idx">04</span>
-                <span className="journey-header__title">My <em>Journey</em></span>
+                <span className="journey-header__title">My <em>Evolution</em><span style={{ color: 'var(--muted)' }}>.</span></span>
               </header>
 
               {/* Chapter area — vertically centered in the remaining space */}

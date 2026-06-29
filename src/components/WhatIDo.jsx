@@ -57,7 +57,7 @@ export default function WhatIDo() {
   const reduced        = useReducedMotion()
 
   // Fade the caption out over the last 10% of the Agents dwell so it disappears
-  // exactly as Execution Log snaps back. Only applied when Agents is active
+  // cleanly as the section ends. Only applied when Agents is active
   // (active === N - 1); all other words keep opacity: 1.
   const captionFade = useTransform(agentsProgress, [0.5, 1], [1, 0], { clamp: true })
 
@@ -437,7 +437,7 @@ export default function WhatIDo() {
           Mirrors the field's geometry (same left/right/height). z:5 paints it
           above the word stacks. The viz region is aria-hidden. */}
       {/* Caption opacity: when Agents is active, fade out over the last 10% of
-          the dwell so the blurb clears before Execution Log snaps back.
+          the dwell so the blurb clears before the section ends.
           All other words (0–3) keep opacity 1 — captionFade is 1 whenever
           agentsProgress < 0.9, which is the case for all non-Agents words. */}
       <motion.div

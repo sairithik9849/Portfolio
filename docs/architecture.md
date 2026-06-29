@@ -44,7 +44,7 @@ App.jsx (orchestration root)
 
 ## Section Render Order (`App.jsx`)
 
-`Nav → Hero → AboutMe → WhatIDo → MyJourney → Experience → Education → Projects → Footer`
+`Nav → Hero → AboutMe → WhatIDo → MyJourney → Projects → Footer`
 
 `AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
 
@@ -59,9 +59,7 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 | `Hero` | `#top` | "Index" |
 | `AboutMe` | `#about` | "About" |
 | `WhatIDo` | `#what-i-do` | "What I Do" |
-| `MyJourney` | `#journey` | "My Journey" |
-| `Experience` | `#experience` | "Experience" |
-| `Education` | `#education` | "Education" |
+| `MyJourney` | `#journey` | "My Evolution" |
 | `Projects` | `#work` | "Work" |
 | `Footer` | `#contact` | "Contact" |
 
@@ -152,8 +150,6 @@ All copy lives in `src/data/` — never hardcode inside components.
 | `whatIDo.js` | `WHAT_I_DO` entries → `WhatIDo.jsx` |
 | `widViz.js` | `WID_VIZ` keyed by id → `WidVisual.jsx` / `Viz*.jsx` |
 | `projects.js` | Project entries → `Projects.jsx` / `ProjectVisual.jsx` |
-| `experience.js` | Experience entries → `Experience.jsx` |
-| `education.js` | Education entries → `Education.jsx` |
 | `agent.js` | AI persona data |
 | `preloader.js` | `PRELOADER_NAME`, `STATUS_PHASES`, `getStatusLabel(progress)` → `Preloader.jsx` |
 | `journey.js` | `JOURNEY` entries → `MyJourney.jsx` / `JourneyChapter` / `JourneyCounter` / `JourneyNav` |

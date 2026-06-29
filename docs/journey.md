@@ -164,7 +164,7 @@ Defined in `src/animations/variants.js` (never inline):
 
 Two vertical zones inside `.journey-sticky`:
 
-1. **Header strip (top):** `.journey-header` — bold serif `04` idx (cream `--fg`) + `My Journey` title (`Journey` in italic muted). `width: fit-content` keeps the `border-bottom` underline trimmed to the text, not the full viewport width. Mirrors the `03 What I Do` `SectionHead` type treatment.
+1. **Header strip (top):** `.journey-header` — bold serif `04` idx (cream `--fg`) + `My Evolution` title (`Evolution` in italic muted). `width: fit-content` keeps the `border-bottom` underline trimmed to the text, not the full viewport width. Mirrors the `03 What I Do` `SectionHead` type treatment.
 2. **Chapter area (middle, `flex: 1; justify-content: center`):** `JourneyChapter` — lime `--accent` chapter name (`navigationTitle`, ~36px `--text-display-lg`) + gold `--accent-2` sub-heading (`title`, `--text-display-md`) + body text (`--fg-2`).
 
 ---

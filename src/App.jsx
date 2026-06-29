@@ -8,8 +8,6 @@ import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
 import WhatIDo from './components/WhatIDo'
 import MyJourney from './components/journey/MyJourney'
-import Experience   from './components/Experience'
-import Education    from './components/Education'
 import Projects     from './components/Projects'
 import Footer       from './components/Footer'
 import AIDrawer     from './components/AIDrawer'
@@ -267,8 +265,6 @@ export default function App() {
             <AboutMe />
             <WhatIDo />
             <MyJourney />
-            <Experience />
-            <Education />
             <Projects />
             <Footer       onOpenAI={() => setAiOpen(true)} />
           </div>
