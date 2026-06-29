@@ -91,6 +91,13 @@
   border-color: var(--accent);
 }
 
+/* When the hotspot has scrolled out of view the IntersectionObserver adds this
+   modifier — force the fixed tooltip invisible so rapid scroll can't leave it stuck. */
+.robot-agent-hotspot--hidden .robot-agent-cta {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 .spline-canvas {
   width: 100% !important;
   height: 100% !important;

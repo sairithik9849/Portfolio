@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, useMotionValue, useReducedMotion } from 'framer-motion'
 import {
   HERO_PARENT,
@@ -68,9 +68,22 @@ function SocialIcon({ name }) {
 
 export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
   const splineRef = useRef(null)
+  const robotHotspotRef = useRef(null)
   const [copied, setCopied] = useState(false)
+  const [robotInView, setRobotInView] = useState(true)
   const copyTimerRef = useRef(null)
   const prefersReducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    const el = robotHotspotRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setRobotInView(entry.isIntersecting),
+      { threshold: 0 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   const handleEmailClick = useCallback((e) => {
     e.preventDefault()
@@ -326,8 +339,9 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
 
       {/* Phase 8 — robot hotspot (last) */}
       <motion.button
+        ref={robotHotspotRef}
         type="button"
-        className="robot-agent-hotspot"
+        className={`robot-agent-hotspot${robotInView ? '' : ' robot-agent-hotspot--hidden'}`}
         onClick={onOpenAI}
         onPointerMove={handleRobotPointerMove}
         aria-label="Open AI agent"
