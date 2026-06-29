@@ -130,6 +130,16 @@ export const WID_DRAW = {
 // Each viz's ambient element transitions to this when isActive becomes false.
 export const WID_AMBIENT_REST = { opacity: 0 }
 
+// ─── My Journey section variants ─────────────────────────────────────────────
+
+// Chapter body transition — one chapter exits before the next enters
+// (AnimatePresence mode="wait"). Blur + translateY gives depth without flash.
+export const JOURNEY_CHAPTER = {
+  initial:  { opacity: 0, filter: 'blur(8px)', y: 40 },
+  animate:  { opacity: 1, filter: 'blur(0px)', y: 0,  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+  exit:     { opacity: 0, filter: 'blur(8px)', y: -40, transition: { duration: 0.30, ease: [0.22, 1, 0.36, 1] } },
+}
+
 // ─── Terminal output swap variants ──────────────────────────────────────────
 // Used by Terminal.jsx for the per-command output enter/exit stagger.
 // Exit: the whole output block fades out quickly (0.10s).

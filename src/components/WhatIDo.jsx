@@ -8,7 +8,7 @@ import { WHAT_I_DO } from '../data/whatIDo'
 const N = WHAT_I_DO.length // 5
 
 // ── Scroll tuning constants ───────────────────────────────────────────────────
-const SCROLL_PER_WORD        = 780   // px of scroll range budgeted per word
+const SCROLL_PER_WORD        = 1100  // px of scroll range budgeted per word
 const AGENTS_DWELL_PX        = 800   // trailing runway so Agents can play before un-pin
 const SETTLE_MS              = 140   // ms of scroll inactivity before settle fires
 const CLICK_SCROLL_DURATION  = 1.0   // Lenis duration (s) for click/keyboard nav

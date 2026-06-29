@@ -33,7 +33,7 @@ CSS is split into one partial per section/component in `src/styles/`. `global.cs
 `tokens.css`, `preloader.css`, `cursor.css`, `layout.css`, `nav.css`, then the hero sub-folder
 (`hero/grid.css`, `hero/shell.css`, `hero/identity.css`, `hero/robot.css`, `hero/manifesto.css`,
 `hero/terminal.css`), `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, `widviz.css`,
-`experience.css`, `education.css`, `projects.css`, `footer.css`.
+`journey.css`, `experience.css`, `education.css`, `projects.css`, `footer.css`.
 
 The hero section is split into one partial per concern inside `src/styles/hero/`. Each file owns
 its component's base rules and co-located responsive overrides. All six are listed in `global.css`

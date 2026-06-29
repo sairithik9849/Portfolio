@@ -7,6 +7,7 @@ import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
 import WhatIDo from './components/WhatIDo'
+import MyJourney from './components/journey/MyJourney'
 import Experience   from './components/Experience'
 import Education    from './components/Education'
 import Projects     from './components/Projects'
@@ -79,9 +80,10 @@ export default function App() {
   const handleRevealComplete = useCallback(() => setHeroStarted(true), [])
 
   const [aiOpen, setAiOpen] = useState(false)
-  const [heroVisible,  setHeroVisible]  = useState(true)
-  const [footerVisible, setFooterVisible] = useState(false)
+  const [heroVisible,    setHeroVisible]    = useState(true)
+  const [footerVisible,  setFooterVisible]  = useState(false)
   const [whatIdoVisible, setWhatIdoVisible] = useState(false)
+  const [journeyVisible, setJourneyVisible] = useState(false)
   const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
 
@@ -216,6 +218,24 @@ export default function App() {
     return () => observer.disconnect()
   }, [mountContent])
 
+  // Hide AIOrb while #journey is on screen, mirroring the WhatIDo IO pattern.
+  useEffect(() => {
+    if (!mountContent) return undefined
+    const section = document.getElementById('journey')
+
+    if (!section || !('IntersectionObserver' in window)) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setJourneyVisible(entry.isIntersecting),
+      { threshold: 0 },
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [mountContent])
+
   return (
     <>
       {/* Preloader — mounts immediately, exits when the reveal fires.
@@ -246,13 +266,14 @@ export default function App() {
             <Hero         onOpenAI={() => setAiOpen(true)} started={heroStarted} onSplineLoaded={handleSplineReady} />
             <AboutMe />
             <WhatIDo />
+            <MyJourney />
             <Experience />
             <Education />
             <Projects />
             <Footer       onOpenAI={() => setAiOpen(true)} />
           </div>
 
-          <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible} />
+          <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible || journeyVisible} />
           <AIDrawer open={aiOpen} onClose={closeAI} />
         </>
       )}

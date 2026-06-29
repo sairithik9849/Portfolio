@@ -22,6 +22,13 @@ App.jsx (orchestration root)
 │   ├── WhatIDo.jsx         (#what-i-do, GSAP pin/scrub)
 │   └── src/components/widviz/Viz*.jsx
 │
+├── MyJourney subsystem     → docs/journey.md
+│   ├── src/components/journey/MyJourney.jsx   (#journey, CSS sticky + Framer useScroll)
+│   ├── src/components/journey/Viz*.jsx        (JourneyStage/Chapter/Counter/Nav/Mobile)
+│   ├── src/lib/journey/ImageSequenceRenderer.js  (engine — implements Renderer contract)
+│   ├── src/lib/journey/journeyProgress.js     (pure progress helpers)
+│   └── src/hooks/useJourneyEngine.js          (React↔engine bridge)
+│
 ├── Projects subsystem
 │   ├── Projects.jsx        (#work)
 │   ├── ProjectVisual.jsx   (VIZ switch)
@@ -37,7 +44,7 @@ App.jsx (orchestration root)
 
 ## Section Render Order (`App.jsx`)
 
-`Nav → Hero → AboutMe → WhatIDo → Experience → Education → Projects → Footer`
+`Nav → Hero → AboutMe → WhatIDo → MyJourney → Experience → Education → Projects → Footer`
 
 `AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
 
@@ -52,6 +59,7 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 | `Hero` | `#top` | "Index" |
 | `AboutMe` | `#about` | "About" |
 | `WhatIDo` | `#what-i-do` | "What I Do" |
+| `MyJourney` | `#journey` | "My Journey" |
 | `Experience` | `#experience` | "Experience" |
 | `Education` | `#education` | "Education" |
 | `Projects` | `#work` | "Work" |
@@ -69,7 +77,7 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 
 **Do not gate `mountContent` on anything time-based** — content must mount early so both subsystems load under the opaque overlay during the cinematic window.
 
-The three `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
+The four `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
 
 ## `preloadAssets.js` Progress Model
 
@@ -93,7 +101,7 @@ Framer Motion's `useScroll` reads native `scrollTop` transparently — do not re
 
 ## AIOrb Visibility
 
-Hidden while the Hero (`#top`) **or** the What I Do section (`#what-i-do`) is intersecting the viewport — `AIOrb` receives `hidden={heroVisible || whatIdoVisible}`. Both flags come from `IntersectionObserver`s in `App.jsx`. A third observer on `#contact` drives `footerVisible` for the HeroFluid active gate. The Hero gate avoids overlapping the robot hotspot; the What I Do gate keeps the orb off the pinned viz panel.
+Hidden while the Hero (`#top`), the What I Do section (`#what-i-do`), **or** the My Journey section (`#journey`) is intersecting the viewport — `AIOrb` receives `hidden={heroVisible || whatIdoVisible || journeyVisible}`. All three flags come from `IntersectionObserver`s in `App.jsx`. A fourth observer on `#contact` drives `footerVisible` for the HeroFluid active gate. The Hero gate avoids overlapping the robot hotspot; the WhatIDo and Journey gates keep the orb off their full-bleed pinned panels.
 
 ## Global Hotkey
 
@@ -119,7 +127,7 @@ The old static `.grid-bg` is gone — do not reintroduce. See `docs/hero.md` for
 
 ## Layout Shell
 
-`.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: hidden }` is load-bearing — Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
+`.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: clip }` is load-bearing — **`clip`, not `hidden`**: `hidden` makes body a scroll container which breaks ScrollTrigger's `position: fixed` pin; `clip` contains horizontal overflow without creating a scroll container. Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
 
 ## Nav Visibility
 
@@ -148,6 +156,7 @@ All copy lives in `src/data/` — never hardcode inside components.
 | `education.js` | Education entries → `Education.jsx` |
 | `agent.js` | AI persona data |
 | `preloader.js` | `PRELOADER_NAME`, `STATUS_PHASES`, `getStatusLabel(progress)` → `Preloader.jsx` |
+| `journey.js` | `JOURNEY` entries → `MyJourney.jsx` / `JourneyChapter` / `JourneyCounter` / `JourneyNav` |
 
 ## Common Edits
 

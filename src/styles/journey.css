@@ -1,0 +1,298 @@
+/* ─── My Journey (04) ──────────────────────────────────────────────────────── */
+/* Apple-style scroll storytelling: a sticky viewport that stays pinned while  */
+/* the outer scroll container advances. One scroll-progress value drives the   */
+/* canvas, chapter, and chapter name indicator simultaneously.                 */
+
+/* ─── Section ───────────────────────────────────────────────────────────────── */
+.journey {
+  position: relative;
+  /* Thin separator from the preceding section — mirrors the section-head border */
+  border-top: 1px solid var(--line);
+}
+
+/* ─── Scroll container ───────────────────────────────────────────────────────── */
+/* Provides the scroll budget. Height is a CSS variable — change it without    */
+/* touching component code. Default: 5 × 100vh, one viewport per chapter.     */
+.journey-scroll-container {
+  position: relative;
+  height: var(--journey-scroll-length, 500vh);
+}
+
+/* ─── Sticky viewport ────────────────────────────────────────────────────────── */
+/* Stays pinned to the top of the viewport while journey-scroll-container      */
+/* scrolls past. overflow:hidden prevents the canvas from leaking.             */
+.journey-sticky {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Stage (z-index 0): canvas + scrim ─────────────────────────────────────── */
+.journey-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* The canvas fills the stage; drawing dimensions are set by the engine. */
+.journey-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Scrim: always present between canvas and text.                               */
+/* Left gradient: primary legibility layer (text lives on the left ~40%).      */
+/* Top + bottom vignettes: soften the frame near section boundaries.           */
+/* Uses literal rgba values because CSS custom properties (--bg = #070707)     */
+/* cannot be composed inside rgba() without CSS color-mix support.             */
+.journey-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to right,
+      rgba(7, 7, 7, 1.00)  0%,
+      rgba(7, 7, 7, 0.93)  18%,
+      rgba(7, 7, 7, 0.72)  36%,
+      rgba(7, 7, 7, 0.22)  58%,
+      transparent          100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(7, 7, 7, 0.50)  0%,
+      transparent          30%
+    ),
+    linear-gradient(
+      to top,
+      rgba(7, 7, 7, 0.55)  0%,
+      transparent          35%
+    );
+}
+
+/* ─── Content (z-index 1): three-zone flex column ──────────────────────────── */
+/* Top: section identity header                                                */
+/* Middle (flex:1): chapter content, vertically centered                      */
+.journey-content {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Shell stretched to full height so flex column spans 100vh. */
+.journey-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-xl);
+}
+
+/* ─── Section identity header (top strip) ────────────────────────────────── */
+/* width: fit-content constrains the border-bottom to the text width only.    */
+/* Mirrors the 03 What I Do SectionHead type treatment: serif idx + title.    */
+.journey-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  width: fit-content;
+  flex-shrink: 0;
+}
+
+.journey-header__idx {
+  font-family: var(--serif);
+  font-size: var(--text-display-5xl);
+  line-height: 0.85;
+  color: var(--fg);
+  font-weight: 400;
+}
+
+.journey-header__title {
+  font-family: var(--serif);
+  font-size: var(--text-display-2xl);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+  color: var(--fg);
+  font-weight: 400;
+}
+
+.journey-header__title em {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── Chapter area (middle, flex-grows to fill space) ────────────────────── */
+/* max-width keeps text within the left ~40% column.                          */
+.journey-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-lg);
+  max-width: 500px;
+  width: 42%;
+}
+
+/* ─── Chapter content ────────────────────────────────────────────────────────── */
+.journey-chapter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Chapter name — lime, medium display serif replacing the old odometer number */
+.journey-chapter__name {
+  display: block;
+  font-family: var(--serif);
+  font-size: var(--text-display-lg);   /* ~36px */
+  font-weight: 400;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  color: var(--accent);                /* lime */
+}
+
+.journey-chapter__title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: var(--text-display-md);   /* 32px */
+  font-weight: 400;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.15;
+  color: var(--accent-2);              /* gold */
+}
+
+.journey-chapter__body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--text-body);         /* 14px */
+  line-height: 1.75;
+  color: var(--fg-2);
+  max-width: 44ch;
+}
+
+/* ─── Mobile layout (≤ 767px) ────────────────────────────────────────────────── */
+/* Desktop sticky is hidden on mobile. A flat chapter list is shown instead.    */
+
+.journey-scroll-container {
+  display: none;
+}
+
+.journey-mobile {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-gutter) var(--space-xxl);
+}
+
+.journey-mobile__chapter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-xl) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.journey-mobile__chapter:last-child {
+  border-bottom: none;
+}
+
+.journey-mobile__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.journey-mobile__num {
+  color: var(--accent-2);
+}
+
+.journey-mobile__nav-title {
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: var(--tracking-snug);
+}
+
+.journey-mobile__title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: var(--text-display-sm);   /* 28px */
+  font-weight: 400;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.2;
+  color: var(--fg);
+}
+
+.journey-mobile__body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--text-body);
+  line-height: 1.75;
+  color: var(--fg-2);
+}
+
+/* ─── Tablet + desktop (≥ 768px): show sticky, hide mobile flat list ──────── */
+@media (min-width: 768px) {
+  .journey-mobile {
+    display: none;
+  }
+
+  .journey-scroll-container {
+    display: block;
+  }
+}
+
+/* ─── Tablet adjustments (768px – 980px) ─────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 980px) {
+  .journey-left {
+    width: 58%;
+    max-width: 420px;
+    gap: var(--space-md);
+  }
+
+  .journey-chapter__name {
+    font-size: var(--text-display-md);  /* step down one scale on tablet */
+  }
+
+  .journey-chapter__title {
+    font-size: var(--text-display-sm);  /* 28px */
+  }
+
+  /* Heavier left scrim on tablet since the canvas takes more relative width */
+  .journey-scrim {
+    background:
+      linear-gradient(
+        to right,
+        rgba(7, 7, 7, 1.00)  0%,
+        rgba(7, 7, 7, 0.96)  25%,
+        rgba(7, 7, 7, 0.80)  50%,
+        rgba(7, 7, 7, 0.30)  75%,
+        transparent          100%
+      ),
+      linear-gradient(to bottom, rgba(7, 7, 7, 0.50) 0%, transparent 30%),
+      linear-gradient(to top,   rgba(7, 7, 7, 0.55) 0%, transparent 35%);
+  }
+}
+
+/* ─── Large desktop (≥ 1280px) ───────────────────────────────────────────────── */
+@media (min-width: 1280px) {
+  .journey-chapter__title {
+    font-size: var(--text-display-lg);  /* 36px */
+  }
+
+  .journey-chapter__body {
+    font-size: var(--text-md);          /* 13px */
+  }
+}
+
+/* ─── Reduced-motion ─────────────────────────────────────────────────────────── */
+/* The canvas draws a single static frame; chapter content is fully readable.  */
+/* The sticky layout is preserved so the section height / composition is the   */
+/* same, but no scroll-driven animation occurs.                                */
+@media (prefers-reduced-motion: reduce) {
+  /* No transition overrides needed — counter and nav (which had transitions)   */
+  /* have been removed; JOURNEY_CHAPTER animation is bypassed in the component. */
+}

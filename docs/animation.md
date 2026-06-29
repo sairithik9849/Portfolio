@@ -41,6 +41,11 @@ See `docs/hero.md` for the full Hero entrance sequence. The relevant exports fro
 - `WID_DRAW` — shared `pathLength` draw transition for structural SVG edges
 - `WID_AMBIENT_REST` — `opacity:0` rest target; ambient elements return to this when `isActive` is false
 
+### My Journey Variants
+
+- `JOURNEY_CHAPTER` — chapter body transition inside `AnimatePresence mode="wait"`. Incoming: `opacity 0→1, blur 8px→0, y 40px→0` (~0.45s). Outgoing: reverse with y→−40px (~0.30s). Keyed by active chapter index.
+- `JOURNEY_COUNTER` — odometer digit slide. Incoming: `y '105%'→'0%'`. Outgoing: `y '0%'→'-105%'`. Combined with `overflow:hidden` on the parent slot for the slot-machine mask effect.
+
 ## Reduced-Motion Pattern
 
 `useReducedMotion()` (from framer-motion) is the standard gate:
@@ -50,9 +55,13 @@ See `docs/hero.md` for the full Hero entrance sequence. The relevant exports fro
 - In `WhatIDo.jsx`: skips the ScrollTrigger pin entirely; falls back to frozen mobile layout (see `docs/what-i-do.md`).
 - Lenis is **entirely disabled** under `prefers-reduced-motion` in `App.jsx` — no instance is created.
 
-## AboutMe Scroll Word-Reveal
+## Scroll-Scrubbed Sections (useScroll + useTransform)
 
-`AboutMe.jsx` uses a scroll-scrubbed animation, not `whileInView`. It uses `useScroll({ offset: ['start end', 'center center'] })` progress mapped to per-word opacity via `useTransform` — each word lights across its `index/total → (index+1)/total` slice. `useReducedMotion()` renders all words solid instantly. Do not convert this to `REVEAL`/`whileInView`.
+Two sections use `useScroll`/`useTransform` from Framer Motion rather than `whileInView`:
+
+**AboutMe** — `useScroll({ offset: ['start end', 'center center'] })` progress mapped to per-word opacity via `useTransform`. Each word lights across its `index/total → (index+1)/total` slice. `useReducedMotion()` renders all words solid instantly. Do not convert to `REVEAL`/`whileInView`.
+
+**MyJourney** — `useScroll({ target: scrollContainerRef, offset: ['start start', 'end end'] })` produces the single 0→1 progress that drives the canvas engine, chapter counter, chapter body, and nav indicator simultaneously. Progress is piped to `ImageSequenceRenderer.setProgress()` via a MotionValue `.on('change', …)` subscription (zero React re-renders for frame changes); chapter index is derived via `progressToChapter` in `src/lib/journey/journeyProgress.js`. See `docs/journey.md` for the full architecture.
 
 ## Performance Floor
 
