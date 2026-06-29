@@ -140,6 +140,25 @@ export const JOURNEY_CHAPTER = {
   exit:     { opacity: 0, filter: 'blur(8px)', y: -40, transition: { duration: 0.30, ease: [0.22, 1, 0.36, 1] } },
 }
 
+// ─── Return-to-Hero floating marker ─────────────────────────────────────────
+// Entrance: slides in from above (y: -12) with a soft scale + fade.
+// Exit: collapses back up faster (0.28s) so it doesn't linger over content.
+// Component toggles between 'show' and 'hidden' driven by the visibility prop.
+export const RETURN_MARKER = {
+  hidden: {
+    opacity: 0,
+    y: -12,
+    scale: 0.92,
+    transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+  },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  },
+}
+
 // ─── Terminal output swap variants ──────────────────────────────────────────
 // Used by Terminal.jsx for the per-command output enter/exit stagger.
 // Exit: the whole output block fades out quickly (0.10s).

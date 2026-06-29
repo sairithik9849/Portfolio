@@ -1,0 +1,142 @@
+/* ---- Return-to-Hero floating marker ---- */
+
+/* Glass monolith — top-right, z-index 40 (above nav=30, below AIOrb=50).
+   overflow:hidden clips the ascending lime streak to the button's bounds. */
+.return-top {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  right: calc(env(safe-area-inset-right, 0px) + var(--space-lg));
+  z-index: 40;
+
+  /* Minimum 44×44px accessible tap target */
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Cyber-Brutalist glass — matches AIOrb / nav glass convention */
+  background: rgba(12, 12, 12, 0.72);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+
+  /* Clip the ascending lime streak so it never overflows the bezel */
+  overflow: hidden;
+
+  cursor: pointer;
+
+  /* Transition border/shadow only — no layout properties.
+     Using the site's signature easing: cubic-bezier(0.22, 1, 0.36, 1). */
+  transition:
+    border-color 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow   250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* On hover: lime border + soft lime glow halo (matches the card/AIOrb glow pattern) */
+.return-top:hover,
+.return-top:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim), 0 0 24px var(--accent-dim);
+}
+
+/* Keyboard focus ring — explicit outline on top of the border glow */
+.return-top:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Lime ascent streak — vertically fills the monolith on hover.
+   Starts pushed below the button (translateY 100%) and slides up to
+   translateY(-100%) so it sweeps through the full height, then vanishes.
+   The position:absolute + inset placement makes it fill the bezel exactly. */
+.return-top-ascent {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  /* Vertical gradient: lime concentrated in the center, transparent at edges.
+     Height is 3× the button so the sweep travels visibly through it. */
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    var(--accent-dim) 35%,
+    rgba(201, 245, 88, 0.55) 50%,
+    var(--accent-dim) 65%,
+    transparent 100%
+  );
+  height: 300%;
+  top: auto;
+  bottom: -200%;
+
+  opacity: 0;
+  transform: translateY(0%);
+  transition:
+    opacity   250ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.return-top:hover .return-top-ascent,
+.return-top:focus-visible .return-top-ascent {
+  opacity: 1;
+  /* Translate upward so the bright midpoint sweeps through the button */
+  transform: translateY(-55%);
+}
+
+/* Chevron container — lifted 2px on hover to reinforce the upward intent */
+.return-top-chevron {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Default icon color */
+  color: var(--fg-2);
+  transition:
+    color     250ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.return-top:hover .return-top-chevron,
+.return-top:focus-visible .return-top-chevron {
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Reduce to border/glow only — no streak movement, no chevron lift.
+   The scroll still completes (Lenis is disabled in this mode; scrollToId
+   falls back to native scrollIntoView({behavior:'smooth'})). */
+@media (prefers-reduced-motion: reduce) {
+  .return-top-ascent {
+    transition: opacity 150ms ease;
+    transform: none !important;
+    height: 100%;
+    bottom: 0;
+    background: rgba(201, 245, 88, 0.12);
+  }
+
+  .return-top-chevron {
+    transition: color 150ms ease;
+    transform: none !important;
+  }
+}
+
+/* ---- Responsive ---- */
+
+/* Tablet — tighten spacing slightly */
+@media (max-width: 1280px) and (min-width: 769px) {
+  .return-top {
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    right: calc(env(safe-area-inset-right, 0px) + 20px);
+  }
+}
+
+/* Mobile — bring closer to edge, keep 44px tap target */
+@media (max-width: 768px) {
+  .return-top {
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    right: calc(env(safe-area-inset-right, 0px) + var(--space-md));
+  }
+}

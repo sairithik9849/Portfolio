@@ -39,6 +39,9 @@ App.jsx (orchestration root)
 │   ├── AIOrb.jsx
 │   └── api/chat.js         (Vercel serverless → Gemini)
 │
+├── Return-to-Hero marker
+│   └── ReturnToTop.jsx     (fixed top-right, z-index 40; see "ReturnToTop Visibility" below)
+│
 └── Content data            src/data/*.js  ← all copy lives here, never hardcoded
 ```
 
@@ -46,7 +49,7 @@ App.jsx (orchestration root)
 
 `Nav → Hero → AboutMe → WhatIDo → MyJourney → Projects → Footer`
 
-`AIOrb` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
+`AIOrb` + `ReturnToTop` + `AIDrawer` + `Cursor` are fixed overlays at the end of the tree.
 
 **`<Nav />` is currently commented out in `App.jsx`** (temporarily hidden) — its import and visibility wiring remain intact; uncomment the JSX to restore it.
 
@@ -96,6 +99,28 @@ Key behaviours:
 Framer Motion's `useScroll` reads native `scrollTop` transparently — do not replace native scroll with a virtual Lenis scroll container.
 
 **Anchor scrolling goes through `scrollToId(id)` (`src/utils/scrollTo.js`)** — it routes through `window.__lenis.scrollTo` when Lenis exists and falls back to native `scrollIntoView`. Use it (Hero and Nav already do) instead of raw `scrollIntoView` for any new in-page link.
+
+## ReturnToTop Visibility
+
+`ReturnToTop` receives `hidden={!returnVisible}` from `App.jsx`. `returnVisible` is driven by a
+fifth `mountContent`-gated `IntersectionObserver` on `#what-i-do`:
+
+```js
+([entry]) => setReturnVisible(
+  entry.isIntersecting || entry.boundingClientRect.top < 0,
+)
+// options: { threshold: 0, rootMargin: '0px 0px -20% 0px' }
+```
+
+- **Hero / About:** `#what-i-do` is below the fold → `isIntersecting = false`, `top > 0` → hidden.
+- **Entering What I Do:** the section intersects (with a −20% bottom-margin delay so it appears once
+  the section is meaningfully engaged) → visible.
+- **Journey / Projects / Footer:** `#what-i-do` has scrolled past — `top < 0` → stays visible.
+- **Scrolling back above What I Do:** `isIntersecting` becomes false and `top > 0` again → hidden.
+
+The component mirrors `AIOrb`'s `hidden`-prop contract: `aria-hidden`, `tabIndex -1`,
+`pointer-events: none` while hidden. Click calls `scrollToId('top')` from `src/utils/scrollTo.js`.
+Entrance/exit uses the `RETURN_MARKER` variant from `src/animations/variants.js`.
 
 ## AIOrb Visibility
 

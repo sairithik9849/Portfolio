@@ -147,6 +147,16 @@ On project card hover, the index number colors to `var(--accent)`. The card visu
 tech energy. This pattern should remain consistent when new interactive elements use tilt effects.
 Pair with `--radius-md` on bordered containers.
 
+### Return-to-Hero marker (`return-to-top.css`)
+
+A 44×44px glass monolith (`backdrop-filter: blur(16px) saturate(150%)`, `--radius-md`, hairline
+`var(--line-2)` border) pinned top-right at z-index 40. Contains an icon-only upward chevron
+(`currentColor`, `var(--fg-2)` at rest). On hover/focus: border lights to `var(--accent)`;
+a vertical lime gradient streak (`.return-top-ascent`) sweeps upward through the bezel via
+`translateY` (transform only, clipped by `overflow:hidden`); chevron color shifts to `var(--accent)`
+and lifts `translateY(-2px)`. All transitions use `cubic-bezier(0.22, 1, 0.36, 1)` at 250–400ms.
+Under `prefers-reduced-motion` the streak is suppressed; only border/glow activates.
+
 ### Status badge pulse (`widviz.css:1583–1584`)
 
 Active status indicators use a CSS keyframe:

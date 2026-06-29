@@ -43,12 +43,13 @@ Read the listed doc before working in each area. Read only what the task require
 
 | When touching…                                                                                                                     | Read                    |
 | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, hotkeys, cursor, nav/footer wiring, project-card visuals | `docs/architecture.md`  |
+| `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, ReturnToTop, hotkeys, cursor, nav/footer wiring, project-card visuals | `docs/architecture.md`  |
 | Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                   | `docs/animation.md`     |
 | `src/styles/`, colors, typography, spacing, radii, layout shell, interaction patterns                                              | `docs/design-system.md` |
 | `Hero.jsx`, `HeroFluid`, `SplineScene`, `InfiniteGrid`, robot, shader glow                                                         | `docs/hero.md`          |
 | `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                      | `docs/what-i-do.md`     |
 | `src/components/journey/`, `src/lib/journey/`, `src/hooks/useJourneyEngine.js`, `src/data/journey.js`                              | `docs/journey.md`       |
+| `src/components/ReturnToTop.jsx`, `src/styles/return-to-top.css`                                                                    | `docs/architecture.md`  |
 | `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                        | `docs/backend.md`       |
 | Skills, skill composition, development workflow, Architecture First, design/component intake                                        | `docs/skills.md`        |
 

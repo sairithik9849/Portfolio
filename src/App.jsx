@@ -12,6 +12,7 @@ import Projects     from './components/Projects'
 import Footer       from './components/Footer'
 import AIDrawer     from './components/AIDrawer'
 import AIOrb        from './components/AIOrb'
+import ReturnToTop  from './components/ReturnToTop'
 import Cursor       from './components/Cursor'
 import Preloader    from './components/Preloader'
 import { createPreloadTracker } from './utils/preloadAssets'
@@ -82,6 +83,9 @@ export default function App() {
   const [footerVisible,  setFooterVisible]  = useState(false)
   const [whatIdoVisible, setWhatIdoVisible] = useState(false)
   const [journeyVisible, setJourneyVisible] = useState(false)
+  // True once the What I Do section has been reached and for the remainder of
+  // the page — drives the Return-to-Hero floating marker visibility.
+  const [returnVisible,  setReturnVisible]  = useState(false)
   const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
 
@@ -216,6 +220,31 @@ export default function App() {
     return () => observer.disconnect()
   }, [mountContent])
 
+  // Show the Return-to-Hero marker once #what-i-do is reached and keep it
+  // visible for the remainder of the page (Journey / Projects / Footer).
+  // `entry.isIntersecting` covers "currently in view"; the `top < 0` arm
+  // covers "scrolled past it" — together they implement "sticky visible once seen".
+  // rootMargin trims the bottom so the marker appears only once the section
+  // is meaningfully engaged, not the instant its top edge crosses the fold.
+  useEffect(() => {
+    if (!mountContent) return undefined
+    const section = document.getElementById('what-i-do')
+
+    if (!section || !('IntersectionObserver' in window)) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setReturnVisible(
+        entry.isIntersecting || entry.boundingClientRect.top < 0,
+      ),
+      { threshold: 0, rootMargin: '0px 0px -20% 0px' },
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [mountContent])
+
   // Hide AIOrb while #journey is on screen, mirroring the WhatIDo IO pattern.
   useEffect(() => {
     if (!mountContent) return undefined
@@ -270,6 +299,7 @@ export default function App() {
           </div>
 
           <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible || journeyVisible} />
+          <ReturnToTop hidden={!returnVisible} />
           <AIDrawer open={aiOpen} onClose={closeAI} />
         </>
       )}
