@@ -16,9 +16,9 @@
   align-items: center;
   justify-content: center;
 
-  /* Cyber-Brutalist glass — matches AIOrb / nav glass convention */
-  background: rgba(12, 12, 12, 0.72);
-  backdrop-filter: blur(16px) saturate(150%);
+  /* Solid dark plate — no backdrop-filter; a blurred fixed element re-rasterizes
+     the scrolling content behind it every frame. Raised opacity reads identically. */
+  background: rgba(12, 12, 12, 0.92);
   border: 1px solid var(--line-2);
   border-radius: var(--radius-md);
 

@@ -40,14 +40,11 @@ const BORDER_FINAL = {
   l3: 'rgba(232, 196, 122, 0.52)',
   l4: 'rgba(232, 196, 122, 0.58)',
 }
-// Edge-lighting (inset highlights + drop shadows) is baked into the Framer
-// boxShadow string because Framer's inline boxShadow fully overrides CSS
-// box-shadow — there is no merging. L3/L4 use CSS box-shadow (no Framer override).
-const GLOW_FINAL = {
-  l1: 'inset 0 1px 0 rgba(237, 237, 223, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 10px rgba(232, 196, 122, 0.14)',
-  l2: 'inset 0 1px 0 rgba(237, 237, 223, 0.09), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 8px 18px rgba(0, 0, 0, 0.42), 0 0 10px rgba(232, 196, 122, 0.17)',
-  l3: '0 0 10px rgba(232, 196, 122, 0.20)',
-}
+// L1/L2 edge-lighting + gold glow now live in widviz.css as
+// .wifc-layer--raw/.wifc-layer--logic with .wifc-active / .wifc-final modifiers.
+// Framer no longer writes boxShadow inline for these layers — eliminates the
+// per-frame repaint that was triggered on all 5 mounted viz layers.
+// L3/L4 use CSS box-shadow (no Framer override) — unchanged.
 
 // ── Sparkline helpers ─────────────────────────────────────────────────────────
 const SPARK_W = 94
@@ -73,8 +70,8 @@ function buildRingDash(pct) {
 export default function VizInterface({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
 
-  const { dissolveIn } = widSlice(index, N)
-  const dissolve = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const { dissolveIn, dissolveOut } = widSlice(index, N)
+  const dissolve = useTransform(progress, dissolveIn, dissolveOut, { clamp: true })
   const scale    = useTransform(dissolve, [0, 1], [0.985, 1])
 
   // ── Autonomous breathing driver: 0 = flat illusion, 1 = peak reveal ───────
@@ -104,7 +101,7 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   // ── Live counter ticker ───────────────────────────────────────────────────
   const [counterVal, setCounterVal] = useState(parseInt(DATA.counterValue, 10))
   useEffect(() => {
-    if (isFinal) return
+    if (isFinal || !isActive) return
     const id = setInterval(() => {
       setCounterVal(v => {
         const delta = Math.floor(Math.random() * 28) - 11
@@ -112,32 +109,32 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
       })
     }, 850)
     return () => clearInterval(id)
-  }, [isFinal])
+  }, [isFinal, isActive])
 
   // ── Rolling sparkline ─────────────────────────────────────────────────────
   const sparkRef = useRef([...DATA.spark])
   const [sparkData, setSparkData] = useState([...DATA.spark])
   useEffect(() => {
-    if (isFinal) return
+    if (isFinal || !isActive) return
     const id = setInterval(() => {
       const next = [...sparkRef.current.slice(1), 52 + Math.floor(Math.random() * 38)]
       sparkRef.current = next
       setSparkData(next)
     }, 1050)
     return () => clearInterval(id)
-  }, [isFinal])
+  }, [isFinal, isActive])
 
   // ── Ring GPU% oscillation ─────────────────────────────────────────────────
   const ringPhaseRef = useRef(0)
   const [ringPct, setRingPct] = useState(DATA.ringPct)
   useEffect(() => {
-    if (isFinal) return
+    if (isFinal || !isActive) return
     const id = setInterval(() => {
       ringPhaseRef.current += 0.20
       setRingPct(0.67 + Math.sin(ringPhaseRef.current) * 0.09)
     }, 380)
     return () => clearInterval(id)
-  }, [isFinal])
+  }, [isFinal, isActive])
 
   // ── Card rotation ─────────────────────────────────────────────────────────
   const rotateX = useTransform(t, [0, 1], [0, PEAK_ROTATE_X])
@@ -196,16 +193,10 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   const l2BorderColor = useTransform(l2BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
   const l4BorderColor = useTransform(l4BorderOp, v => `rgba(232, 196, 122, ${v.toFixed(3)})`)
 
-  // Framer inline boxShadow fully overrides CSS box-shadow, so edge lighting
-  // (inset highlights + drop shadows) is composed here alongside the gold glow.
-  // At t=0: edge lights are static; the gold term is transparent. At t=1: gold
-  // blooms in to match GLOW_FINAL. L3 uses CSS box-shadow (no Framer override).
-  const l1Glow = useTransform(l1BorderOp, v =>
-    `inset 0 1px 0 rgba(237, 237, 223, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 10px rgba(232, 196, 122, ${(v * 0.37).toFixed(3)})`
-  )
-  const l2Glow = useTransform(l2BorderOp, v =>
-    `inset 0 1px 0 rgba(237, 237, 223, 0.09), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 8px 18px rgba(0, 0, 0, 0.42), 0 0 10px rgba(232, 196, 122, ${(v * 0.38).toFixed(3)})`
-  )
+  // L1/L2 box-shadow is now CSS class-driven (.wifc-active / .wifc-final) so
+  // Framer does not write boxShadow as an inline style — eliminates per-frame
+  // string rebuilds and box-shadow repaints on all five mounted viz layers.
+  // L3 uses CSS box-shadow (no Framer override) — unchanged.
 
   // ── Data particle — rises through layers at pulse peak ────────────────────
   const particleY  = useTransform(pulseT, [0, 1], ['78%', '12%'])
@@ -258,12 +249,13 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
         >
 
           {/* ── LAYER 1 — Raw Data Stream ─────────────────────────────────
-                border: set in CSS as transparent 1px; borderColor animated here */}
+                border: set in CSS as transparent 1px; borderColor animated here.
+                boxShadow: CSS class-driven (.wifc-active / .wifc-final) — no
+                Framer inline override so the edge-lighting never repaints. */}
           <motion.div
-            className="wifc-layer wifc-layer--raw"
+            className={`wifc-layer wifc-layer--raw${isActive ? ' wifc-active' : ''}${isFinal ? ' wifc-final' : ''}`}
             style={{
               borderColor: isFinal ? BORDER_FINAL.l1 : l1BorderColor,
-              boxShadow:   isFinal ? GLOW_FINAL.l1   : l1Glow,
             }}
           >
             <div className="wifc-raw-track" aria-hidden="true">
@@ -291,14 +283,14 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
           />
 
           {/* ── LAYER 2 — Logic Grid ──────────────────────────────────────
-                border: set in CSS as transparent 1px; borderColor animated here */}
+                border: set in CSS as transparent 1px; borderColor animated here.
+                boxShadow: CSS class-driven — same pattern as Layer 1. */}
           <motion.div
-            className="wifc-layer wifc-layer--logic"
+            className={`wifc-layer wifc-layer--logic${isActive ? ' wifc-active' : ''}${isFinal ? ' wifc-final' : ''}`}
             style={{
-              translateZ:    isFinal ? `${PEAK_Z_L2}px` : zL2,
-              '--pulse-op':  isFinal ? '1' : pulseOpStr,
-              borderColor:   isFinal ? BORDER_FINAL.l2 : l2BorderColor,
-              boxShadow:     isFinal ? GLOW_FINAL.l2   : l2Glow,
+              translateZ:   isFinal ? `${PEAK_Z_L2}px` : zL2,
+              '--pulse-op': isFinal ? '1' : pulseOpStr,
+              borderColor:  isFinal ? BORDER_FINAL.l2 : l2BorderColor,
             }}
           >
             <svg
@@ -457,7 +449,9 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
                 </div>
               </div>
 
-              <div className="wifc-glass-indicators" aria-hidden="true">
+              {/* .wifc-live gates wifc-ind-breathe to the active layer only
+                  (animation-play-state: paused → running via CSS) */}
+              <div className={`wifc-glass-indicators${isActive && !isFinal ? ' wifc-live' : ''}`} aria-hidden="true">
                 <div className="wifc-glass-ind wifc-glass-ind--1" />
                 <div className="wifc-glass-ind wifc-glass-ind--2" />
                 <div className="wifc-glass-ind wifc-glass-ind--3" />

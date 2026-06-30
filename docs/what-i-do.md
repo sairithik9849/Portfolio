@@ -69,8 +69,8 @@ Adding a capability requires: a `WHAT_I_DO` entry, a `WID_VIZ` entry, a new `Viz
 
 ## Per-Viz Scroll Slices — `widSlice.js`
 
-`widSlice(index, n)` returns the symmetric input ranges each viz maps `progress` through with `useTransform`:
-- `dissolveIn` triangle `[s-d, s, s+d] → [0, 1, 0]` (cross-dissolve)
+`widSlice(index, n)` returns the input/output ranges each viz maps `progress` through with `useTransform`:
+- `dissolveIn` + `dissolveOut` trapezoid `[s-d/2, s, s+d/2, s+d] → [0, 1, 1, 0]` (hold for first half of the scroll gap, crossfade over the second half — lands fully at the next snap)
 - `enterIn` one-way `[s-d, s] → [0, 1]` (enter only)
 
 `useTransform` clamps, so edge vizzes (i=0, i=n-1) need no manual clamping. **Use this helper for any new viz** rather than hand-rolling ranges.

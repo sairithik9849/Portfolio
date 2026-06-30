@@ -44,10 +44,10 @@ const clamp  = (v, a, b) => (v < a ? a : v > b ? b : v)
 export default function VizData({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
 
-  const { dissolveIn, enterIn } = widSlice(index, N)
+  const { dissolveIn, dissolveOut, enterIn } = widSlice(index, N)
 
   // ── scroll clock — all hooks called unconditionally ───────────────────────
-  const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const dissolve  = useTransform(progress, dissolveIn, dissolveOut, { clamp: true })
   const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
   const enter     = useTransform(progress, enterIn,  [0, 1],    { clamp: true })
   // Readouts fade in as the snap lands — mirrors VizSystems' statusOp.

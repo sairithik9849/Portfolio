@@ -244,8 +244,8 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
   const isFinal = reduced || frozen
 
   // Cross-dissolve — shared infra used by every widviz component.
-  const { dissolveIn } = widSlice(index, N)
-  const dissolve = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const { dissolveIn, dissolveOut } = widSlice(index, N)
+  const dissolve = useTransform(progress, dissolveIn, dissolveOut, { clamp: true })
 
   // agentsProgress consumed in Phase 2B+ (could drive cycle speed; parked for now)
   void agentsProgress

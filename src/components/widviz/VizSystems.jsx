@@ -17,8 +17,8 @@ const arc = (cx, cy, r, a0, a1) => {
 export default function VizSystems({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
 
-  const { dissolveIn, enterIn } = widSlice(index, N)
-  const dissolve = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const { dissolveIn, dissolveOut, enterIn } = widSlice(index, N)
+  const dissolve = useTransform(progress, dissolveIn, dissolveOut, { clamp: true })
   const scale    = useTransform(dissolve, [0, 1], [0.985, 1])
   const enter    = useTransform(progress, enterIn,  [0, 1],    { clamp: true })
 

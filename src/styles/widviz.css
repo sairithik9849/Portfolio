@@ -144,9 +144,8 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  transform: translate(-50%, -50%);
   pointer-events: none;
-  will-change: top, left, opacity;
+  will-change: transform, opacity;
 }
 
 .wbk-flow-dot--trunk {
@@ -269,9 +268,8 @@
   border-radius: 2px;
   background: var(--accent);
   box-shadow: 0 0 10px rgba(201, 245, 88, 0.9), 0 0 22px rgba(201, 245, 88, 0.4);
-  transform: translate(-50%, -50%) rotate(45deg);
   pointer-events: none;
-  will-change: left, top, opacity;
+  will-change: transform, opacity;
 }
 
 /* ── BREAKER chip ───────────────────────────────────────────────────────────── */
@@ -1083,6 +1081,24 @@
     rgba(7, 7, 7, 0.58)
   );
   overflow: hidden;
+  /* Base edge lighting — always present.
+     Gold glow added via .wifc-active (active layer) or .wifc-final (frozen).
+     Baked here in CSS so Framer does not write boxShadow as an inline style
+     (Framer's inline boxShadow fully overrides CSS; keeping it in CSS means
+     zero per-frame string rebuilds → zero paint triggers on inactive layers). */
+  box-shadow:
+    inset 0 1px 0 rgba(237, 237, 223, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.wifc-layer--raw.wifc-active,
+.wifc-layer--raw.wifc-final {
+  box-shadow:
+    inset 0 1px 0 rgba(237, 237, 223, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    0 0 10px rgba(232, 196, 122, 0.14);
 }
 
 /* Track extends 32px beyond the layer edges so the seamless loop never shows
@@ -1176,6 +1192,20 @@
     rgba(10, 10, 10, 0.64),
     rgba(10, 10, 10, 0.50)
   );
+  /* Base edge lighting — same CSS-driven pattern as .wifc-layer--raw above. */
+  box-shadow:
+    inset 0 1px 0 rgba(237, 237, 223, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 8px 18px rgba(0, 0, 0, 0.42);
+}
+
+.wifc-layer--logic.wifc-active,
+.wifc-layer--logic.wifc-final {
+  box-shadow:
+    inset 0 1px 0 rgba(237, 237, 223, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 8px 18px rgba(0, 0, 0, 0.42),
+    0 0 10px rgba(232, 196, 122, 0.17);
 }
 
 .wifc-logic-svg {
@@ -1595,28 +1625,38 @@
   border-radius: 1px;
 }
 
+/* box-shadow step removed — animating box-shadow triggers repaint.
+   Opacity-only is compositor-clean. .wifc-live gates the animation to the
+   active Interface layer only (mirrors the .wagnt-live pattern in VizAgents). */
 @keyframes wifc-ind-breathe {
-  0%, 100% { opacity: 0.35; box-shadow: none; }
-  50%       { opacity: 1.0;  box-shadow: 0 0 5px currentColor; }
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 1.0;  }
 }
 
 .wifc-glass-ind--1 {
   width: 100%;
   background: rgba(201, 245, 88, 0.6);
-  color: rgba(201, 245, 88, 0.4);
   animation: wifc-ind-breathe 2.8s ease-in-out infinite;
+  animation-play-state: paused;
 }
 .wifc-glass-ind--2 {
   width: 72%;
   background: rgba(232, 196, 122, 0.45);
-  color: rgba(232, 196, 122, 0.3);
   animation: wifc-ind-breathe 2.8s ease-in-out infinite 0.93s;
+  animation-play-state: paused;
 }
 .wifc-glass-ind--3 {
   width: 44%;
   background: rgba(180, 180, 160, 0.35);
-  color: rgba(180, 180, 160, 0.2);
   animation: wifc-ind-breathe 2.8s ease-in-out infinite 1.86s;
+  animation-play-state: paused;
+}
+
+/* Active Interface layer: run the breathe animation */
+.wifc-live .wifc-glass-ind--1,
+.wifc-live .wifc-glass-ind--2,
+.wifc-live .wifc-glass-ind--3 {
+  animation-play-state: running;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

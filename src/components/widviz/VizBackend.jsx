@@ -64,16 +64,27 @@ const INITIAL_CALM_TRACE   = buildTrace(DATA.traceCalm)
 const INITIAL_STRESS_TRACE = buildTrace(DATA.traceStressed)
 
 // ── FlowDot — one particle along a fixed from→to path ────────────────────────
-function FlowDot({ clock, dotIndex, total, from, to, colorClass }) {
+// Position is expressed as a static base (from.x%, from.y%) in JSX + a GPU-only
+// translate3d delta driven by the clock — never writes top/left per frame.
+function FlowDot({ clock, dotIndex, total, from, to, fieldSizeRef, colorClass }) {
   const offset  = dotIndex / total
   const t       = useTransform(clock, v => (v + offset) % 1)
-  const top     = useTransform(t, [0, 1], [`${from.y}%`, `${to.y}%`])
-  const left    = useTransform(t, [0, 1], [`${from.x}%`, `${to.x}%`])
   const opacity = useTransform(t, [0, 0.1, 0.88, 1], [0, 0.9, 0.9, 0])
+  const transform = useTransform(t, v => {
+    const { w, h } = fieldSizeRef.current
+    const dx = ((to.x - from.x) / 100) * w * v
+    const dy = ((to.y - from.y) / 100) * h * v
+    return `translate(-50%, -50%) translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0)`
+  })
   return (
     <motion.div
       className={`wbk-flow-dot ${colorClass}`}
-      style={{ top, left, opacity }}
+      style={{
+        left: `${from.x}%`,
+        top:  `${from.y}%`,
+        transform,
+        opacity,
+      }}
     />
   )
 }
@@ -81,19 +92,34 @@ function FlowDot({ clock, dotIndex, total, from, to, colorClass }) {
 export default function VizBackend({ progress, index, isActive, reduced, frozen }) {
   const isFinal = reduced || frozen
 
-  const { dissolveIn, enterIn } = widSlice(index, N)
+  const { dissolveIn, dissolveOut, enterIn } = widSlice(index, N)
 
-  const dissolve  = useTransform(progress, dissolveIn, [0, 1, 0], { clamp: true })
+  const dissolve  = useTransform(progress, dissolveIn, dissolveOut, { clamp: true })
   const scale     = useTransform(dissolve, [0, 1], [0.985, 1])
   const enter     = useTransform(progress, enterIn, [0, 1], { clamp: true })
   const graphOp   = useTransform(enter, [0.55, 0.82], [0, 1], { clamp: true })
+
+  // ── Field size — used by FlowDot and the packet to convert %-paths to px ───
+  useEffect(() => {
+    const el = fieldRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width > 0) fieldSizeRef.current = { w: r.width, h: r.height }
+    if (isFinal) return
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect
+      if (width > 0) fieldSizeRef.current = { w: width, h: height }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isFinal])
 
   // ── Flow clocks ───────────────────────────────────────────────────────────
   const trunkClock = useMotionValue(0)
   const pathClock  = useMotionValue(0)
 
   useEffect(() => {
-    if (isFinal) return
+    if (isFinal || !isActive) return
     const c1 = animate(trunkClock, NUM_TRUNK_DOTS, {
       duration: NUM_TRUNK_DOTS * TRUNK_DUR,
       ease: 'linear',
@@ -106,7 +132,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
     })
     return () => { c1.stop(); c2.stop() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFinal])
+  }, [isFinal, isActive])
 
   // ── Phase MotionValue — 0=STRESSED, 1=RESOLVED ────────────────────────────
   const phase      = useMotionValue(isFinal ? 1 : 0)
@@ -121,6 +147,8 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
   const cacheFlowOp = useTransform(phase, [0.55, 1], [0, 1])
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
+  const fieldRef      = useRef(null)
+  const fieldSizeRef  = useRef({ w: 100, h: 100 }) // px; updated by ResizeObserver
   const lineRef       = useRef(null)
   const dotRef        = useRef(null)
   const graphRef      = useRef(null)
@@ -278,16 +306,16 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
 
   const cacheGlowOp = useTransform(phase, [0, 1], [0, 1])
 
-  // ── Packet position ───────────────────────────────────────────────────────
-  const packetX = useTransform(packetT, t => {
+  // ── Packet position — translate3d delta from static api anchor ───────────
+  // Base left/top = NODE_POS.api (% in JSX, static). Framer writes only the
+  // compositor-only translate3d delta; rotate(45deg) preserved in the string.
+  const packetTransform = useTransform(packetT, t => {
     const from = NODE_POS.api
     const to   = packetRouteRef.current === 'cache' ? NODE_POS.cache : NODE_POS.db
-    return `${(from.x + (to.x - from.x) * t).toFixed(1)}%`
-  })
-  const packetY = useTransform(packetT, t => {
-    const from = NODE_POS.api
-    const to   = packetRouteRef.current === 'cache' ? NODE_POS.cache : NODE_POS.db
-    return `${(from.y + (to.y - from.y) * t).toFixed(1)}%`
+    const { w, h } = fieldSizeRef.current
+    const dx = ((to.x - from.x) / 100) * w * t
+    const dy = ((to.y - from.y) / 100) * h * t
+    return `translate(-50%, -50%) translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) rotate(45deg)`
   })
 
   const initialTrace = isFinal ? INITIAL_CALM_TRACE : INITIAL_STRESS_TRACE
@@ -298,6 +326,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
       style={{ opacity: isFinal ? 1 : dissolve, scale: isFinal ? 1 : scale }}
     >
       <motion.div
+        ref={fieldRef}
         className="wbk-field"
         style={{ '--enter': isFinal ? 1 : enter }}
       >
@@ -374,6 +403,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
             total={NUM_TRUNK_DOTS}
             from={NODE_POS.edge}
             to={NODE_POS.api}
+            fieldSizeRef={fieldSizeRef}
             colorClass="wbk-flow-dot--trunk"
           />
         ))}
@@ -391,6 +421,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
                 total={NUM_PATH_DOTS}
                 from={NODE_POS.api}
                 to={NODE_POS.db}
+                fieldSizeRef={fieldSizeRef}
                 colorClass="wbk-flow-dot--db"
               />
             ))}
@@ -410,6 +441,7 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
                 total={NUM_PATH_DOTS}
                 from={NODE_POS.api}
                 to={NODE_POS.cache}
+                fieldSizeRef={fieldSizeRef}
                 colorClass="wbk-flow-dot--cache"
               />
             ))}
@@ -453,7 +485,12 @@ export default function VizBackend({ progress, index, isActive, reduced, frozen 
         {!isFinal && (
           <motion.div
             className="wbk-packet"
-            style={{ left: packetX, top: packetY, opacity: packetOpMV }}
+            style={{
+              left:      `${NODE_POS.api.x}%`,
+              top:       `${NODE_POS.api.y}%`,
+              transform: packetTransform,
+              opacity:   packetOpMV,
+            }}
           />
         )}
 
