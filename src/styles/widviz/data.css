@@ -1,0 +1,176 @@
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIZ: DATA â€” noise â†’ signal radio tuning
+   ~110 drifting noise dots (HTML spans, rAF-driven) swept leftâ†’right by a
+   scan line that resolves them onto a rising signal curve (SVG, front-synced
+   stroke-dashoffset). data-phase on .wdat-field (noise/resolving/signal)
+   gates the post-lock area glow and traveling spark. Readouts: scrambleâ†’lock
+   ROWS counter + SNOWFLAKE (bottom-left), NOISEâ†’RESOLVINGâ†’SIGNAL stage
+   (bottom-right). All animation via transform/opacity/dashoffset only.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+.widviz-data {
+  /* Flex column + justify-content:center vertically centers the .wdat-layout
+     block within the full-height absolute layer. Asymmetric padding shifts the
+     visual center upward, creating breathing room above the caption paragraph. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4vh 0 18vh;
+  box-sizing: border-box;
+}
+
+.wdat-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 14px;
+}
+
+.wdat-field {
+  position: relative;
+  width: 100%;
+  height: clamp(300px, 50vh, 520px);
+}
+
+/* SVG layer: curve + area + spark â€” stretched viewBox, VizSystems convention.
+   All paths use vector-effect: non-scaling-stroke so weights stay uniform. */
+.wdat-mesh-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Noise dot â€” base position via left/top %; the rAF writes transform
+   (px offset + flare scale) and opacity only. Both are composited properties
+   that never trigger style-recalc + paint.
+   Previously a COLOR_LUT wrote background per-dot per-frame (110 paint
+   invalidations per rAF). Now all dots are accent-colored; the noiseâ†’signal
+   transition is expressed entirely through the opacity range (0.3â€“0.95). */
+.wdat-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  opacity: 0.35;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* Signal phase for static final frames (reduced/frozen) where no rAF runs. */
+.wdat-field[data-phase='signal'] .wdat-dot {
+  opacity: 0.95;
+}
+
+/* Signal curve â€” draws in sync with the sweep front via stroke-dashoffset.
+   pathLength="1" normalizes dash math to 0â€“1. */
+.wdat-curve {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(201, 245, 88, 0.35));
+}
+
+/* Area glow under the curve â€” fades up when the phase gate flips to signal */
+.wdat-area {
+  fill: url(#wdat-area-grad);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.wdat-field[data-phase='signal'] .wdat-area {
+  opacity: 1;
+}
+
+/* Spark comet â€” short dash traveling the curve, post-lock ambient life */
+.wdat-spark {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 0.05 0.95;
+  stroke-dashoffset: 0;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(201, 245, 88, 0.8));
+}
+
+.wdat-field[data-phase='signal'] .wdat-spark {
+  opacity: 0.9;
+  animation: wdat-spark-travel 3.4s linear infinite;
+}
+
+@keyframes wdat-spark-travel {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -1; }
+}
+
+/* Sweep line â€” full-height vertical scan, translateX driven by the rAF.
+   The ::before trail is a static-painted gradient that rides the transform. */
+.wdat-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1.5px;
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(201, 245, 88, 0.5);
+  opacity: 0;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.wdat-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 26px;
+  background: linear-gradient(to left, rgba(201, 245, 88, 0.12), transparent);
+}
+
+/* Readouts â€” in-flow below the field via .wdat-meta, not absolute corners */
+.wdat-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 14px;
+}
+
+.wdat-readout {
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wider);
+}
+
+.wdat-counter {
+  color: var(--accent-2);
+}
+
+/* Counter value in lime */
+.wdat-counter b {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+/* Stage label â€” colour tracks the tuning phase set by the rAF */
+.wdat-stage {
+  color: var(--muted);
+}
+
+.wdat-stage[data-stage='resolving'] {
+  color: var(--accent-2);
+}
+
+.wdat-stage[data-stage='signal'] {
+  color: var(--accent);
+}

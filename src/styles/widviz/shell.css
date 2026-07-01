@@ -1,0 +1,39 @@
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   WID VIZ â€” unboxed full-height system field + five per-word live visuals
+   Architecture: .widviz-panel is position:absolute inside the pinned .wid-stage
+   (position:relative), filling from the band's right edge to the stage's right
+   edge and top-to-bottom. A layered mask-image fades all content at the top,
+   right, and bottom so every viz dissolves into the dark background â€” the field
+   reads as the page itself, not a card. No border, no background, no chrome.
+   Five .widviz-layer children are position:absolute; inset:0 for cross-dissolve.
+   All animation via transform/opacity/pathLength only. 60fps floor.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+/* â”€â”€ Panel â€” full-height unboxed field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.widviz-panel {
+  position: absolute;
+  /* Panel is a direct child of .what-i-do (position:relative, full-width).
+     left is driven by --viz-left (inherited from .what-i-do) which places the
+     panel's left edge at 50vw + 48px â€” 48px gap past the lime band's 50vw cut.
+     right mirrors the stage's max-width:1440px right padding edge. */
+  left: var(--viz-left);
+  right: max(0px, 50vw - 720px);   /* matches stage right padding edge */
+  top: 0;
+  height: 100vh;
+  pointer-events: none;
+}
+
+/* â”€â”€ Body â€” five absolutely-stacked layers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.widviz-body {
+  position: absolute;
+  inset: 0;
+}
+
+/* .widviz-fade removed â€” the panel is fully transparent now so the page
+   background (--bg + body radial glows) shows through behind every viz. */
+
+.widviz-layer {
+  position: absolute;
+  inset: 0;
+  /* Each viz manages its own inner layout */
+}

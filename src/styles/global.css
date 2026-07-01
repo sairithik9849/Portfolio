@@ -19,7 +19,14 @@
 @import './components.css';
 @import './about-me.css';
 @import './WhatIDo.css';
-@import './widviz.css';
+/* what-i-do viz — split into per-viz partials (cascade order preserved) */
+@import './widviz/shell.css';
+@import './widviz/backend.css';
+@import './widviz/systems.css';
+@import './widviz/data.css';
+@import './widviz/interface.css';
+@import './widviz/agents.css';
+
 @import './journey.css';
 @import './projects.css';
 @import './footer.css';

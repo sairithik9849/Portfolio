@@ -1,0 +1,393 @@
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIZ: SYSTEMS â€” Living Dashboard (6-cell control room grid)
+   Three rows Ã— two columns of independent monitoring cells. Each cell runs its
+   own ambient animation via a shared RAF loop; an incident state machine
+   randomly selects one cell to go critical and then auto-heals it every ~9â€“14 s.
+   Scroll-driven stagger: cells appear Tâ†’B, Lâ†’R as --enter (0â†’1) rises.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+.widviz-systems {
+  --wsys-dashboard-scale: 1;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4vh 0 20vh;
+  box-sizing: border-box;
+}
+
+/* â”€â”€ Dashboard container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 10px;
+  transform: scale(var(--wsys-dashboard-scale));
+  transform-origin: top center;
+}
+
+/* â”€â”€ Header bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 9px;
+  border-bottom: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-wider);
+  opacity: clamp(0, calc(var(--enter, 1) * 6), 1);
+}
+
+.wsys-dash-kicker  { color: var(--muted); }
+.wsys-dash-nominal { color: var(--accent); }
+.wsys-dash-uptime  { color: var(--accent-2); }
+
+/* â”€â”€ 3Ã—2 grid (2 cols Ã— 3 rows) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, auto);
+  gap: 8px;
+}
+
+/* â”€â”€ Individual cell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-cell {
+  border: 1px solid var(--line);
+  background: rgba(7, 7, 7, 0.55);
+  padding: 10px 12px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border-radius: 2px;
+  /* Staggered scroll-in: cell 0 appears first, cell 5 last */
+  opacity: clamp(0, calc((var(--enter, 1) - var(--i, 0) * 0.10) * 12), 1);
+  transform: translateY(calc((1 - clamp(0, (var(--enter, 1) - var(--i, 0) * 0.10) * 12, 1)) * 10px));
+  transition: border-color 0.45s, box-shadow 0.45s, opacity 0.3s, transform 0.3s;
+}
+
+.wsys-cell--incident {
+  /* derived from --accent-alert (#ff4848) */
+  border-color: rgba(255, 72, 72, 0.38);
+  box-shadow: 0 0 14px rgba(255, 72, 72, 0.08), inset 0 0 20px rgba(255, 72, 72, 0.04);
+}
+
+/* â”€â”€ Cell header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wsys-cell-label {
+  font-family: var(--mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-widest);
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-badge {
+  font-family: var(--mono);
+  font-size: var(--text-4xs);    /* intentionally tiny â€” indicator only */
+  letter-spacing: 0.12em;
+  padding: 1.5px 4px;
+  border-radius: 2px;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.wsys-badge--ok {
+  color: var(--accent);
+  border: 1px solid rgba(201, 245, 88, 0.28);
+}
+
+.wsys-badge--incident {
+  color: var(--accent-alert);
+  border: 1px solid rgba(255, 72, 72, 0.38); /* --accent-alert at 38% */
+  animation: wsys-badge-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes wsys-badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* â”€â”€ Cell footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-cell-foot {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.wsys-val {
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wsys-val-sm {
+  font-family: var(--mono);
+  font-size: var(--text-2xs);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wsys-unit {
+  font-family: var(--mono);
+  font-size: var(--text-4xs);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* â”€â”€ CPU cell â€” 4 vertical core bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-cores {
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+  height: 54px;
+}
+
+.wsys-core-track {
+  flex: 1;
+  height: 100%;
+  background: var(--muted-2);
+  border-radius: 1px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.wsys-core-bar {
+  width: 100%;
+  /* Full height + scaleY replaces the animated height% â€” compositor-only, no reflow.
+     transform-origin:bottom means scaleY scales the bar upward from the track floor.
+     The rAF lerp provides smooth motion; no CSS transition needed. */
+  height: 100%;
+  transform-origin: center bottom;
+  will-change: transform;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+  box-shadow: 0 0 6px rgba(201, 245, 88, 0.3);
+}
+
+.wsys-cell--incident .wsys-core-bar {
+  background: var(--accent-alert);
+  box-shadow: 0 0 6px rgba(255, 72, 72, 0.3); /* --accent-alert at 30% */
+}
+
+/* â”€â”€ Memory cell â€” horizontal fill gauge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-mem-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.wsys-mem-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: var(--text-4xs);
+  color: var(--muted);
+}
+
+.wsys-mem-track {
+  height: 9px;
+  background: var(--muted-2);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.wsys-mem-fill {
+  height: 100%;
+  /* Full width + scaleX replaces the animated width% â€” compositor-only, no reflow.
+     transform-origin:left means scaleX grows the bar rightward from the track edge.
+     The rAF lerp provides smooth motion; no CSS transition needed. */
+  width: 100%;
+  transform-origin: left center;
+  will-change: transform;
+  background: var(--accent);
+  border-radius: 1px;
+  box-shadow: 2px 0 8px rgba(201, 245, 88, 0.4);
+}
+
+.wsys-cell--incident .wsys-mem-fill {
+  background: var(--accent-alert);
+  box-shadow: 2px 0 8px rgba(255, 72, 72, 0.35); /* --accent-alert at 35% */
+}
+
+.wsys-mem-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: var(--text-4xs);
+  color: var(--muted-2);
+}
+
+/* â”€â”€ Queue cell â€” 6 depth bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-queue-bars {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 54px;
+}
+
+.wsys-queue-track {
+  flex: 1;
+  height: 100%;
+  background: var(--muted-2);
+  border-radius: 1px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.wsys-queue-bar {
+  width: 100%;
+  /* Full height + scaleY replaces animated height% â€” compositor-only, no reflow.
+     transform-origin:bottom means the bar grows upward from the track floor. */
+  height: 100%;
+  transform-origin: center bottom;
+  will-change: transform;
+  background: var(--accent-2);
+  border-radius: 1px 1px 0 0;
+  box-shadow: 0 0 5px rgba(232, 196, 122, 0.25);
+}
+
+.wsys-cell--incident .wsys-queue-bar {
+  background: var(--accent-alert);
+}
+
+/* â”€â”€ Error rate cell â€” EKG sparkline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-ekg-svg {
+  width: 100%;
+  height: 54px;
+  overflow: visible;
+}
+
+.wsys-ekg-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 2px rgba(201, 245, 88, 0.5));
+  transition: stroke 0.3s, filter 0.3s;
+}
+
+.wsys-ekg-line--alert {
+  stroke: var(--accent-alert);
+  filter: drop-shadow(0 0 3px rgba(255, 72, 72, 0.7)); /* --accent-alert at 70% */
+}
+
+/* â”€â”€ Uptime cell â€” HH:MM:SS counter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-uptime-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  justify-content: center;
+}
+
+.wsys-uptime-counter {
+  font-family: var(--mono);
+  font-size: 21px;                 /* display-scale one-off â€” HH:MM:SS clock */
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 16px rgba(201, 245, 88, 0.35);
+}
+
+.wsys-uptime-sub {
+  font-family: var(--mono);
+  font-size: var(--text-4xs);
+  letter-spacing: var(--tracking-widest);
+  color: var(--muted);
+}
+
+/* â”€â”€ Deploy cell â€” canary donut ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-deploy-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.wsys-deploy-svg {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.wsys-arc--v1 { stroke: var(--muted); }
+.wsys-arc--v2 { stroke: var(--accent); filter: drop-shadow(0 0 3px rgba(201,245,88,0.55)); }
+
+.wsys-deploy-inner-label {
+  font-family: var(--mono);
+  font-size: 5.5px;              /* SVG units in a 50Ã—50 viewBox â€” decorative */
+  letter-spacing: 0.08em;
+  fill: var(--muted);
+}
+
+.wsys-deploy-inner-sub {
+  font-family: var(--mono);
+  font-size: 4.5px;              /* SVG units in a 50Ã—50 viewBox â€” decorative */
+  letter-spacing: 0.06em;
+  fill: var(--muted-2);
+}
+
+.wsys-deploy-val {
+  font-family: var(--mono);
+  font-size: var(--text-2xs);
+  color: var(--accent);
+  letter-spacing: var(--tracking-wide);
+  font-variant-numeric: tabular-nums;
+}
+
+/* â”€â”€ Event log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.wsys-log {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  max-height: 58px;
+  opacity: clamp(0, calc((var(--enter, 1) - 0.5) * 6), 1);
+  border-top: 1px solid var(--line);
+  padding-top: 7px;
+}
+
+.wsys-log-entry {
+  font-family: var(--mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: wsys-log-slide 0.3s ease forwards;
+}
+
+.wsys-log-entry--alert {
+  color: var(--accent-alert);
+}
+
+@keyframes wsys-log-slide {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* -- Laptop-viewport adjustments ------------------------------------------------- */
+@media (max-height: 900px) and (min-width: 981px) {
+  .widviz-systems {
+    --wsys-dashboard-scale: 0.86;
+  }
+}

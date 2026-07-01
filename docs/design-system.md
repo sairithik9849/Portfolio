@@ -32,12 +32,14 @@ CSS is split into one partial per section/component in `src/styles/`. `global.cs
 
 `tokens.css`, `preloader.css`, `layout.css`, `nav.css`, then the hero sub-folder
 (`hero/grid.css`, `hero/shell.css`, `hero/identity.css`, `hero/robot.css`, `hero/manifesto.css`,
-`hero/terminal.css`), `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, `widviz.css`,
-`journey.css`, `projects.css`, `footer.css`.
+`hero/terminal.css`), `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, then the widviz
+sub-folder (`widviz/shell.css`, `widviz/backend.css`, `widviz/systems.css`, `widviz/data.css`,
+`widviz/interface.css`, `widviz/agents.css`), `journey.css`, `projects.css`, `footer.css`.
 
-The hero section is split into one partial per concern inside `src/styles/hero/`. Each file owns
-its component's base rules and co-located responsive overrides. All six are listed in `global.css`
-in cascade order.
+Two sections use a per-concern sub-folder instead of a single file: `src/styles/hero/` (six
+partials) and `src/styles/widviz/` (six partials — one per viz module plus the shared panel
+scaffold). Each file owns its component's base rules and co-located responsive overrides. All
+partials in each sub-folder are listed in `global.css` in cascade order.
 
 ### Adding a new section
 
