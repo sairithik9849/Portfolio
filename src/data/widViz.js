@@ -190,52 +190,17 @@ export const WID_VIZ = {
   },
 
   agents: {
-    kicker:  '// 03·05',
-    mode:    'AGENTS',
-    status:  'AUTONOMOUS LOOP',
-    lanes:   4,
-    globalTelemetry: [
-      { label: 'AGENTS', value: '04' },
-      { label: 'QUEUE',  value: '02' },
-    ],
-    stations: [
-      {
-        id: 'discovery', label: 'DISCOVERY', index: '01',
-        telemetry: [
-          { label: 'CTX',     value: '1.2k' },
-          { label: 'MEM HIT', value: '94%',  drift: { min: 92, max: 96, decimals: 0, suffix: '%'  } },
-        ],
-      },
-      {
-        id: 'planning', label: 'PLANNING', index: '02',
-        telemetry: [
-          { label: 'SUBTASKS', value: '4' },
-          { label: 'DEPTH',    value: '2' },
-        ],
-      },
-      {
-        id: 'execution', label: 'EXECUTION', index: '03',
-        lanes: [
-          { label: 'LANE 01', run: 78, slots: [100, 78, 45] },
-          { label: 'LANE 02', run: 43, slots: [100, 43,  0] },
-          { label: 'LANE 03', run: 91, slots: [100, 91, 70] },
-          { label: 'LANE 04', run: 15, slots: [ 15,  0,  0] },
-        ],
-      },
-      {
-        id: 'verification', label: 'VERIFICATION', index: '04',
-        telemetry: [
-          { label: 'PASS', value: '98%',  drift: { min: 97,   max: 99,   decimals: 0, suffix: '%'  } },
-          { label: 'CONF', value: '0.97', drift: { min: 0.95, max: 0.99, decimals: 2, suffix: ''   } },
-        ],
-      },
-      {
-        id: 'shipping', label: 'SHIPPING', index: '05',
-        telemetry: [
-          { label: 'SHIPPED', value: '1.2k'  },
-          { label: 'LAT',     value: '240ms', drift: { min: 232, max: 248, decimals: 0, suffix: 'ms' } },
-        ],
-      },
+    // Orchestrator Core — orbital workflow visualization.
+    // Five lifecycle stages arranged clockwise on an elliptical orbit around a
+    // central core. One traveler rides the ring; 4 agents orbit the core in
+    // parallel during the execution phase. Minimal data: no telemetry, no indices.
+    agentCount: 4,
+    stages: [
+      { id: 'goal',         label: 'GOAL' },
+      { id: 'discovery',    label: 'DISCOVERY' },
+      { id: 'planning',     label: 'PLANNING' },
+      { id: 'verification', label: 'VERIFY' },
+      { id: 'shipping',     label: 'SHIP' },
     ],
   },
 }

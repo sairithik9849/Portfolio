@@ -1,20 +1,20 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   WID VIZ — unboxed full-height system field + five per-word live visuals
+﻿/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   WID VIZ â€” unboxed full-height system field + five per-word live visuals
    Architecture: .widviz-panel is position:absolute inside the pinned .wid-stage
    (position:relative), filling from the band's right edge to the stage's right
    edge and top-to-bottom. A layered mask-image fades all content at the top,
-   right, and bottom so every viz dissolves into the dark background — the field
+   right, and bottom so every viz dissolves into the dark background â€” the field
    reads as the page itself, not a card. No border, no background, no chrome.
    Five .widviz-layer children are position:absolute; inset:0 for cross-dissolve.
    All animation via transform/opacity/pathLength only. 60fps floor.
-   ───────────────────────────────────────────────────────────────────────────── */
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-/* ── Panel — full-height unboxed field ──────────────────────────────────────── */
+/* â”€â”€ Panel â€” full-height unboxed field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .widviz-panel {
   position: absolute;
   /* Panel is a direct child of .what-i-do (position:relative, full-width).
      left is driven by --viz-left (inherited from .what-i-do) which places the
-     panel's left edge at 50vw + 48px — 48px gap past the lime band's 50vw cut.
+     panel's left edge at 50vw + 48px â€” 48px gap past the lime band's 50vw cut.
      right mirrors the stage's max-width:1440px right padding edge. */
   left: var(--viz-left);
   right: max(0px, 50vw - 720px);   /* matches stage right padding edge */
@@ -23,13 +23,13 @@
   pointer-events: none;
 }
 
-/* ── Body — five absolutely-stacked layers ──────────────────────────────────── */
+/* â”€â”€ Body â€” five absolutely-stacked layers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .widviz-body {
   position: absolute;
   inset: 0;
 }
 
-/* .widviz-fade removed — the panel is fully transparent now so the page
+/* .widviz-fade removed â€” the panel is fully transparent now so the page
    background (--bg + body radial glows) shows through behind every viz. */
 
 .widviz-layer {
@@ -39,11 +39,11 @@
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: BACKEND — resilience narrative
-   STRESSED: DB pressured — amber rings + particle flow, high latency.
-   RESOLVED: CACHE absorbs load — lime bloom + particle flow, latency drops.
-   ═══════════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIZ: BACKEND â€” resilience narrative
+   STRESSED: DB pressured â€” amber rings + particle flow, high latency.
+   RESOLVED: CACHE absorbs load â€” lime bloom + particle flow, latency drops.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .widviz-backend {
   /* position:absolute + inset:0 inherited from .widviz-layer */
@@ -54,7 +54,7 @@
   inset: 0;
 }
 
-/* ── Dot-grid background ───────────────────────────────────────────────────── */
+/* â”€â”€ Dot-grid background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-bg-grid {
   position: absolute;
   inset: 0;
@@ -65,7 +65,7 @@
   -webkit-mask-image: radial-gradient(ellipse 90% 75% at 50% 38%, black 20%, transparent 75%);
 }
 
-/* ── Mesh SVG ──────────────────────────────────────────────────────────────── */
+/* â”€â”€ Mesh SVG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-mesh-svg {
   position: absolute;
   inset: 0;
@@ -75,7 +75,7 @@
   overflow: visible;
 }
 
-/* Base edges — draw-in via CSS --enter/--i dashoffset */
+/* Base edges â€” draw-in via CSS --enter/--i dashoffset */
 .wbk-edge {
   fill: none;
   stroke: var(--line-2);
@@ -109,7 +109,7 @@
   to { stroke-dashoffset: -11.5; }
 }
 
-/* ── DB pressure rings ─────────────────────────────────────────────────────── */
+/* â”€â”€ DB pressure rings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-rings {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -138,7 +138,7 @@
   100% { transform: translate(-50%, -50%) scale(3.8); opacity: 0;    }
 }
 
-/* ── Flow particles ────────────────────────────────────────────────────────── */
+/* â”€â”€ Flow particles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-flow-dot {
   position: absolute;
   width: 4px;
@@ -162,7 +162,7 @@
   box-shadow: 0 0 5px rgba(201, 245, 88, 0.85);
 }
 
-/* ── Node chips ────────────────────────────────────────────────────────────── */
+/* â”€â”€ Node chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-node {
   position: absolute;
   pointer-events: none;
@@ -170,7 +170,7 @@
   will-change: opacity;
 }
 
-/* Hex badge — outer ring centered on the node anchor */
+/* Hex badge â€” outer ring centered on the node anchor */
 .wbk-node-hex {
   position: absolute;
   left: 0;
@@ -199,7 +199,7 @@
   transition: background 0.35s;
 }
 
-/* Label group — default: to the right of the dot */
+/* Label group â€” default: to the right of the dot */
 .wbk-node-labels {
   position: absolute;
   top: 0;
@@ -232,7 +232,7 @@
   color: var(--accent-2);
 }
 
-/* CACHE — always lime */
+/* CACHE â€” always lime */
 .wbk-node--cache .wbk-node-hex {
   border-color: var(--accent);
   box-shadow: 0 0 10px rgba(201, 245, 88, 0.35), inset 0 0 8px rgba(201, 245, 88, 0.08);
@@ -240,7 +240,7 @@
 .wbk-node--cache .wbk-node-inner  { background: rgba(201, 245, 88, 0.58); }
 .wbk-node--cache .wbk-node-label  { color: var(--accent); }
 
-/* DB stressed — amber glow */
+/* DB stressed â€” amber glow */
 .wbk-node--stressed .wbk-node-hex {
   border-color: rgba(232, 196, 122, 0.55);
   box-shadow: 0 0 12px rgba(232, 196, 122, 0.38), inset 0 0 8px rgba(232, 196, 122, 0.08);
@@ -260,7 +260,7 @@
   will-change: opacity;
 }
 
-/* ── Hero request packet ────────────────────────────────────────────────────── */
+/* â”€â”€ Hero request packet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-packet {
   position: absolute;
   width: 8px;
@@ -272,7 +272,7 @@
   will-change: transform, opacity;
 }
 
-/* ── BREAKER chip ───────────────────────────────────────────────────────────── */
+/* â”€â”€ BREAKER chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-breaker {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -311,7 +311,7 @@
   color: var(--accent-2);
 }
 
-/* ── EKG latency graph ──────────────────────────────────────────────────────── */
+/* â”€â”€ EKG latency graph â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wbk-graph {
   display: flex;
   flex-direction: column;
@@ -350,7 +350,7 @@
   overflow: visible;
 }
 
-/* p99 ceiling — dashed amber reference line */
+/* p99 ceiling â€” dashed amber reference line */
 .wbk-graph-ceil {
   stroke: var(--accent-2);
   stroke-width: 0.6;
@@ -358,14 +358,14 @@
   opacity: 0.32;
 }
 
-/* p50 baseline — faint lime floor */
+/* p50 baseline â€” faint lime floor */
 .wbk-graph-base {
   stroke: var(--accent);
   stroke-width: 0.5;
   opacity: 0.18;
 }
 
-/* Latency trace — lime resolved, amber stressed */
+/* Latency trace â€” lime resolved, amber stressed */
 .wbk-graph-line {
   fill: none;
   stroke: var(--accent);
@@ -376,14 +376,14 @@
   transition: stroke 0.3s, filter 0.3s;
 }
 
-/* Sweep dot — lime always (trace color handles the stressed signal) */
+/* Sweep dot â€” lime always (trace color handles the stressed signal) */
 .wbk-graph-dot {
   fill: var(--accent);
   filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.85));
   transition: fill 0.3s, filter 0.3s;
 }
 
-/* STRESSED state — JS adds wbk-graph--stressed when phase < 0.5 */
+/* STRESSED state â€” JS adds wbk-graph--stressed when phase < 0.5 */
 .wbk-graph--stressed .wbk-graph-line {
   stroke: var(--accent-2);
   filter: drop-shadow(0 0 3px rgba(232, 196, 122, 0.75));
@@ -396,7 +396,7 @@
   color: var(--accent-2);
 }
 
-/* Graph legend — cache hit % left, label right */
+/* Graph legend â€” cache hit % left, label right */
 .wbk-graph-legend {
   display: flex;
   justify-content: space-between;
@@ -417,13 +417,13 @@
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: SYSTEMS — Living Dashboard (6-cell control room grid)
-   Three rows × two columns of independent monitoring cells. Each cell runs its
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIZ: SYSTEMS â€” Living Dashboard (6-cell control room grid)
+   Three rows Ã— two columns of independent monitoring cells. Each cell runs its
    own ambient animation via a shared RAF loop; an incident state machine
-   randomly selects one cell to go critical and then auto-heals it every ~9–14 s.
-   Scroll-driven stagger: cells appear T→B, L→R as --enter (0→1) rises.
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   randomly selects one cell to go critical and then auto-heals it every ~9â€“14 s.
+   Scroll-driven stagger: cells appear Tâ†’B, Lâ†’R as --enter (0â†’1) rises.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .widviz-systems {
   --wsys-dashboard-scale: 1;
@@ -435,7 +435,7 @@
   box-sizing: border-box;
 }
 
-/* ── Dashboard container ──────────────────────────────────────────────────── */
+/* â”€â”€ Dashboard container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-dashboard {
   display: flex;
   flex-direction: column;
@@ -445,7 +445,7 @@
   transform-origin: top center;
 }
 
-/* ── Header bar ───────────────────────────────────────────────────────────── */
+/* â”€â”€ Header bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-dash-header {
   display: flex;
   justify-content: space-between;
@@ -462,7 +462,7 @@
 .wsys-dash-nominal { color: var(--accent); }
 .wsys-dash-uptime  { color: var(--accent-2); }
 
-/* ── 3×2 grid (2 cols × 3 rows) ──────────────────────────────────────────── */
+/* â”€â”€ 3Ã—2 grid (2 cols Ã— 3 rows) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -470,7 +470,7 @@
   gap: 8px;
 }
 
-/* ── Individual cell ──────────────────────────────────────────────────────── */
+/* â”€â”€ Individual cell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-cell {
   border: 1px solid var(--line);
   background: rgba(7, 7, 7, 0.55);
@@ -491,7 +491,7 @@
   box-shadow: 0 0 14px rgba(255, 72, 72, 0.08), inset 0 0 20px rgba(255, 72, 72, 0.04);
 }
 
-/* ── Cell header ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Cell header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-cell-head {
   display: flex;
   justify-content: space-between;
@@ -506,10 +506,10 @@
   text-transform: uppercase;
 }
 
-/* ── Status badge ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-badge {
   font-family: var(--mono);
-  font-size: var(--text-4xs);    /* intentionally tiny — indicator only */
+  font-size: var(--text-4xs);    /* intentionally tiny â€” indicator only */
   letter-spacing: 0.12em;
   padding: 1.5px 4px;
   border-radius: 2px;
@@ -532,7 +532,7 @@
   50%       { opacity: 0.45; }
 }
 
-/* ── Cell footer ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Cell footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-cell-foot {
   display: flex;
   align-items: baseline;
@@ -561,7 +561,7 @@
   color: var(--muted);
 }
 
-/* ── CPU cell — 4 vertical core bars ─────────────────────────────────────── */
+/* â”€â”€ CPU cell â€” 4 vertical core bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-cores {
   display: flex;
   gap: 5px;
@@ -582,7 +582,7 @@
 
 .wsys-core-bar {
   width: 100%;
-  /* Full height + scaleY replaces the animated height% — compositor-only, no reflow.
+  /* Full height + scaleY replaces the animated height% â€” compositor-only, no reflow.
      transform-origin:bottom means scaleY scales the bar upward from the track floor.
      The rAF lerp provides smooth motion; no CSS transition needed. */
   height: 100%;
@@ -598,7 +598,7 @@
   box-shadow: 0 0 6px rgba(255, 72, 72, 0.3); /* --accent-alert at 30% */
 }
 
-/* ── Memory cell — horizontal fill gauge ─────────────────────────────────── */
+/* â”€â”€ Memory cell â€” horizontal fill gauge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-mem-wrap {
   display: flex;
   flex-direction: column;
@@ -625,7 +625,7 @@
 
 .wsys-mem-fill {
   height: 100%;
-  /* Full width + scaleX replaces the animated width% — compositor-only, no reflow.
+  /* Full width + scaleX replaces the animated width% â€” compositor-only, no reflow.
      transform-origin:left means scaleX grows the bar rightward from the track edge.
      The rAF lerp provides smooth motion; no CSS transition needed. */
   width: 100%;
@@ -649,7 +649,7 @@
   color: var(--muted-2);
 }
 
-/* ── Queue cell — 6 depth bars ────────────────────────────────────────────── */
+/* â”€â”€ Queue cell â€” 6 depth bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-queue-bars {
   display: flex;
   gap: 4px;
@@ -670,7 +670,7 @@
 
 .wsys-queue-bar {
   width: 100%;
-  /* Full height + scaleY replaces animated height% — compositor-only, no reflow.
+  /* Full height + scaleY replaces animated height% â€” compositor-only, no reflow.
      transform-origin:bottom means the bar grows upward from the track floor. */
   height: 100%;
   transform-origin: center bottom;
@@ -684,7 +684,7 @@
   background: var(--accent-alert);
 }
 
-/* ── Error rate cell — EKG sparkline ─────────────────────────────────────── */
+/* â”€â”€ Error rate cell â€” EKG sparkline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-ekg-svg {
   width: 100%;
   height: 54px;
@@ -706,7 +706,7 @@
   filter: drop-shadow(0 0 3px rgba(255, 72, 72, 0.7)); /* --accent-alert at 70% */
 }
 
-/* ── Uptime cell — HH:MM:SS counter ──────────────────────────────────────── */
+/* â”€â”€ Uptime cell â€” HH:MM:SS counter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-uptime-wrap {
   display: flex;
   flex-direction: column;
@@ -718,7 +718,7 @@
 
 .wsys-uptime-counter {
   font-family: var(--mono);
-  font-size: 21px;                 /* display-scale one-off — HH:MM:SS clock */
+  font-size: 21px;                 /* display-scale one-off â€” HH:MM:SS clock */
   letter-spacing: 0.05em;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
@@ -732,7 +732,7 @@
   color: var(--muted);
 }
 
-/* ── Deploy cell — canary donut ring ─────────────────────────────────────── */
+/* â”€â”€ Deploy cell â€” canary donut ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-deploy-wrap {
   display: flex;
   align-items: center;
@@ -752,14 +752,14 @@
 
 .wsys-deploy-inner-label {
   font-family: var(--mono);
-  font-size: 5.5px;              /* SVG units in a 50×50 viewBox — decorative */
+  font-size: 5.5px;              /* SVG units in a 50Ã—50 viewBox â€” decorative */
   letter-spacing: 0.08em;
   fill: var(--muted);
 }
 
 .wsys-deploy-inner-sub {
   font-family: var(--mono);
-  font-size: 4.5px;              /* SVG units in a 50×50 viewBox — decorative */
+  font-size: 4.5px;              /* SVG units in a 50Ã—50 viewBox â€” decorative */
   letter-spacing: 0.06em;
   fill: var(--muted-2);
 }
@@ -772,7 +772,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Event log ────────────────────────────────────────────────────────────── */
+/* â”€â”€ Event log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wsys-log {
   display: flex;
   flex-direction: column;
@@ -805,15 +805,15 @@
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: DATA — noise → signal radio tuning
-   ~110 drifting noise dots (HTML spans, rAF-driven) swept left→right by a
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIZ: DATA â€” noise â†’ signal radio tuning
+   ~110 drifting noise dots (HTML spans, rAF-driven) swept leftâ†’right by a
    scan line that resolves them onto a rising signal curve (SVG, front-synced
    stroke-dashoffset). data-phase on .wdat-field (noise/resolving/signal)
-   gates the post-lock area glow and traveling spark. Readouts: scramble→lock
-   ROWS counter + SNOWFLAKE (bottom-left), NOISE→RESOLVING→SIGNAL stage
+   gates the post-lock area glow and traveling spark. Readouts: scrambleâ†’lock
+   ROWS counter + SNOWFLAKE (bottom-left), NOISEâ†’RESOLVINGâ†’SIGNAL stage
    (bottom-right). All animation via transform/opacity/dashoffset only.
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .widviz-data {
   /* Flex column + justify-content:center vertically centers the .wdat-layout
@@ -839,7 +839,7 @@
   height: clamp(300px, 50vh, 520px);
 }
 
-/* SVG layer: curve + area + spark — stretched viewBox, VizSystems convention.
+/* SVG layer: curve + area + spark â€” stretched viewBox, VizSystems convention.
    All paths use vector-effect: non-scaling-stroke so weights stay uniform. */
 .wdat-mesh-svg {
   position: absolute;
@@ -850,12 +850,12 @@
   overflow: visible;
 }
 
-/* Noise dot — base position via left/top %; the rAF writes transform
+/* Noise dot â€” base position via left/top %; the rAF writes transform
    (px offset + flare scale) and opacity only. Both are composited properties
    that never trigger style-recalc + paint.
    Previously a COLOR_LUT wrote background per-dot per-frame (110 paint
-   invalidations per rAF). Now all dots are accent-colored; the noise→signal
-   transition is expressed entirely through the opacity range (0.3–0.95). */
+   invalidations per rAF). Now all dots are accent-colored; the noiseâ†’signal
+   transition is expressed entirely through the opacity range (0.3â€“0.95). */
 .wdat-dot {
   position: absolute;
   width: 4px;
@@ -873,8 +873,8 @@
   opacity: 0.95;
 }
 
-/* Signal curve — draws in sync with the sweep front via stroke-dashoffset.
-   pathLength="1" normalizes dash math to 0–1. */
+/* Signal curve â€” draws in sync with the sweep front via stroke-dashoffset.
+   pathLength="1" normalizes dash math to 0â€“1. */
 .wdat-curve {
   fill: none;
   stroke: var(--accent);
@@ -886,7 +886,7 @@
   filter: drop-shadow(0 0 6px rgba(201, 245, 88, 0.35));
 }
 
-/* Area glow under the curve — fades up when the phase gate flips to signal */
+/* Area glow under the curve â€” fades up when the phase gate flips to signal */
 .wdat-area {
   fill: url(#wdat-area-grad);
   opacity: 0;
@@ -897,7 +897,7 @@
   opacity: 1;
 }
 
-/* Spark comet — short dash traveling the curve, post-lock ambient life */
+/* Spark comet â€” short dash traveling the curve, post-lock ambient life */
 .wdat-spark {
   fill: none;
   stroke: var(--accent);
@@ -919,7 +919,7 @@
   to   { stroke-dashoffset: -1; }
 }
 
-/* Sweep line — full-height vertical scan, translateX driven by the rAF.
+/* Sweep line â€” full-height vertical scan, translateX driven by the rAF.
    The ::before trail is a static-painted gradient that rides the transform. */
 .wdat-sweep {
   position: absolute;
@@ -944,7 +944,7 @@
   background: linear-gradient(to left, rgba(201, 245, 88, 0.12), transparent);
 }
 
-/* Readouts — in-flow below the field via .wdat-meta, not absolute corners */
+/* Readouts â€” in-flow below the field via .wdat-meta, not absolute corners */
 .wdat-meta {
   display: flex;
   justify-content: space-between;
@@ -969,7 +969,7 @@
   font-weight: 400;
 }
 
-/* Stage label — colour tracks the tuning phase set by the rAF */
+/* Stage label â€” colour tracks the tuning phase set by the rAF */
 .wdat-stage {
   color: var(--muted);
 }
@@ -982,17 +982,17 @@
   color: var(--accent);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: INTERFACE — 4-layer "raw chaos → refined UX" breathing card
-   Narrative: L1 raw data stream → L2 logic/orchestration grid → L3 insight
-   widgets → L4 frosted glass control panel. Autonomous 6.5s breathing loop
-   (flat illusion ↔ isometric anatomy reveal). Single Framer t MotionValue.
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VIZ: INTERFACE â€” 4-layer "raw chaos â†’ refined UX" breathing card
+   Narrative: L1 raw data stream â†’ L2 logic/orchestration grid â†’ L3 insight
+   widgets â†’ L4 frosted glass control panel. Autonomous 6.5s breathing loop
+   (flat illusion â†” isometric anatomy reveal). Single Framer t MotionValue.
    Rendering constraints: no filter on preserve-3d card (WebKit Z-sort bug);
    L1 is one div + SVG background-image (no per-glyph spans); light-blob uses
    radial-gradient only (no filter:blur). All animation transform/opacity only.
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── Outer centering shell ─────────────────────────────────────────────────── */
+/* â”€â”€ Outer centering shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .widviz-interface {
   position: absolute;
   inset: 0;
@@ -1001,14 +1001,14 @@
   justify-content: center;
 }
 
-/* ── Background glow — flat 2D div, NOT inside preserve-3d card.
+/* â”€â”€ Background glow â€” flat 2D div, NOT inside preserve-3d card.
    Applying filter to a preserve-3d ancestor breaks WebKit Z-sorting.
    This div is a sibling of .wifc-stage so it lives in the flat stacking context.
    Framer animates opacity + scale; the radial-gradient does the soft diffusion. */
 .wifc-glow {
   position: absolute;
   inset: 0;
-  /* Tighter falloff — illumination hugs the card instead of washing out the panel.
+  /* Tighter falloff â€” illumination hugs the card instead of washing out the panel.
      Core is slightly brighter to compensate for the smaller footprint. */
   background: radial-gradient(ellipse at 50% 52%,
     rgba(201, 245, 88, 0.28) 0%,
@@ -1021,7 +1021,7 @@
   z-index: 0;
 }
 
-/* ── 3D stage — perspective viewport for the card ─────────────────────────── */
+/* â”€â”€ 3D stage â€” perspective viewport for the card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wifc-stage {
   position: relative;
   width: 340px;
@@ -1029,15 +1029,15 @@
   perspective: 1300px;
   perspective-origin: 50% 40%;
   z-index: 1;
-  /* Scale up the whole card as one unit — scales card, widgets, fonts, and
+  /* Scale up the whole card as one unit â€” scales card, widgets, fonts, and
      Z-depths together. Safe here: no filter on the preserve-3d container. */
   transform: scale(1.35);
   transform-origin: center;
 }
 
-/* ── 3D card — rotates as one unit; layers separate on Z inside.
-   CRITICAL: no filter property on this element — applying filter to a
-   preserve-3d container flattens the 3D context in WebKit/Safari. ────────── */
+/* â”€â”€ 3D card â€” rotates as one unit; layers separate on Z inside.
+   CRITICAL: no filter property on this element â€” applying filter to a
+   preserve-3d container flattens the 3D context in WebKit/Safari. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wifc-card {
   position: absolute;
   inset: 0;
@@ -1045,7 +1045,7 @@
   will-change: transform;
 }
 
-/* Shared layer plane — full-size, each shifts its own translateZ via Framer.
+/* Shared layer plane â€” full-size, each shifts its own translateZ via Framer.
    Note: .wifc-layer is already defined globally earlier in this file for the
    five viz cross-dissolve layers; these wifc-layer sub-variants are specific
    to the 3D card planes inside VizInterface.
@@ -1069,11 +1069,11 @@
   border: 1px solid transparent;
 }
 
-/* ── LAYER 1 — Raw Data Stream (chaos) ─────────────────────────────────────
+/* â”€â”€ LAYER 1 â€” Raw Data Stream (chaos) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Single track div scrolls a repeating SVG background-image tile to simulate
-   a waterfall of data packets — zero per-glyph DOM nodes.
-   Substrate: darkest of the four slabs — the foundation that everything builds
-   up from. Visible through gaps in the data-tile at the isometric tilt. ──── */
+   a waterfall of data packets â€” zero per-glyph DOM nodes.
+   Substrate: darkest of the four slabs â€” the foundation that everything builds
+   up from. Visible through gaps in the data-tile at the isometric tilt. â”€â”€â”€â”€ */
 .wifc-layer--raw {
   background: linear-gradient(
     to bottom,
@@ -1081,11 +1081,11 @@
     rgba(7, 7, 7, 0.58)
   );
   overflow: hidden;
-  /* Base edge lighting — always present.
+  /* Base edge lighting â€” always present.
      Gold glow added via .wifc-active (active layer) or .wifc-final (frozen).
      Baked here in CSS so Framer does not write boxShadow as an inline style
      (Framer's inline boxShadow fully overrides CSS; keeping it in CSS means
-     zero per-frame string rebuilds → zero paint triggers on inactive layers). */
+     zero per-frame string rebuilds â†’ zero paint triggers on inactive layers). */
   box-shadow:
     inset 0 1px 0 rgba(237, 237, 223, 0.07),
     inset 0 -1px 0 rgba(0, 0, 0, 0.5),
@@ -1102,8 +1102,8 @@
 }
 
 /* Track extends 32px beyond the layer edges so the seamless loop never shows
-   a blank edge. translateY animates one tile-height (32px) → repeating
-   background looks identical before/after → perfect seamless loop. */
+   a blank edge. translateY animates one tile-height (32px) â†’ repeating
+   background looks identical before/after â†’ perfect seamless loop. */
 .wifc-raw-track {
   position: absolute;
   top: -32px;
@@ -1114,7 +1114,7 @@
   will-change: transform;
 }
 
-/* Single div — the SVG data-URI tile is a 120×32 pattern of varied-width
+/* Single div â€” the SVG data-URI tile is a 120Ã—32 pattern of varied-width
    rectangles at muted lime opacities, suggesting hex/byte data packets.
    background-size matches the tile; repeat fills the track. */
 .wifc-raw-field {
@@ -1126,13 +1126,13 @@
   background-repeat: repeat;
 }
 
-/* Waterfall: shift by one tile height → seamless loop via repeating background */
+/* Waterfall: shift by one tile height â†’ seamless loop via repeating background */
 @keyframes wifc-waterfall {
   from { transform: translateY(0); }
   to   { transform: translateY(32px); }
 }
 
-/* ── Cast shadow — in-card plane, grounding the isometric tilt ────────────── */
+/* â”€â”€ Cast shadow â€” in-card plane, grounding the isometric tilt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wifc-shadow {
   position: absolute;
   bottom: 0;
@@ -1149,11 +1149,11 @@
   will-change: transform, opacity;
 }
 
-/* ── Layer identity tags — mono labels that fade in as slabs peel apart ─────
+/* â”€â”€ Layer identity tags â€” mono labels that fade in as slabs peel apart â”€â”€â”€â”€â”€
    Positioned at the bottom-left of each inner slab (the leading corner facing
    the viewer at the isometric tilt). The L4 hero tag uses top-right so it
    doesn't collide with the glass-inner layout. Opacity driven by Framer labelOp
-   (t: 0.2→0.7); isFinal renders them at opacity:1. Decorative, aria-hidden. */
+   (t: 0.2â†’0.7); isFinal renders them at opacity:1. Decorative, aria-hidden. */
 .wifc-layer-tag {
   position: absolute;
   bottom: 6px;
@@ -1168,7 +1168,7 @@
   will-change: opacity;
 }
 
-/* Hero tag on L4 glass — lime accent, top-right to clear the panel content */
+/* Hero tag on L4 glass â€” lime accent, top-right to clear the panel content */
 .wifc-layer-tag--hero {
   bottom: auto;
   left: auto;
@@ -1177,11 +1177,11 @@
   color: var(--accent);
 }
 
-/* ── LAYER 2 — Logic & Orchestration Grid (filter) ─────────────────────────
+/* â”€â”€ LAYER 2 â€” Logic & Orchestration Grid (filter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Wireframe SVG circuit paths + structural node dots. The lime data pulse
    travels the paths via CSS animation; --pulse-op gates its opacity so it
    appears only at peak separation. vector-effect: non-scaling-stroke keeps
-   line weights uniform despite the preserveAspectRatio="none" stretch. ──── */
+   line weights uniform despite the preserveAspectRatio="none" stretch. â”€â”€â”€â”€ */
 .wifc-layer--logic {
   /* --pulse-op set by Framer; 0=invisible at flat, 1=fully visible at peak */
   /* Substrate: slightly lighter than L1, darker than L3. The circuit SVG and
@@ -1192,7 +1192,7 @@
     rgba(10, 10, 10, 0.64),
     rgba(10, 10, 10, 0.50)
   );
-  /* Base edge lighting — same CSS-driven pattern as .wifc-layer--raw above. */
+  /* Base edge lighting â€” same CSS-driven pattern as .wifc-layer--raw above. */
   box-shadow:
     inset 0 1px 0 rgba(237, 237, 223, 0.09),
     inset 0 -1px 0 rgba(0, 0, 0, 0.45),
@@ -1217,7 +1217,7 @@
   overflow: visible;
 }
 
-/* Structural routing lines — brightens from 40%→100% opacity as pulse fires */
+/* Structural routing lines â€” brightens from 40%â†’100% opacity as pulse fires */
 .wifc-route-line {
   fill: none;
   stroke: var(--line-2);
@@ -1226,9 +1226,9 @@
   opacity: calc(0.4 + 0.6 * var(--pulse-op, 0));
 }
 
-/* Traveling pulse comet — 15% dash racing along each path.
+/* Traveling pulse comet â€” 15% dash racing along each path.
    CSS animation runs continuously; --pulse-op gates whether it's visible.
-   filter on individual SVG paths is fine — only the preserve-3d ANCESTOR
+   filter on individual SVG paths is fine â€” only the preserve-3d ANCESTOR
    must stay filter-free (the WebKit constraint). */
 .wifc-route-pulse {
   fill: none;
@@ -1243,13 +1243,13 @@
 }
 
 /* Comet travels one full path length (pathLength="1") per cycle.
-   dashoffset 0 → -1: dash advances from path start to path end, loops. */
+   dashoffset 0 â†’ -1: dash advances from path start to path end, loops. */
 @keyframes wifc-pulse-travel {
   from { stroke-dashoffset:  0; }
   to   { stroke-dashoffset: -1; }
 }
 
-/* Empty structural nodes — hollow dots at routing intersections */
+/* Empty structural nodes â€” hollow dots at routing intersections */
 .wifc-gridnode {
   fill: none;
   stroke: var(--line-2);
@@ -1258,13 +1258,13 @@
   opacity: calc(0.35 + 0.65 * var(--pulse-op, 0));
 }
 
-/* ── LAYER 3 — Insight Widgets (synthesis) ──────────────────────────────────
+/* â”€â”€ LAYER 3 â€” Insight Widgets (synthesis) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Three floating UI widgets. Their layer is Z-staggered between L2 and L4.
    Framer ties opacity to pulseT; sparkline gets a small translateX nudge.
    Substrate: lightest of the inner slabs; edge-lit box-shadow here (no Framer
-   boxShadow override on this layer, so CSS applies cleanly). ── */
+   boxShadow override on this layer, so CSS applies cleanly). â”€â”€ */
 .wifc-layer--widgets {
-  /* opacity driven by Framer l3Op (peel × widgetOp) */
+  /* opacity driven by Framer l3Op (peel Ã— widgetOp) */
   background: linear-gradient(
     to bottom,
     rgba(12, 12, 12, 0.60),
@@ -1277,7 +1277,7 @@
     0 10px 22px rgba(0, 0, 0, 0.38);
 }
 
-/* Base widget — absolute positioned within the layer */
+/* Base widget â€” absolute positioned within the layer */
 .wifc-widget {
   position: absolute;
   pointer-events: none;
@@ -1294,7 +1294,7 @@
   opacity: 0.75;
 }
 
-/* Sparkline — top-left, nudges left when pulse hits */
+/* Sparkline â€” top-left, nudges left when pulse hits */
 .wifc-widget--spark {
   top: 14%;
   left: 5%;
@@ -1318,7 +1318,7 @@
   filter: drop-shadow(0 0 3px rgba(201, 245, 88, 0.55));
 }
 
-/* Rolling metric counter — top-right */
+/* Rolling metric counter â€” top-right */
 .wifc-widget--counter {
   top: 14%;
   right: 8%;
@@ -1342,7 +1342,7 @@
   color: var(--muted);
 }
 
-/* Resource allocation ring — bottom-right */
+/* Resource allocation ring â€” bottom-right */
 .wifc-widget--ring {
   bottom: 12%;
   right: 6%;
@@ -1355,7 +1355,7 @@
   width: 50px;
   height: 50px;
   display: block;
-  /* Arc starts at the top (−90°) */
+  /* Arc starts at the top (âˆ’90Â°) */
   transform: rotate(-90deg);
   flex-shrink: 0;
 }
@@ -1397,11 +1397,11 @@
   color: var(--muted);
 }
 
-/* ── Data particle — rising data bubble in flat stacking context ─────────────
+/* â”€â”€ Data particle â€” rising data bubble in flat stacking context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Sits as a sibling of .wifc-card inside .wifc-stage (NOT inside preserve-3d)
    so it renders above the 3D layers and is driven purely by 2D Framer top/left.
    Travels from lower-right to upper-left tracing the isometric "up" axis,
-   symbolising data rising from raw stream (L1) to glass interface (L4). ────── */
+   symbolising data rising from raw stream (L1) to glass interface (L4). â”€â”€â”€â”€â”€â”€ */
 .wifc-particle {
   position: absolute;
   width: 6px;
@@ -1418,17 +1418,17 @@
   z-index: 10;
 }
 
-/* ── LAYER 4 — Human Interface (glass control) ──────────────────────────────
-   Frosted glass panel — furthest Z so it fully occludes the machinery in
+/* â”€â”€ LAYER 4 â€” Human Interface (glass control) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Frosted glass panel â€” furthest Z so it fully occludes the machinery in
    flat State A (the "illusion" the viewer first sees).
    backdrop-filter: blur(12px) provides real frosting where the browser supports
    it inside preserve-3d (Chrome/FF). Where it flattens (some Safari builds),
    the semi-transparent background + .wifc-light-blob still read as glass.
-   .wifc-light-blob is a radial-gradient — NO filter:blur (repaint-heavy). ── */
+   .wifc-light-blob is a radial-gradient â€” NO filter:blur (repaint-heavy). â”€â”€ */
 .wifc-layer--glass {
   background: rgba(14, 14, 14, 0.85);
   border: 1px solid rgba(237, 237, 223, 0.18);
-  /* Stronger top-rim highlight than the inner slabs — glass sits proudest of the
+  /* Stronger top-rim highlight than the inner slabs â€” glass sits proudest of the
      stack and earns a brighter lit edge. Deep drop shadow grounds and separates it
      from the layers behind. */
   box-shadow:
@@ -1440,8 +1440,8 @@
 }
 
 /* Hybrid refraction light-blob on the glass underside.
-   Lime + gold radial-gradient with soft transparent stops — zero composite cost.
-   Framer animates opacity only (0 at flat → 0.75 at pulse peak). */
+   Lime + gold radial-gradient with soft transparent stops â€” zero composite cost.
+   Framer animates opacity only (0 at flat â†’ 0.75 at pulse peak). */
 .wifc-light-blob {
   position: absolute;
   bottom: 0;
@@ -1483,7 +1483,7 @@
   color: var(--muted);
 }
 
-/* Panel title in the header — lime accent with subtle glow */
+/* Panel title in the header â€” lime accent with subtle glow */
 .wifc-glass-title {
   font-family: var(--mono);
   font-size: var(--text-xs);
@@ -1492,7 +1492,7 @@
   text-shadow: 0 0 8px rgba(201, 245, 88, 0.5);
 }
 
-/* Mode badge in the metrics row — gold, non-interactive metadata */
+/* Mode badge in the metrics row â€” gold, non-interactive metadata */
 .wifc-glass-mode {
   font-family: var(--mono);
   font-size: var(--text-xs);
@@ -1537,13 +1537,13 @@
   flex-shrink: 0;
 }
 
-/* Gold value modifier — for the <16ms frame-budget metric */
+/* Gold value modifier â€” for the <16ms frame-budget metric */
 .wifc-glass-val--gold {
   color: var(--accent-2);
   text-shadow: 0 0 10px rgba(232, 196, 122, 0.45);
 }
 
-/* Tech stack chip row — actual libraries powering the animations on this page */
+/* Tech stack chip row â€” actual libraries powering the animations on this page */
 .wifc-tech-row {
   display: flex;
   gap: 4px;
@@ -1612,7 +1612,7 @@
   }
 }
 
-/* Three slim status indicator bars — animated shimmer */
+/* Three slim status indicator bars â€” animated shimmer */
 .wifc-glass-indicators {
   display: flex;
   flex-direction: column;
@@ -1625,7 +1625,7 @@
   border-radius: 1px;
 }
 
-/* box-shadow step removed — animating box-shadow triggers repaint.
+/* box-shadow step removed â€” animating box-shadow triggers repaint.
    Opacity-only is compositor-clean. .wifc-live gates the animation to the
    active Interface layer only (mirrors the .wagnt-live pattern in VizAgents). */
 @keyframes wifc-ind-breathe {
@@ -1659,68 +1659,28 @@
   animation-play-state: running;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════════════════════
-   VIZ: AGENTS — autonomous factory vertical conveyor
-   ADR-001: Vertical riser top→bottom. ADR-002: Discovery 13% · Planning 14% ·
-   Execution 40% · Verification 14% · Shipping 13%. ADR-003: 4 lanes.
-   ADR-004: Lightweight chassis (uprights + tie-bars + caps + brackets).
-   ADR-006: Hybrid SVG rails + HTML station overlays.
-   ADR-007: --line/--line-2 chassis · --accent core/active · --accent-2 rework+meta.
+   VIZ: AGENTS — Orchestrator Core orbital workflow
+   One luminous traveler rides a clockwise stage ring; 4 agents orbit the core
+   in parallel during execution; gold rework arc loops back on failure; ship
+   node blooms on success. Story: Goal → Discovery → Planning → Agents → Verify
+   → (Rework) → Ship.
+   Color tokens: --accent (#c9f558, lime) = healthy flow / active;
+                 --accent-2 (#e8c47a, gold) = rework / fail only.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .widviz-agents {
-  /* inherits position:absolute; inset:0 from .widviz-layer */
-  /* Narrow the factory by 8% while keeping it horizontally centered.        */
-  /* scaleX is safe here — the agents motion.div only animates opacity, so   */
-  /* there is no Framer-set transform to conflict with.                       */
-  transform: scaleX(0.92);
-  transform-origin: center;
+  /* position:absolute; inset:0 inherited from .widviz-layer */
 }
 
-/* ── Global status header (above the chassis frame) ────────────────────────── */
-.wagnt-header {
-  position: absolute;
-  top: 28px;
-  left: 48px;
-  right: 48px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.wagnt-kicker {
-  font-family: var(--mono);
-  font-size: var(--text-xs);
-  color: var(--accent);
-  letter-spacing: var(--tracking-open);
-  opacity: 0.65;
-}
-
-.wagnt-status {
-  font-family: var(--mono);
-  font-size: var(--text-2xs);
-  color: var(--accent-2);
-  letter-spacing: var(--tracking-wider);
-  opacity: 0.75;
-  flex: 1;
-}
-
-.wagnt-global-tel {
-  display: flex;
-  gap: 8px;
-}
-
-/* ── Factory field — conveyor coordinate space ──────────────────────────────── */
+/* ── Factory field — shared coordinate space for SVG and HTML overlays ────────── */
 .wagnt-field {
   position: absolute;
-  top: 80px;
-  left: 48px;
-  right: 48px;
-  bottom: 40px;
+  top: 20px;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
 }
 
 /* ── SVG rails layer ─────────────────────────────────────────────────────────── */
@@ -1733,1124 +1693,544 @@
   pointer-events: none;
 }
 
-/* Chassis: vertical frame uprights */
-.wagnt-upright {
-  stroke: var(--line-2);
+/* ── Orbit guide rings ───────────────────────────────────────────────────────── */
+/* Outer ellipse: dashed hairline tracing the stage ring */
+.wagnt-orbit-guide {
+  fill: none;
+  stroke: var(--line);
   stroke-width: 0.5;
   vector-effect: non-scaling-stroke;
+  stroke-dasharray: 2.5 5;
+  opacity: 0.45;
 }
 
-/* Chassis: top/bottom cap bars */
-.wagnt-cap {
-  stroke: var(--line-2);
-  stroke-width: 0.8;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Chassis: station-boundary tie-bars — hairlines, not dashed */
-.wagnt-tiebar {
-  stroke: var(--line-2);
+/* Inner ellipse: agent orbit, even dimmer */
+.wagnt-inner-orbit {
+  fill: none;
+  stroke: var(--line);
   stroke-width: 0.35;
-  opacity: 0.5;
   vector-effect: non-scaling-stroke;
-}
-
-/* Center spine connectors between stations */
-.wagnt-spine {
-  stroke: var(--line-2);
-  stroke-width: 0.5;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Flow conduit underlay — dim wider path beneath spine for depth */
-.wagnt-conduit {
-  fill: none;
-  stroke: var(--line-2);
-  stroke-width: 2.5;
-  opacity: 0.07;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Downward flow chevrons — larger and directionally clear */
-.wagnt-flow-chevron {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 0.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.18;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Intake / output port dots */
-.wagnt-port-dot {
-  fill: var(--accent);
-  opacity: 0.55;
-}
-
-/* Fan-out: planning bottom → each lane top */
-.wagnt-fanout {
-  fill: none;
-  stroke: var(--line-2);
-  stroke-width: 0.5;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Lane centerline rails — slightly more visible, cleaner dash */
-.wagnt-lane-rail {
-  stroke: var(--line-2);
-  stroke-width: 0.4;
-  stroke-dasharray: 1.2 1.8;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Reconverge: each lane bottom → verification top */
-.wagnt-reconverge {
-  fill: none;
-  stroke: var(--line-2);
-  stroke-width: 0.5;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Core ring — SVG backdrop circle, whisper-quiet */
-.wagnt-core-ring {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 0.4;
-  opacity: 0.12;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Rework retry bus — right gutter orthogonal path */
-.wagnt-rework {
-  fill: none;
-  stroke: var(--accent-2);
-  stroke-width: 1.1;
-  stroke-dasharray: 2.5 1.5;
-  opacity: 0.35;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Rework direction chevrons */
-.wagnt-rework-chevron {
-  fill: none;
-  stroke: var(--accent-2);
-  stroke-width: 0.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.30;
-  vector-effect: non-scaling-stroke;
-}
-
-.wagnt-rework-arrow {
-  fill: var(--accent-2);
-  opacity: 0.40;
-}
-
-/* ── Planning: splitter manifold ─────────────────────────────────────────────── */
-.wagnt-manifold {
-  fill: none;
-  stroke: var(--line-2);
-  stroke-width: 0.45;
-  opacity: 0.55;
-  vector-effect: non-scaling-stroke;
-}
-
-.wagnt-manifold-rib {
-  stroke: var(--line-2);
-  stroke-width: 0.25;
-  opacity: 0.40;
-  vector-effect: non-scaling-stroke;
-}
-
-/* ── Execution: modular rack-unit blocks ─────────────────────────────────────── */
-.wagnt-module {
-  width: 100%;
-  height: 9px;
-  background: rgba(237, 237, 223, 0.04);
-  border: 1px solid rgba(237, 237, 223, 0.07);
-  border-radius: 1px;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-/* slot[0] — completed: brighter lime fill */
-.wagnt-module:first-child .wagnt-module-fill {
-  background: rgba(201, 245, 88, 0.30);
-}
-
-/* slot[1] — active: live-animated fill */
-.wagnt-module-fill {
-  background: rgba(201, 245, 88, 0.15);
-  height: 100%;
-  transition: none;
-}
-
-.wagnt-module-fill--done {
-  background: rgba(201, 245, 88, 0.32);
-}
-
-/* slot[2] — pending: dimmer */
-.wagnt-module:last-child .wagnt-module-fill {
-  background: rgba(201, 245, 88, 0.08);
-}
-.wagnt-module:last-child .wagnt-module-fill--done {
-  background: rgba(201, 245, 88, 0.22);
-}
-
-.wagnt-module-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-/* ── Verification: gate bar — structural dormant, lit during inspection ─────── */
-.wagnt-gate-bar {
-  stroke: var(--line-2);
-  stroke-width: 0.4;
-  opacity: 0.20;
-  vector-effect: non-scaling-stroke;
-  transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
-}
-
-/* ── Port labels ─────────────────────────────────────────────────────────────── */
-.wagnt-port-label {
-  position: absolute;
-  transform: translateX(-50%);
-  font-family: var(--mono);
-  font-size: var(--text-3xs);
-  letter-spacing: var(--tracking-widest);
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.wagnt-port-label--in  { color: var(--accent);  opacity: 0.55; }
-.wagnt-port-label--out { color: var(--accent);  opacity: 0.48; }
-
-/* ── Rework label — right gutter, readable during rework phase ───────────────── */
-.wagnt-rework-label {
-  position: absolute;
-  font-family: var(--mono);
-  font-size: var(--text-3xs);
-  letter-spacing: var(--tracking-wider);
-  color: var(--accent-2);
+  stroke-dasharray: 1.5 4;
   opacity: 0.25;
-  white-space: nowrap;
-  pointer-events: none;
-  text-align: right;
-  transition: opacity 0.3s ease;
 }
 
-/* ── Shared telemetry pair (used in station + global header) ─────────────────── */
-.wagnt-tel-pair {
-  display: flex;
-  gap: 4px;
-  align-items: baseline;
+/* ── Rework chord — VERIFY → PLANNING through the core ──────────────────────── */
+/* Dim by default; CSS activates to gold during rework phase.
+   Path ref used for getPointAtLength in the RAF loop. */
+.wagnt-rework-chord {
+  fill: none;
+  stroke: var(--accent-2);
+  /* #e8c47a mirrors --accent-2 */
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 2 3.5;
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
 
-.wagnt-tel-label {
-  font-family: var(--mono);
-  font-size: var(--text-3xs);
-  letter-spacing: var(--tracking-open);
-  color: var(--muted);
-  opacity: 0.7;
+.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-chord {
+  opacity: 0.65;
 }
 
-.wagnt-tel-value {
-  font-family: var(--mono);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  color: var(--accent-2);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── Non-execution station bays ─────────────────────────────────────────────── */
-.wagnt-station {
+/* ── Stage node container ────────────────────────────────────────────────────── */
+/* Zero-size absolute anchor at each ellipse point. Children (dot-wrap, label)
+   use offsets from this origin so the dot sits precisely on the ellipse.
+   Explicit width/height:0 makes right:Npx on label children unambiguous —
+   label's right edge lands at node-origin minus N px (= to the left). */
+.wagnt-node {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 5px 6px;
+  width: 0;
+  height: 0;
   pointer-events: none;
 }
 
-.wagnt-station-head {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+/* Dot wrapper — 10×10 px box centered at the ellipse point */
+.wagnt-node-dot-wrap {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -5px;
+  left: -5px;
 }
 
-/* Index number — readable at all times; active station gets full uplift via [data-phase] rules */
-.wagnt-station-index {
-  font-family: var(--mono);
-  font-size: var(--text-4xs);
-  color: var(--muted);
-  letter-spacing: var(--tracking-open);
-  opacity: 0.62;
+/* Halo glow ring — scales up on active */
+.wagnt-node-halo {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 245, 88, 0.14) 0%, transparent 68%);
+  /* rgba value mirrors --accent = #c9f558 */
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
 }
 
-/* Label — readable even when inactive; active station gets --fg uplift via [data-phase] rules */
-.wagnt-station-label {
+/* Dot circle */
+.wagnt-node-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Node label — positioned absolutely from the ellipse-point origin.
+   Per-node classes below handle which direction the label extends. */
+.wagnt-node-label {
+  position: absolute;
   font-family: var(--mono);
-  font-size: var(--text-xs);
+  font-size: 18px;
   letter-spacing: var(--tracking-wider);
   color: var(--fg-2);
-  opacity: 0.72;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.45;
+  transition: color 0.3s ease, opacity 0.3s ease;
 }
 
-.wagnt-station-tel {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+/* GOAL (top of ring) — label sits below the dot */
+.wagnt-node--goal .wagnt-node-label {
+  top: 9px;    /* dot bottom-edge (+5px) + 4px gap */
+  left: 0;
+  transform: translateX(-50%);
 }
 
-/* ── Execution band (dominant zone, 40% of height) ──────────────────────────── */
-.wagnt-exec-band {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  pointer-events: none;
+/* DISCOVERY / PLANNING (right side) — label extends rightward */
+.wagnt-node--discovery .wagnt-node-label,
+.wagnt-node--planning .wagnt-node-label {
+  left: 9px;   /* dot right-edge (+5px) + 4px gap */
+  top: -9px;   /* vertically centres 18px label with 10px dot (-height/2) */
 }
 
-.wagnt-exec-head {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 5px 6px 4px;
-  flex-shrink: 0;
+/* VERIFY / SHIP (left side) — label extends leftward */
+.wagnt-node--verification .wagnt-node-label,
+.wagnt-node--shipping .wagnt-node-label {
+  /* right offset from zero-width parent: right:N means label right-edge is at -N */
+  right: 9px;
+  top: -9px;   /* vertically centres 18px label with 10px dot (-height/2) */
+  text-align: right;
 }
 
-/* Lane grid */
-.wagnt-lanes {
-  display: flex;
-  flex: 1;
-  gap: 0;
-  overflow: hidden;
+/* ── Active node — lime ignition ─────────────────────────────────────────────── */
+.wagnt-node--active .wagnt-node-halo {
+  opacity: 1;
 }
 
-.wagnt-lane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 4px 4px 4px;
-  border-left: 1px solid rgba(237, 237, 223, 0.06);
-  gap: 5px;
-  overflow: hidden;
-  min-width: 0;
-  position: relative;  /* contains the absolute wagnt-lane-pulse */
+.wagnt-node--active .wagnt-node-dot {
+  border-color: var(--accent);
+  background: rgba(201, 245, 88, 0.12);
+  box-shadow: 0 0 7px rgba(201, 245, 88, 0.38);
 }
 
-.wagnt-lane:first-child { border-left: none; }
-
-.wagnt-lane-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-shrink: 0;
+.wagnt-node--active .wagnt-node-label {
+  color: var(--accent);
+  opacity: 1;
 }
 
-/* ── Core nucleus (HTML div — stays perfectly round over SVG stretch) ─────────── */
+/* ── Ship bloom — expanding ring pulse on arrival ────────────────────────────── */
+@keyframes wagnt-ship-bloom {
+  0%   { box-shadow: 0 0 0 0   rgba(201, 245, 88, 0.55); }
+  65%  { box-shadow: 0 0 0 10px rgba(201, 245, 88, 0); }
+  100% { box-shadow: 0 0 0 10px rgba(201, 245, 88, 0); }
+}
+
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-node--shipping.wagnt-node--active .wagnt-node-dot {
+  animation: wagnt-ship-bloom 0.75s ease-out forwards;
+}
+
+/* ── Orchestrator core ────────────────────────────────────────────────────────── */
+/* Three HTML layers: bloom glow (large, animates), ring (hairline), dot (nucleus).
+   Explicit 60×60 size so top:50%/left:50% on children resolves to 30px,
+   making translate(-50%,-50%) correctly center each layer at the core origin. */
 .wagnt-core {
   position: absolute;
+  width: 60px;
+  height: 60px;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 1;
 }
 
-.wagnt-core-nucleus {
+/* Large soft bloom — pulses during agents phase */
+.wagnt-core-bloom {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 245, 88, 0.07) 0%, transparent 70%);
+  /* rgba mirrors --accent */
+}
+
+/* Hairline ring around the core */
+.wagnt-core-ring {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* Central nucleus dot */
+.wagnt-core-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.5;
+  transition: opacity 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* Core brightens while agents are active */
+@keyframes wagnt-core-pulse {
+  0%, 100% { opacity: 0.07; transform: translate(-50%, -50%) scale(1);   }
+  50%       { opacity: 0.22; transform: translate(-50%, -50%) scale(1.18); }
+}
+
+.wagnt-live .wagnt-field[data-phase="agents"] .wagnt-core-bloom {
+  animation: wagnt-core-pulse 2.4s ease-in-out infinite;
+}
+
+.wagnt-live .wagnt-field[data-phase="agents"] .wagnt-core-ring {
+  border-color: var(--accent);
+  box-shadow: 0 0 7px rgba(201, 245, 88, 0.22);
+}
+
+.wagnt-live .wagnt-field[data-phase="agents"] .wagnt-core-dot {
+  opacity: 0.95;
+  box-shadow: 0 0 9px rgba(201, 245, 88, 0.45);
+}
+
+/* ── Traveler (lime) and agent orbs (lime) ───────────────────────────────────── */
+/* Both start at top:0; left:0 — positioned exclusively via RAF transform */
+.wagnt-traveler,
+.wagnt-agent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Traveler: slightly larger — the main narrative guide */
+.wagnt-traveler {
+  width: 9px;
+  height: 9px;
+  background: var(--accent);
+  /* #c9f558 mirrors --accent */
+  box-shadow: 0 0 8px rgba(201, 245, 88, 0.65), 0 0 18px rgba(201, 245, 88, 0.2);
+}
+
+/* Gold traveler during rework arc */
+.wagnt-traveler.wagnt-packet--fail {
+  background: var(--accent-2);
+  /* #e8c47a mirrors --accent-2 */
+  box-shadow: 0 0 8px rgba(232, 196, 122, 0.65), 0 0 18px rgba(232, 196, 122, 0.2);
+}
+
+/* Agent orbs: slightly smaller, same glow family */
+.wagnt-agent {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  box-shadow: 0 0 5px rgba(201, 245, 88, 0.45);
+}
+
+/* Static agents (isFinal / frozen mode) — CSS-positioned, no RAF */
+.wagnt-agent--static {
+  transform: translate(-50%, -50%);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   AGENTS — depth layer: background network, particles, trail, node micro-
+   interactions, agent personality, contextual label, completion feedback.
+   All new elements use z-index tiers:
+     0 = bg network / gradient / particles
+     1 = orbit SVG / flow pulses  (existing wagnt-svg keeps stacking order)
+     3 = trail dots
+     4 = traveler / agents        (existing RAF elements)
+     5 = contextual label
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Depth gradient — soft spatial falloff behind the core ───────────────────── */
+.wagnt-depth-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 65% 50% at 50% 50%,
+    rgba(201, 245, 88, 0.032) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Background scatter network ─────────────────────────────────────────────── */
+.wagnt-network-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+  animation: wagnt-network-breathe 9s ease-in-out infinite;
+}
+
+@keyframes wagnt-network-breathe {
+  0%, 100% { opacity: 0.07; }
+  50%       { opacity: 0.13; }
+}
+
+/* Network ripple brightens on ship completion, then settles back */
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-network-svg {
+  animation: wagnt-network-ship-ripple 0.85s ease-out, wagnt-network-breathe 9s ease-in-out 0.85s infinite;
+}
+
+@keyframes wagnt-network-ship-ripple {
+  0%   { opacity: 0.07; }
+  35%  { opacity: 0.28; }
+  100% { opacity: 0.10; }
+}
+
+.wagnt-bg-node {
+  fill: var(--fg-2);
+  opacity: 0.5;
+}
+
+.wagnt-bg-edge {
+  stroke: var(--fg-2);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+  fill: none;
+  opacity: 0.35;
+}
+
+/* ── Ambient drift particles ─────────────────────────────────────────────────── */
+.wagnt-particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--line-2);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform, opacity;
+  animation: wagnt-particle-drift var(--par-dur, 12s) ease-in-out var(--par-delay, 0s) infinite;
+}
+
+@keyframes wagnt-particle-drift {
+  0%   { transform: translate(-50%, -50%); opacity: 0; }
+  12%  { opacity: 0.28; }
+  78%  { opacity: 0.18; }
+  100% { transform: translate(calc(var(--par-dx, 6px) - 50%), calc(var(--par-dy, -18px) - 50%)); opacity: 0; }
+}
+
+/* ── Node microinteractions ─────────────────────────────────────────────────── */
+
+/* Activation ripple — expands outward when wagnt-node--active is set */
+.wagnt-node-ripple {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 245, 88, 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wagnt-node--active .wagnt-node-ripple {
+  animation: wagnt-node-ripple-expand 0.55s ease-out forwards;
+}
+
+@keyframes wagnt-node-ripple-expand {
+  0%   { opacity: 0.7; transform: scale(0.5); }
+  100% { opacity: 0;   transform: scale(1.6); }
+}
+
+/* Idle halo breathing — very subtle, per-node phase offset via --node-phase */
+@keyframes wagnt-node-idle-breathe {
+  0%, 100% { opacity: 0;    }
+  50%       { opacity: 0.18; }
+}
+
+.wagnt-live .wagnt-node-halo {
+  animation: wagnt-node-idle-breathe 5s ease-in-out infinite;
+  animation-delay: var(--node-phase, 0s);
+}
+
+/* Active node: kill idle breathing (existing opacity:1 rule takes over) */
+.wagnt-live .wagnt-node--active .wagnt-node-halo {
+  animation: none;
+}
+
+/* ── Agent personality — per-agent glow via --agent-glow custom prop ─────────── */
+/* --agent-glow set inline from AGENT_PERSONA constants in the RAF loop.
+   Scales the box-shadow radius and alpha proportionally. */
+.wagnt-agent {
+  box-shadow: 0 0 calc(5px * var(--agent-glow, 1)) rgba(201, 245, 88, calc(0.45 * var(--agent-glow, 1)));
+}
+
+/* ── Traveler comet trail ────────────────────────────────────────────────────── */
+.wagnt-trail {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  opacity: 0.75;
-  position: relative;
-  z-index: 1;
-}
-
-/* Main bloom — quiet baseline; phase-coupled swell under [data-phase="fanout"/"reconverge"] */
-.wagnt-core-glow {
-  position: absolute;
-  inset: -14px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(201, 245, 88, 0.08) 0%, rgba(201, 245, 88, 0.025) 45%, transparent 70%);
-  transition: opacity 0.5s ease;
-}
-
-/* Inner ring — clean single ring, enough to read as "a hub" */
-.wagnt-core-ring-inner {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1px solid rgba(201, 245, 88, 0.18);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Acknowledgement ripple — fires on fanout and reconverge */
-.wagnt-core-ack {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ── New motion elements — hidden by default, activated by [data-phase] CSS ───── */
-
-/* Execution lane flow pulse — absolutely positioned within .wagnt-lane */
-.wagnt-lane-pulse {
-  position: absolute;
-  top: -3px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(to right, transparent 0%, rgba(201, 245, 88, 0.55) 50%, transparent 100%);
-  border-radius: 1px;
-  opacity: 0;
   pointer-events: none;
   will-change: transform, opacity;
+  z-index: 3;
 }
 
-/* Intake cycle-start pulse ring */
-.wagnt-intake-pulse {
+/* ── Contextual phase label — one whisper at a time ──────────────────────────── */
+.wagnt-ctx-label {
   position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 0;
+  font-family: var(--mono);
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  color: rgba(232, 196, 122, 0.75);
   pointer-events: none;
-  will-change: transform, opacity;
-}
-
-/* Output shipping pulse ring — slightly smaller than intake */
-.wagnt-out-pulse {
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  transform: translate(-50%, -50%) scale(1);
+  z-index: 5;
   opacity: 0;
-  pointer-events: none;
-  will-change: transform, opacity;
+  transition: opacity 0.45s ease;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 10px));
 }
 
-/* ── Phase 2A — Ambient factory motion ─────────────────────────────────────────
-   All animation declarations are scoped under .wagnt-live.
-   Static Phase 1.5 frame is byte-for-byte identical when .wagnt-live is absent.
-   ─────────────────────────────────────────────────────────────────────────────── */
-
-/* ── Keyframes ─────────────────────────────────────────────────────────────── */
-
-/* 1. Core heartbeat — subtle scale pulse */
-@keyframes wagnt-core-beat {
-  0%, 100% { transform: scale(1);    }
-  50%       { transform: scale(1.10); }
+.wagnt-ctx-label--show {
+  opacity: 1;
 }
 
-/* 2. Core glow quiet baseline breathe — gentle, non-dominant */
-@keyframes wagnt-glow-breathe {
-  0%, 100% { opacity: 0.30; }
-  50%       { opacity: 0.52; }
+/* ── Completion feedback — ring, nodes, and core glow synchronized on ship ────── */
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-core-ring {
+  animation: wagnt-completion-ring 0.85s ease-out forwards;
 }
 
-/* 3. Inner ring pulse */
-@keyframes wagnt-ring-pulse {
-  0%, 100% { opacity: 0.18; }
-  50%       { opacity: 0.40; }
+@keyframes wagnt-completion-ring {
+  0%   { border-color: var(--line-2); box-shadow: none; }
+  45%  { border-color: var(--accent); box-shadow: 0 0 20px rgba(201, 245, 88, 0.55); }
+  100% { border-color: var(--accent); box-shadow: 0 0 10px rgba(201, 245, 88, 0.30); }
 }
 
-/* 4. Flow chevron cascade — staggered opacity wave, downward */
-@keyframes wagnt-chevron-wave {
-  0%, 100% { opacity: 0.10; }
-  50%       { opacity: 0.55; }
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-node-dot {
+  animation: wagnt-completion-node-glow 0.85s ease-out forwards;
 }
 
-/* 5. Lane rail march — downward dashoffset drift */
-@keyframes wagnt-rail-march {
-  from { stroke-dashoffset: 0;  }
-  to   { stroke-dashoffset: -3; }
+@keyframes wagnt-completion-node-glow {
+  0%   { box-shadow: none; }
+  45%  { box-shadow: 0 0 10px rgba(201, 245, 88, 0.42); }
+  100% { box-shadow: 0 0 4px  rgba(201, 245, 88, 0.18); }
 }
 
-/* 6. Arc flow — fanout / reconverge dash travel */
-@keyframes wagnt-arc-flow {
-  from { stroke-dashoffset: 0;    }
-  to   { stroke-dashoffset: -1.8; }
+.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-core-dot {
+  animation: wagnt-completion-core-dot 0.85s ease-out forwards;
 }
 
-/* 7. Port dot pulse */
-@keyframes wagnt-port-pulse {
-  0%, 100% { opacity: 0.40; }
-  50%       { opacity: 0.90; }
+@keyframes wagnt-completion-core-dot {
+  0%   { opacity: 0.5;  box-shadow: none; }
+  45%  { opacity: 0.95; box-shadow: 0 0 14px rgba(201, 245, 88, 0.60); }
+  100% { opacity: 0.85; box-shadow: 0 0 7px  rgba(201, 245, 88, 0.30); }
 }
 
-/* 8. Module fill breathe — desynced cycle */
-@keyframes wagnt-module-breathe {
-  0%, 100% { opacity: 0.75; }
-  50%       { opacity: 1.0;  }
-}
-
-/* 9. Conduit throughput glow */
-@keyframes wagnt-conduit-pulse {
-  0%, 100% { opacity: 0.07; }
-  50%       { opacity: 0.14; }
-}
-
-/* 10. Verification gate scan — gate brightens to accent during inspection */
-@keyframes wagnt-gate-scan {
-  0%, 100% { opacity: 0.75; }
-  40%       { opacity: 1.0;  }
-}
-
-/* 11. Rework gate reject — one-shot amber flash on fail */
-@keyframes wagnt-gate-reject {
-  0%   { opacity: 1.0; }
-  60%  { opacity: 0.85; }
-  100% { opacity: 0.85; }
-}
-
-/* 12. Rework arc upward flow */
-@keyframes wagnt-rework-flow {
-  from { stroke-dashoffset: 0;    }
-  to   { stroke-dashoffset: -4.0; }
-}
-
-/* 13. Rework chevron cascade */
-@keyframes wagnt-rework-chevron-cascade {
-  0%, 100% { opacity: 0.45; }
-  50%       { opacity: 1.0; }
-}
-
-/* 14. Core acknowledgement ripple */
-@keyframes wagnt-core-ack-ripple {
-  0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.70; }
-  100% { transform: translate(-50%, -50%) scale(5); opacity: 0;    }
-}
-
-/* 15. Core glow swell — phase-coupled bright pulse on fanout/reconverge */
-@keyframes wagnt-glow-swell {
-  0%   { opacity: 0.30; }
-  18%  { opacity: 0.95; }
-  100% { opacity: 0.30; }
-}
-
-/* 16. Lane flow pulse — bright band travels down the lane during execution */
-@keyframes wagnt-lane-pulse-move {
-  0%   { transform: translateY(-4px);   opacity: 0;    }
-  8%   { opacity: 0.82; }
-  85%  { opacity: 0.55; }
-  100% { transform: translateY(260px); opacity: 0;    }
-}
-
-/* 17. Manifold rib staggered unfold — ribs brighten sequentially during planning */
-@keyframes wagnt-rib-unfold {
-  from { opacity: 0.20; }
-  to   { opacity: 0.82; }
-}
-
-/* 18. Verification gate stabilize — brief quiver then snap to calm hold */
-@keyframes wagnt-gate-stabilize {
-  0%   { opacity: 0.75; }
-  10%  { opacity: 1.00; }
-  20%  { opacity: 0.68; }
-  33%  { opacity: 0.97; }
-  46%  { opacity: 0.78; }
-  60%  { opacity: 0.95; }
-  74%  { opacity: 0.84; }
-  88%  { opacity: 0.93; }
-  100% { opacity: 0.90; }
-}
-
-/* 19. Intake cycle-start pulse ring */
-@keyframes wagnt-in-pulse-ring {
-  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.85; }
-  100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0;    }
-}
-
-/* 20. Output shipping pulse ring — quieter than intake */
-@keyframes wagnt-out-pulse-ring {
-  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.65; }
-  100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0;    }
-}
-
-/* ── Live-state animations (only when .wagnt-live is applied) ────────────── */
-
-/* Core nucleus — clean heartbeat */
-.wagnt-live .wagnt-core-nucleus {
-  animation: wagnt-core-beat 3.2s ease-in-out infinite;
-  will-change: transform;
-}
-
-/* Core glow — quiet baseline breathe; swells phase-coupled in [data-phase] rules below */
-.wagnt-live .wagnt-core-glow {
-  animation: wagnt-glow-breathe 3.8s ease-in-out infinite;
-  animation-delay: -0.8s;
-}
-
-/* Core SVG ring — very quiet aura pulse */
-.wagnt-live .wagnt-core-ring {
-  animation: wagnt-ring-pulse 3.2s ease-in-out infinite;
-  animation-delay: -1.6s;
-}
-
-/* Inner ring — complementary phase */
-.wagnt-live .wagnt-core-ring-inner {
-  animation: wagnt-ring-pulse 3.2s ease-in-out infinite;
-  animation-delay: -0.4s;
-}
-
-/* Acknowledgement ripple — dispatch and merge */
-.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-core-ack,
-.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-core-ack {
-  animation: wagnt-core-ack-ripple 0.8s cubic-bezier(0.2, 0, 0.8, 1) forwards;
-}
-
-/* Chevrons — quiet static baseline; animated only during spine-active phases below */
-.wagnt-live .wagnt-flow-chevron {
-  opacity: 0.12;
-  transition: opacity 0.5s ease;
-}
-
-/* Lane rails — static baseline; march animation gated to execution phase below */
-.wagnt-live .wagnt-lane-rail {
-  transition: opacity 0.4s ease;
-}
-
-/* Fan-out beziers — static baseline; arc-flow gated to planning/fanout phases below */
-.wagnt-live .wagnt-fanout {
-  stroke-dasharray: 0.9 1.1;
-  transition: opacity 0.3s ease, stroke 0.3s ease;
-}
-
-/* Reconverge beziers — static baseline; arc-flow gated to reconverge/verification phases below */
-.wagnt-live .wagnt-reconverge {
-  stroke-dasharray: 0.9 1.1;
-  transition: opacity 0.3s ease, stroke 0.3s ease;
-}
-
-/* Conduit — very slow, nearly subliminal */
-.wagnt-live .wagnt-conduit {
-  animation: wagnt-conduit-pulse 5.0s ease-in-out infinite;
-}
-
-/* Port dots — staggered by --port-i */
-.wagnt-live .wagnt-port-dot {
-  animation: wagnt-port-pulse 3.5s ease-in-out infinite;
-  animation-delay: calc(var(--port-i, 0) * -1.75s);
-}
-
-/* Module fills — static baseline; breathe gated to execution phase below */
-.wagnt-live .wagnt-module-fill {
-  transition: opacity 0.4s ease;
-}
-
-/* ── Belt-and-suspenders: disable if OS prefers reduced motion ───────────── */
+/* ── Reduced-motion ───────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .wagnt-live .wagnt-core-nucleus,
-  .wagnt-live .wagnt-core-glow,
-  .wagnt-live .wagnt-core-ring,
-  .wagnt-live .wagnt-core-ring-inner,
-  .wagnt-live .wagnt-flow-chevron,
-  .wagnt-live .wagnt-lane-rail,
-  .wagnt-live .wagnt-fanout,
-  .wagnt-live .wagnt-reconverge,
-  .wagnt-live .wagnt-conduit,
-  .wagnt-live .wagnt-port-dot,
-  .wagnt-live .wagnt-module-fill {
-    animation: none;
-  }
-  .wagnt-live .wagnt-fanout,
-  .wagnt-live .wagnt-reconverge {
-    stroke-dasharray: none;
-  }
-  /* New phase-gated animation kills */
-  .wagnt-live .wagnt-field[data-phase="intake"]    .wagnt-intake-pulse,
-  .wagnt-live .wagnt-field[data-phase="shipping"]  .wagnt-out-pulse,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-lane-pulse,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-manifold-rib,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-core-glow,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-flow-chevron,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-lane-rail,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-fanout,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-reconverge,
-  .wagnt-live .wagnt-field[data-phase] .wagnt-module-fill,
-  .wagnt-live .wagnt-field[data-phase="verification"] .wagnt-gate-bar,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-gate-bar,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-chevron,
-  .wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-core-ack,
-  .wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-core-ack {
-    animation: none;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   PHASE 2B/2C/2D — Autonomous simulation tokens + phase activation
-   Token pool: lead + 4 children. All absolutely positioned at top:0,left:0 inside
-   .wagnt-field and moved exclusively via transform in the RAF (no layout thrash).
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* ── Data-packet tokens — weighted objects, not DOM elements */
-.wagnt-packet {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  border: 1px solid rgba(201, 245, 88, 0.70);
-  background: rgba(201, 245, 88, 0.22);
-  box-shadow: 0 0 7px rgba(201, 245, 88, 0.35), 0 0 2px rgba(201, 245, 88, 0.6);
-  pointer-events: none;
-  will-change: transform, opacity;
-  z-index: 2;
-}
-
-/* Inner corner accent — directional cue */
-.wagnt-packet-tick {
-  position: absolute;
-  top: 1.5px;
-  left: 1.5px;
-  width: 3px;
-  height: 3px;
-  border-left: 1px solid rgba(201, 245, 88, 0.75);
-  border-top: 1px solid rgba(201, 245, 88, 0.75);
-  border-radius: 0.5px;
-}
-
-/* Rework / fail variant — distinct gold */
-.wagnt-packet--fail {
-  border-color: rgba(232, 196, 122, 0.70);
-  background: rgba(232, 196, 122, 0.22);
-  box-shadow: 0 0 10px rgba(232, 196, 122, 0.50), 0 0 3px rgba(232, 196, 122, 0.70);
-}
-.wagnt-packet--fail .wagnt-packet-tick {
-  border-color: rgba(232, 196, 122, 0.75);
-}
-
-/* Lead token — goal unit: larger, stronger presence */
-.wagnt-packet--lead {
-  width: 10px;
-  height: 10px;
-  border-radius: 2.5px;
-  background: rgba(201, 245, 88, 0.28);
-  box-shadow: 0 0 10px rgba(201, 245, 88, 0.50), 0 0 3px rgba(201, 245, 88, 0.75);
-}
-
-/* Lead + fail — gold halo, unmistakable rework carrier */
-.wagnt-packet--lead.wagnt-packet--fail {
-  box-shadow: 0 0 14px rgba(232, 196, 122, 0.60), 0 0 4px rgba(232, 196, 122, 0.80);
-}
-
-/* ── Smooth transitions on live elements ────────────────────────────────── */
-.wagnt-live .wagnt-manifold       { transition: opacity 0.4s ease; }
-.wagnt-live .wagnt-manifold-rib   { transition: opacity 0.35s ease; }
-.wagnt-live .wagnt-gate-bar       { transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease; }
-.wagnt-live .wagnt-rework         { transition: opacity 0.3s ease; }
-.wagnt-live .wagnt-rework-chevron { transition: opacity 0.3s ease; }
-.wagnt-live .wagnt-rework-arrow   { transition: opacity 0.3s ease; }
-.wagnt-live .wagnt-rework-label   { transition: opacity 0.3s ease; }
-.wagnt-live .wagnt-port-dot--in   { transition: opacity 0.25s ease; }
-.wagnt-live .wagnt-port-dot--out  { transition: opacity 0.25s ease; }
-
-/* ── Intake: chevrons animate, goal-in label brightens, intake pulse fires ── */
-.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-flow-chevron,
-.wagnt-live .wagnt-field[data-phase="discovery"] .wagnt-flow-chevron {
-  animation: wagnt-chevron-wave 3.0s ease-in-out infinite;
-  animation-delay: calc(var(--chev-i, 0) * -0.6s);
-}
-.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-port-label--in  { opacity: 0.95; }
-.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-intake-pulse {
-  animation: wagnt-in-pulse-ring 0.75s cubic-bezier(0.2, 0, 0.8, 1) forwards;
-}
-
-/* ── Planning: manifold brightens + ribs unfold staggered ───────────────── */
-.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-manifold,
-.wagnt-live .wagnt-field[data-phase="fanout"]   .wagnt-manifold {
-  opacity: 0.92;
-}
-.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-manifold-rib,
-.wagnt-live .wagnt-field[data-phase="fanout"]   .wagnt-manifold-rib {
-  animation: wagnt-rib-unfold 0.30s ease forwards;
-  animation-delay: calc(var(--rib-i, 0) * 0.09s);
-}
-
-/* ── Planning: fan-out paths glow as tasks separate ─────────────────────── */
-.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-fanout {
-  stroke: var(--accent);
-  opacity: 0.40;
-  animation: wagnt-arc-flow 2.2s linear infinite;
-}
-
-/* ── Fan-out: fan lines fully lit + arc-flow + glow swell ───────────────── */
-.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-fanout {
-  stroke: var(--accent);
-  opacity: 0.90;
-  animation: wagnt-arc-flow 2.2s linear infinite;
-}
-.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-core-glow {
-  animation: wagnt-glow-swell 0.7s ease-out forwards;
-}
-
-/* ── Execution: lane rails march + lane pulses flow + module fills breathe ─ */
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-lane-rail {
-  animation: wagnt-rail-march 2.0s linear infinite;
-  opacity: 0.75;
-}
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-lane-pulse {
-  animation: wagnt-lane-pulse-move 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: calc(var(--lane-i, 0) * -0.65s);
-}
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-module-fill {
-  animation: wagnt-module-breathe 6.0s ease-in-out infinite;
-  animation-delay: calc(var(--cell-i, 0) * -0.52s);
-}
-
-/* ── Reconverge: merge lines light up + arc-flow + glow swell ───────────── */
-.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-reconverge {
-  stroke: var(--accent);
-  opacity: 0.70;
-  animation: wagnt-arc-flow 2.6s linear infinite;
-}
-.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-core-glow {
-  animation: wagnt-glow-swell 0.7s ease-out forwards;
-}
-
-/* ── Verification: gate stabilizes (quiver → calm hold) ─────────────────── */
-.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-gate-bar {
-  stroke: var(--accent);
-  stroke-width: 0.9;
-  opacity: 0.70;
-}
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-gate-bar {
-  stroke: var(--accent);
-  stroke-width: 0.9;
-  animation: wagnt-gate-stabilize 1.8s cubic-bezier(0.25, 0, 0.5, 1) forwards;
-}
-/* Reconverge arc keeps flowing into verification */
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-reconverge {
-  stroke: var(--accent);
-  opacity: 0.45;
-  animation: wagnt-arc-flow 2.6s linear infinite;
-}
-
-/* ── Shipping: chevrons flow out the bottom spine, output brightens + pulse ─ */
-.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-flow-chevron {
-  animation: wagnt-chevron-wave 3.0s ease-in-out infinite;
-  animation-delay: calc(var(--chev-i, 0) * -0.6s);
-}
-.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-port-label--out { opacity: 0.85; }
-.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-out-pulse {
-  animation: wagnt-out-pulse-ring 0.85s cubic-bezier(0.2, 0, 0.8, 1) forwards;
-  animation-delay: 0.25s;
-}
-
-/* ── Rework: gate flashes gold on fail, retry bus fully activates ────────── */
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-gate-bar {
-  stroke: var(--accent-2);
-  stroke-width: 1.0;
-  opacity: 0.95;
-  animation: wagnt-gate-reject 0.55s ease-out 1 forwards;
-}
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework {
-  opacity: 1.0;
-  animation: wagnt-rework-flow 0.85s linear infinite;
-}
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-chevron {
-  animation: wagnt-rework-chevron-cascade 0.6s ease-in-out infinite;
-  animation-delay: calc(var(--chev-rw-i, 0) * 0.12s);
-  opacity: 0.95;
-}
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-arrow {
-  opacity: 0.85;
-}
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-label {
-  opacity: 0.85;
-}
-
-/* ── Port dot flashes — intake on arrival, output on ship ───────────────── */
-.wagnt-live .wagnt-field[data-phase="intake"]   .wagnt-port-dot--in  { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-port-dot--out { opacity: 1.0; }
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   PHASE 3 — Narrative focal hierarchy
-   Three tiers: ACTIVE (1.0) · ADJACENT (0.42) · DISTANT (0.12 base recede).
-   Wider gap between active and distant = stronger directional reading.
-   ══════════════════════════════════════════════════════════════════════════════ */
-
-/* ── Transitions ─────────────────────────────────────────────────────────── */
-.wagnt-live .wagnt-station        { transition: opacity 0.40s cubic-bezier(0.4, 0, 0.2, 1); }
-.wagnt-live .wagnt-exec-band      { transition: opacity 0.40s cubic-bezier(0.4, 0, 0.2, 1); }
-.wagnt-live .wagnt-lane-rail      { transition: opacity 0.35s ease; }
-.wagnt-live .wagnt-station-label  { transition: color 0.40s ease, opacity 0.40s ease; }
-.wagnt-live .wagnt-station-index  { transition: opacity 0.40s ease; }
-
-/* ── Base (DISTANT) — readable floor: fully legible in any snapshot ──────── */
-/* Distinction between active and inactive comes from accent + motion, not contrast crushing */
-.wagnt-live .wagnt-field[data-phase] .wagnt-station,
-.wagnt-live .wagnt-field[data-phase] .wagnt-exec-band {
-  opacity: 0.75;
-}
-
-/* ── Per-phase focal assignments ─────────────────────────────────────────── */
-
-/* ── Per-phase focal assignments — ACTIVE (1.0) vs ADJACENT (0.88) vs DISTANT (0.75 base) ── */
-/* All values are legible; active station pops via accent + motion, not by crushing others.   */
-
-/* intake: discovery=ACTIVE, planning=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-station--discovery      { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="intake"] .wagnt-station--planning       { opacity: 0.88; }
-
-/* discovery: discovery=ACTIVE, planning=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="discovery"] .wagnt-station--discovery   { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="discovery"] .wagnt-station--planning    { opacity: 0.88; }
-
-/* planning: planning=ACTIVE, discovery=ADJACENT, execution=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-station--planning     { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-station--discovery    { opacity: 0.88; }
-.wagnt-live .wagnt-field[data-phase="planning"] .wagnt-exec-band             { opacity: 0.88; }
-
-/* fanout: planning=ACTIVE, execution=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-station--planning       { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-exec-band               { opacity: 0.88; }
-
-/* execution: exec=ACTIVE, planning=ADJACENT, verification=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-exec-band            { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-station--planning    { opacity: 0.88; }
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-station--verification { opacity: 0.88; }
-
-/* reconverge: verification brightens in anticipation */
-.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-station--verification { opacity: 0.92; }
-.wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-exec-band           { opacity: 0.88; }
-
-/* verification: verification=ACTIVE, execution=ADJACENT, shipping=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-exec-band         { opacity: 0.88; }
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--shipping { opacity: 0.88; }
-
-/* shipping: shipping=ACTIVE, verification=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-station--shipping     { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-station--verification { opacity: 0.88; }
-
-/* rework: planning=ACTIVE, verification=ADJACENT */
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-station--planning       { opacity: 1.0; }
-.wagnt-live .wagnt-field[data-phase="rework"] .wagnt-station--verification   { opacity: 0.88; }
-
-/* ── Typography uplift — active station: full opacity, bright label ──────── */
-.wagnt-live .wagnt-field[data-phase="intake"]       .wagnt-station--discovery   .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="discovery"]    .wagnt-station--discovery   .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="planning"]     .wagnt-station--planning    .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="fanout"]       .wagnt-station--planning    .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="reconverge"]   .wagnt-station--verification .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="shipping"]     .wagnt-station--shipping    .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="rework"]       .wagnt-station--planning    .wagnt-station-label {
-  color: var(--fg);
-  opacity: 1.0;
-}
-
-/* Active index fully visible */
-.wagnt-live .wagnt-field[data-phase="intake"]       .wagnt-station--discovery   .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="discovery"]    .wagnt-station--discovery   .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="planning"]     .wagnt-station--planning    .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="fanout"]       .wagnt-station--planning    .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="reconverge"]   .wagnt-station--verification .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="shipping"]     .wagnt-station--shipping    .wagnt-station-index,
-.wagnt-live .wagnt-field[data-phase="rework"]       .wagnt-station--planning    .wagnt-station-index {
-  opacity: 0.70;
-}
-
-/* Execution label uplift during execution / fanout */
-.wagnt-live .wagnt-field[data-phase="execution"] .wagnt-exec-band .wagnt-station-label,
-.wagnt-live .wagnt-field[data-phase="fanout"]    .wagnt-exec-band .wagnt-station-label {
-  color: var(--fg);
-  opacity: 1.0;
-}
-
-/* ── Active-station telemetry brightening — legible everywhere, extra pop when active ── */
-.wagnt-live .wagnt-field[data-phase="intake"]       .wagnt-station--discovery   .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="discovery"]    .wagnt-station--discovery   .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="planning"]     .wagnt-station--planning    .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="fanout"]       .wagnt-station--planning    .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="verification"] .wagnt-station--verification .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="reconverge"]   .wagnt-station--verification .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="shipping"]     .wagnt-station--shipping    .wagnt-tel-label,
-.wagnt-live .wagnt-field[data-phase="rework"]       .wagnt-station--planning    .wagnt-tel-label {
-  opacity: 0.90;
-}
-
-/* ── Extended reduced-motion: remove all transitions and token motion ────── */
-@media (prefers-reduced-motion: reduce) {
-  /* Tokens and new motion elements */
-  .wagnt-packet,
-  .wagnt-lane-pulse,
-  .wagnt-intake-pulse,
-  .wagnt-out-pulse { display: none; }
-
-  /* Transition kill */
-  .wagnt-live .wagnt-manifold,
-  .wagnt-live .wagnt-manifold-rib,
-  .wagnt-live .wagnt-fanout,
-  .wagnt-live .wagnt-reconverge,
-  .wagnt-live .wagnt-gate-bar,
-  .wagnt-live .wagnt-rework,
-  .wagnt-live .wagnt-rework-chevron,
-  .wagnt-live .wagnt-rework-arrow,
-  .wagnt-live .wagnt-port-dot--in,
-  .wagnt-live .wagnt-port-dot--out,
-  .wagnt-live .wagnt-core-glow,
-  .wagnt-live .wagnt-flow-chevron,
-  .wagnt-live .wagnt-lane-rail,
-  .wagnt-live .wagnt-module-fill {
-    transition: none;
-  }
-  .wagnt-live .wagnt-fanout,
-  .wagnt-live .wagnt-reconverge {
-    stroke-dasharray: none;
-  }
-  .wagnt-live .wagnt-station,
-  .wagnt-live .wagnt-exec-band,
-  .wagnt-live .wagnt-station-label,
-  .wagnt-live .wagnt-station-index {
-    transition: none;
+  .wagnt-core-bloom,
+  .wagnt-live .wagnt-field[data-phase="agents"] .wagnt-core-bloom,
+  .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-node--shipping.wagnt-node--active .wagnt-node-dot {
+    animation: none !important;
   }
 
-  /* New keyframe kill — all phase-gated animations */
-  .wagnt-live .wagnt-field[data-phase] .wagnt-core-glow,
-  .wagnt-live .wagnt-field[data-phase="planning"] .wagnt-manifold-rib,
-  .wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-manifold-rib,
-  .wagnt-live .wagnt-field[data-phase="execution"] .wagnt-lane-rail,
-  .wagnt-live .wagnt-field[data-phase="execution"] .wagnt-module-fill,
-  .wagnt-live .wagnt-field[data-phase="intake"] .wagnt-flow-chevron,
-  .wagnt-live .wagnt-field[data-phase="discovery"] .wagnt-flow-chevron,
-  .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-flow-chevron,
-  .wagnt-live .wagnt-field[data-phase="planning"] .wagnt-fanout,
-  .wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-fanout,
-  .wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-reconverge,
-  .wagnt-live .wagnt-field[data-phase="verification"] .wagnt-reconverge,
-  .wagnt-live .wagnt-field[data-phase="verification"] .wagnt-gate-bar,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-gate-bar,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework,
-  .wagnt-live .wagnt-field[data-phase="rework"] .wagnt-rework-chevron,
-  .wagnt-live .wagnt-field[data-phase="fanout"] .wagnt-core-ack,
-  .wagnt-live .wagnt-field[data-phase="reconverge"] .wagnt-core-ack {
-    animation: none;
+  /* Kill all smooth transitions */
+  .wagnt-node-dot,
+  .wagnt-node-halo,
+  .wagnt-node-label,
+  .wagnt-core-ring,
+  .wagnt-core-dot,
+  .wagnt-rework-chord {
+    transition: none !important;
+  }
+
+  /* Hide RAF-driven motion elements; static agents remain visible */
+  .wagnt-traveler,
+  .wagnt-agent:not(.wagnt-agent--static) {
+    display: none;
+  }
+
+  /* Depth-layer additions — disable all ambient CSS animations */
+  .wagnt-network-svg,
+  .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-network-svg {
+    animation: none !important;
+    opacity: 0.08;
+  }
+
+  .wagnt-particle {
+    display: none;
+  }
+
+  .wagnt-node-ripple,
+  .wagnt-node--active .wagnt-node-ripple {
+    animation: none !important;
+  }
+
+  .wagnt-live .wagnt-node-halo,
+  .wagnt-live .wagnt-node--active .wagnt-node-halo {
+    animation: none !important;
+  }
+
+  .wagnt-trail {
+    display: none;
+  }
+
+  .wagnt-ctx-label {
+    display: none;
+  }
+
+  .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-core-ring,
+  .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-node-dot,
+  .wagnt-live .wagnt-field[data-phase="shipping"] .wagnt-core-dot {
+    animation: none !important;
   }
 }
 
-/* ── Frozen / mobile — wagnt-field needs relative position in static flow ─────── */
+/* ── Frozen / mobile fallback ────────────────────────────────────────────────── */
+/* isFinal renders a static settled frame in-flow (not absolute) */
 .widviz-panel--frozen .wagnt-field {
   position: relative;
   height: 300px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   FROZEN / MOBILE variant
-   Desktop: fully unboxed (no border). Mobile only: minimal hairline frame
-   for legibility against the shader background.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.widviz-panel--frozen {
-  /* Override the absolute full-height panel — frozen panels are in-flow */
-  position: relative;
-  height: auto;
-  min-height: 180px;
-  margin-bottom: 0;
-  /* No mask on frozen panels */
-  mask-image: none;
-  -webkit-mask-image: none;
-  /* No pointer-events override needed — panel is decorative */
-  overflow: hidden;
-}
-
-.widviz-panel--frozen .widviz-body {
-  position: relative;
-  min-height: 140px;
-}
-
-.widviz-panel--frozen .widviz-layer {
-  position: static;
-  height: auto;
-}
-
-/* Frozen SYSTEMS: field needs explicit height for absolute node positions */
-.widviz-panel--frozen .wsys-field {
-  position: relative;
-  height: 140px;
-  overflow: hidden;
-}
-
-/* Frozen BACKEND: field needs explicit height for absolute positioned children.
-   Nodes at y:50% + graph at 59% + legend ~80px below = ~265px. 295px gives
-   comfortable clearance so the legend doesn't crowd the blurb text. */
-.widviz-panel--frozen .wbk-field {
-  position: relative;
-  height: 295px;
-  overflow: hidden;
-}
-
-/* Frozen DATA: same fix — absolute nodes need a sized containing block */
-.widviz-panel--frozen .wdat-field {
-  position: relative;
-  height: 140px;
-  overflow: hidden;
-}
-
-/* Frozen INTERFACE: sized containing block for the 3D stage (preserve-3d still works) */
-.widviz-panel--frozen .wifc-stage {
-  position: relative;
-  height: 240px;
-  overflow: hidden;
-}
-
-
-/* Mobile container — sits above the blurb in .wid-mobile-blurb-item.
-   No extra margin here; parent gap:20px already spaces all three elements
-   (kicker, viz, blurb) uniformly. */
-.wid-mobile-viz {
-  margin-bottom: 0;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
 @media (max-width: 980px) {
-  /* Frozen mobile panels: add hairline border for legibility against shader */
-  .widviz-panel--frozen {
-    min-height: 140px;
+  .wagnt-field {
+    position: relative;
+    height: 300px;
     border: 1px solid var(--line);
-    border-radius: 2px;
+    border-radius: var(--radius-lg);
+  }
+
+  .widviz-agents {
+    position: relative;
   }
 }
 
+/* ── Shared laptop-viewport adjustments (cross-viz) ──────────────────────────── */
 @media (max-height: 900px) and (min-width: 981px) {
   .widviz-systems {
     --wsys-dashboard-scale: 0.86;
   }
 
-  /* Agents factory: 14% total narrowing on laptop viewports (replaces the
-     global 8% — not additive). Later rule wins via source order. */
-  .widviz-agents {
-    transform: scaleX(0.86);
-  }
-
-  /* Interface card: scale down from 1.35 → 1.15 on laptop viewports so the
-     isometric card doesn't overflow the panel at reduced heights. */
+  /* Interface card: scale down on laptop viewports so it doesn't overflow the panel */
   .wifc-stage {
     transform: scale(1.15);
   }
