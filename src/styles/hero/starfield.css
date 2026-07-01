@@ -1,0 +1,70 @@
+/* ---- hero starfield (animated, full-bleed) ----
+   Replaces hero/grid.css. Same full-bleed technique: 100vw wide, centered
+   via left:50% + translateX(-50%); clipped by body{overflow-x:hidden}. */
+
+.starfield {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  /* clips star box-shadows that extend beyond the hero bounds */
+  overflow: hidden;
+}
+
+/* 1 ─ opaque deep-space base
+   Translates the original's radial-gradient(ellipse at bottom, #262626 0%, #000 100%)
+   to tokens: faint --bg-2 tonal lift at the base (distant planet glow feel),
+   solid --bg everywhere else. Text lives in the upper/center area which is
+   darkest here → high contrast foundation before the scrim even applies. */
+.starfield__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 130% 80% at 50% 100%,
+    var(--bg-2) 0%,
+    var(--bg)  55%
+  );
+}
+
+/* 2 ─ layer group (parallax wrapper) and per-layer drift wrappers */
+.starfield__layers,
+.starfield__layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* Individual star dot — rendered entirely via box-shadow; the element itself
+   is invisible. Centered horizontally so the ±STAR_SPREAD/2 x-offsets in
+   JS distribute stars symmetrically across the full 100vw container. */
+.starfield__dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  background: transparent;
+  border-radius: var(--radius-full);
+}
+
+/* 3 ─ legibility scrim
+   Sits above the star layers, below hero text (position in the DOM stack).
+   A soft radial gradient darkens the central text column by ~55% at its
+   densest, fading to nothing at the edges where stars can shine freely.
+   color-mix() avoids raw hex while using --bg at varying alpha. */
+.starfield__scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 52% 62% at 50% 38%,
+    color-mix(in srgb, var(--bg) 60%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 30%, transparent) 45%,
+    transparent 72%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Drift and parallax are frozen in JS via useReducedMotion().
+     The static starfield + vignette + scrim remain visible and legible. */
+}

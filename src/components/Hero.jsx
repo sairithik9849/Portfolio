@@ -9,7 +9,7 @@ import {
 import Terminal from './Terminal'
 import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
-import InfiniteGrid from './InfiniteGrid'
+import StarField from './StarField'
 import MatrixText from './MatrixText'
 import TextScramble from './TextScramble'
 import Typewriter from './Typewriter'
@@ -157,9 +157,9 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
       onPointerMove={handlePointerMove}
       style={{ position: 'relative' }}
     >
-      {/* Phase 1 — InfiniteGrid fades in; wrapper uses variants so it holds
-           hidden until the parent `started` gate opens (same as all other phases).
-           direct initial/animate was bypassing the parent animate state. */}
+      {/* Phase 1 — StarField mounts only after the preloader has revealed
+           (started=true) so Chrome never rasterizes 1330 box-shadows behind an
+           opaque curtain. Wrapper holds at opacity:0 until T.grid then fades in. */}
       <motion.div
         variants={{
           hidden: { opacity: 0 },
@@ -167,7 +167,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
         }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       >
-        <InfiniteGrid />
+        {started && <StarField />}
       </motion.div>
 
       {/* Full-cover 3D layer — absolutely fills the hero, below text z-index */}

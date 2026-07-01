@@ -1,12 +1,12 @@
 # Hero
 
-Hero entrance cascade, WebGL fluid background, Spline robot, and InfiniteGrid. Loaded on demand via the routing table in `CLAUDE.md`.
+Hero entrance cascade, Spline robot, and StarField. Loaded on demand via the routing table in `CLAUDE.md`.
 
-**Scope:** Hero entrance cascade, HeroFluid WebGL, SplineScene, InfiniteGrid, and the shader attractor. Preloader handoff and app-level observer setup → `docs/architecture.md`. Variant object definitions → `docs/animation.md`.
+**Scope:** Hero entrance cascade, SplineScene, and StarField. Preloader handoff and app-level observer setup → `docs/architecture.md`. Variant object definitions → `docs/animation.md`.
 
 ## Hero Internal Z-Order
 
-`InfiniteGrid` `z:0` → `SplineScene` `z:1` → text/H1 `z:2`
+`StarField` `z:0` → `SplineScene` `z:1` → text/H1 `z:2`
 
 ## Hero Entrance Cascade
 
@@ -14,7 +14,7 @@ Hero entrance cascade, WebGL fluid background, Spline robot, and InfiniteGrid. L
 
 ### Sequence (serialized)
 
-InfiniteGrid → meta-row + name letters → manifesto quote → metric cards (simultaneous) → CTA → terminal → footer → robot hotspot
+StarField → meta-row + name letters → manifesto quote → metric cards (simultaneous) → CTA → terminal → footer → robot hotspot
 
 ### Timing Constants (`src/animations/variants.js`)
 
@@ -35,34 +35,6 @@ Legacy exports from `variants.js` that are **no longer used by `Hero.jsx`**: `HE
 ### Reduced Motion
 
 `useReducedMotion()` in `Hero.jsx` sets `T = HERO_SEQUENCE_INSTANT` (all delays 0) and `dur = 0` (all durations 0) — entire sequence collapses to instant show. Apply the same `T`/`dur` pattern to any new Hero-level animation.
-
-## HeroFluid (WebGL Background)
-
-Three.js via `@react-three/fiber` + `@react-three/drei` (GLSL noise shader).
-
-### Lazy Boundary
-
-`HeroFluid` is `React.lazy` + Suspense in `App.jsx`. **Never convert to a static import** — the bundle is ~600 KB and must code-split.
-
-### Render Loop Gating
-
-`frameloop` is `"always"` only when **both** conditions are true:
-1. `App.jsx` passes `active={heroVisible || footerVisible}` — two `IntersectionObserver`s on `#top`/`#contact`.
-2. `HeroFluid` itself listens to `visibilitychange` and sets `docHidden=false` — prevents the shader rendering stale/throttled frames while the browser is backgrounded, which previously caused a jarring green flash on return.
-
-`frameloop` is `"never"` otherwise.
-
-### `uTime` — Clamped-Delta Accumulator
-
-`useFrame` receives `delta` and advances `timeRef.current += Math.min(delta, MAX_FRAME_DELTA)` (cap: 0.05 s) instead of reading `clock.getElapsedTime()`. This ensures no tab pause can teleport the noise field forward by the idle gap and snap it onto a bright/green frame.
-
-### Shader Attractor
-
-`App.jsx` owns `globalMouseRef` (viewport-normalized 0–1 + `lastMove` timestamp) passed to `HeroFluid`. The glow is **confined to `#top` and `#contact`** via `e.target.closest('#top, #contact')` in `handleGlobalPointerMove` — it does not activate over mid-page sections. Idle-decays (~1.75s) in `HeroFluid.jsx` when the pointer leaves those regions. If the fluid stops tracking the cursor, check this ref's `pointermove` listener in `App.jsx`.
-
-### `.noise` CSS Texture
-
-`.noise` deliberately has **no `mix-blend-mode`** (plain 4% opacity) — overlay blending forced a full-viewport blend pass per scrolled frame; do not reintroduce it.
 
 ## SplineScene (Hero Robot)
 
@@ -92,9 +64,18 @@ Spline via `@splinetool/react-spline` + `@splinetool/runtime`.
 
 Copy lives in `src/data/terminal.js`; line shapes are documented there. The `help` command and `● READY` status line are intentionally absent.
 
-## InfiniteGrid
+## StarField
 
 Static import in `Hero.jsx`. Renders at `z:0`. Its `100vw` full-bleed extends past the `.shell` intentionally — `body { overflow-x: hidden }` in `global.css` is the containment; do not remove it.
+
+Three depth layers (small/many/fast → large/sparse/slow) drift upward via `useAnimationFrame` + `useMotionValue` (the same rAF pattern used by the former `InfiniteGrid`). A subtle `useSpring` parallax shifts all layers together on `window` `pointermove`. Both are frozen under `useReducedMotion()`.
+
+**Legibility stack (inside `.starfield`):**
+1. `.starfield__vignette` — opaque `--bg`/`--bg-2` radial base; covers the page background within the hero viewport (intentional).
+2. `.starfield__layers` — the drifting star dots (box-shadow on centered 1/2/3 px divs).
+3. `.starfield__scrim` — soft `color-mix()` radial overlay darkening the text column by ~55% at center, fading to transparent at the edges. Ensures cream text stays fully legible over cream star points.
+
+CSS partial: `src/styles/hero/starfield.css` (registered in `global.css` at the former `grid.css` slot).
 
 ## Common Edits
 
@@ -105,9 +86,6 @@ Static import in `Hero.jsx`. Renders at `z:0`. Its `100vw` full-bleed extends pa
 ## Do Not
 
 - Never reintroduce `staggerChildren` on `HERO_PARENT` — it breaks per-phase ordering.
-- Never convert `HeroFluid` to a static import — the ~600 KB bundle must stay code-split.
-- Never use `clock.getElapsedTime()` in `HeroFluid` — use the clamped-delta accumulator (`Math.min(delta, MAX_FRAME_DELTA)`); `getElapsedTime()` teleports the noise field after a tab pause.
-- Never remove the `docHidden` + `active` render-loop gate — removing it causes a jarring green flash on tab return.
 - Never remove either load-fade path from `SplineScene` (the `onLoad` handler and the 4s `setTimeout` fallback) — both are needed.
 - Never remove the Spline pointer-forwarding in `Hero.jsx` without also removing letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
 - Never add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.

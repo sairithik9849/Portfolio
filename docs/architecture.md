@@ -2,7 +2,7 @@
 
 App-shell wiring, render order, preloader handoff, scrolling, observers, and cross-cutting singletons. Loaded on demand via the routing table in `CLAUDE.md`.
 
-**Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, shader attractor, nav/footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
+**Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, nav/footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
 
 ## Subsystem Map
 
@@ -12,9 +12,8 @@ App.jsx (orchestration root)
 ├── Lenis + GSAP clock      App.jsx useEffect
 ├── Hero subsystem          → docs/hero.md
 │   ├── Hero.jsx            (#top)
-│   ├── HeroFluid.jsx       (lazy WebGL, Three.js / R3F)
 │   ├── SplineScene.jsx     (lazy @splinetool/react-spline)
-│   └── InfiniteGrid.jsx
+│   └── StarField.jsx
 │
 ├── WhatIDo subsystem       → docs/what-i-do.md
 │   ├── WhatIDo.jsx         (#what-i-do, GSAP pin/scrub)
@@ -68,8 +67,8 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 
 `App.jsx` uses three booleans — `mountContent`, `revealed`, and `heroStarted` — to separate the three distinct phases cleanly.
 
-- **`mountContent`** (set via `requestAnimationFrame` one frame after the overlay paints) mounts the full content tree **under the still-opaque overlay** so HeroFluid's WebGL shader can compile and Spline can init while the bar animates.
-- **`revealed`** (set by `createPreloadTracker`'s `onReady` callback) sends `beginExit=true` to Preloader. The curtain (`translateY` sweep) lifts only when **both** this flag has fired **and** the single-fill bar has completed — whichever comes last. Preloader.jsx enforces the `fillDone && beginExit` gate internally. `onReady` fires once both HeroFluid (`markFluidReady`) and the Spline robot (`markSplineReady`) are ready — or the `HARD_CEILING_MS` (~6.5s) safety cap fires. There is no separate `MIN_DISPLAY_MS` timing floor in the tracker; the bar's `FILL_DURATION_MS` (~2.6s) is the effective display floor.
+- **`mountContent`** (set via `requestAnimationFrame` one frame after the overlay paints) mounts the full content tree **under the still-opaque overlay** so Spline can init while the bar animates.
+- **`revealed`** (set by `createPreloadTracker`'s `onReady` callback) sends `beginExit=true` to Preloader. The curtain (`translateY` sweep) lifts only when **both** this flag has fired **and** the single-fill bar has completed — whichever comes last. Preloader.jsx enforces the `fillDone && beginExit` gate internally. `onReady` fires once the Spline robot (`markSplineReady`) is ready — or the `HARD_CEILING_MS` (~6.5s) safety cap fires. There is no separate `MIN_DISPLAY_MS` timing floor in the tracker; the bar's `FILL_DURATION_MS` (~2.6s) is the effective display floor.
 - **`heroStarted`** (set from `Preloader`'s `onRevealComplete` → `AnimatePresence onExitComplete`) starts the `HERO_SEQUENCE` cascade. This deliberately fires **after the curtain finishes sweeping up**, so the heavy Framer reconciliation spike lands on a fully clean main thread with the preloader already gone.
 
 **Do not collapse these back into two or one flag** — separating `revealed` from `heroStarted` is what keeps the Framer spike off the preloader's visible frames. Collapsing them causes the cascade's main-thread cost to contend with the curtain sweep.
@@ -80,7 +79,7 @@ The four `IntersectionObserver` effects in `App.jsx` have `mountContent` in thei
 
 ## `preloadAssets.js` Progress Model
 
-The progress bar (Preloader.jsx) is a **single compositor-driven WAAPI animation** on `transform: scaleX` from 0→1 over `FILL_DURATION_MS` (~2.6s) with a near-linear ease — it runs off the main thread, so nothing that runs under the overlay can ever stutter it. `preloadAssets.js` does not drive the bar at all; it only tracks *when the reveal may happen* via `markFluidReady()` / `markSplineReady()`. The old two-phase ramp+race, `FILL_RAMP`, `RACE_DURATION_MS`, `MIN_DISPLAY_MS`, `rangeRef`, and `animRef` reassignment are gone.
+The progress bar (Preloader.jsx) is a **single compositor-driven WAAPI animation** on `transform: scaleX` from 0→1 over `FILL_DURATION_MS` (~2.6s) with a near-linear ease — it runs off the main thread, so nothing that runs under the overlay can ever stutter it. `preloadAssets.js` does not drive the bar at all; it only tracks *when the reveal may happen* via `markSplineReady()`. The old two-phase ramp+race, `FILL_RAMP`, `RACE_DURATION_MS`, `MIN_DISPLAY_MS`, `rangeRef`, and `animRef` reassignment are gone.
 
 ## Lenis Momentum Scroll
 
@@ -122,29 +121,23 @@ Entrance/exit uses the `RETURN_MARKER` variant from `src/animations/variants.js`
 
 ## AIOrb Visibility
 
-Hidden while the Hero (`#top`), the What I Do section (`#what-i-do`), **or** the My Journey section (`#journey`) is intersecting the viewport — `AIOrb` receives `hidden={heroVisible || whatIdoVisible || journeyVisible}`. All three flags come from `IntersectionObserver`s in `App.jsx`. A fourth observer on `#contact` drives `footerVisible` for the HeroFluid active gate. The Hero gate avoids overlapping the robot hotspot; the WhatIDo and Journey gates keep the orb off their full-bleed pinned panels.
+Hidden while the Hero (`#top`), the What I Do section (`#what-i-do`), **or** the My Journey section (`#journey`) is intersecting the viewport — `AIOrb` receives `hidden={heroVisible || whatIdoVisible || journeyVisible}`. All three flags come from `IntersectionObserver`s in `App.jsx`. The Hero gate avoids overlapping the robot hotspot; the WhatIDo and Journey gates keep the orb off their full-bleed pinned panels.
 
 ## Global Hotkey
 
 `useHotkey('cmd+k', toggleAI)` in `App.jsx` (from `src/hooks/useHotkey.js`) opens the AI drawer. The hook also supports `'escape'`. Any new global shortcut belongs in `App.jsx` using this hook.
 
-## Shader Attractor Singleton
-
-`App.jsx` owns `globalMouseRef` (viewport-normalized 0–1 + `lastMove` timestamp) passed to `HeroFluid`. The glow is **confined to `#top` and `#contact`** via `e.target.closest('#top, #contact')` in `handleGlobalPointerMove` — it does not activate over mid-page sections. Idle-decays (~1.75s) in `HeroFluid.jsx` when the pointer leaves those regions. If the fluid stops tracking the cursor, check this ref's `pointermove` listener in `App.jsx`.
-
 ## Page Background Z-Order
 
-- `HeroFluid` (lazy WebGL) at `z:0`
-- `.noise` CSS texture at `z:2`
-- Both persistent across the page
+- `.noise` CSS texture at `z:2`, persistent across the page
 
-The old static `.grid-bg` is gone — do not reintroduce. See `docs/hero.md` for HeroFluid render-loop gating and `uTime` accumulator details.
+The old static `.grid-bg` is gone — do not reintroduce.
 
 `.noise` deliberately has **no `mix-blend-mode`** (plain 4% opacity) — overlay blending forced a full-viewport blend pass per scrolled frame; do not reintroduce it.
 
 ## Layout Shell
 
-`.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: clip }` is load-bearing — **`clip`, not `hidden`**: `hidden` makes body a scroll container which breaks ScrollTrigger's `position: fixed` pin; `clip` contains horizontal overflow without creating a scroll container. Spline canvas and `InfiniteGrid`'s `100vw` full-bleed both extend past the shell intentionally.
+`.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: clip }` is load-bearing — **`clip`, not `hidden`**: `hidden` makes body a scroll container which breaks ScrollTrigger's `position: fixed` pin; `clip` contains horizontal overflow without creating a scroll container. Spline canvas and `StarField`'s `100vw` full-bleed both extend past the shell intentionally.
 
 ## Nav Visibility
 
@@ -175,7 +168,7 @@ All copy lives in `src/data/` — never hardcode inside components.
 
 ## Common Edits
 
-**Adding a new page section:** Add the component to the render order in `App.jsx`, add an `IntersectionObserver` if needed for AIOrb/HeroFluid gating, add an entry to the section-id table above, add an entry to `nav.js`, and create `src/styles/<name>.css` (see `docs/design-system.md`).
+**Adding a new page section:** Add the component to the render order in `App.jsx`, add an `IntersectionObserver` if needed for AIOrb gating, add an entry to the section-id table above, add an entry to `nav.js`, and create `src/styles/<name>.css` (see `docs/design-system.md`).
 
 **Adding a new in-page anchor link:** Use `scrollToId(id)` from `src/utils/scrollTo.js` — never use raw `scrollIntoView`.
 
