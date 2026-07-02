@@ -237,12 +237,14 @@ export default function App() {
           Hero holds all elements at opacity:0 until started=true. */}
       {mountContent && (
         <>
-          {/* Fixed background layer */}
+          {/* Fixed background layers — composited (position:fixed), not
+              repainted (background-attachment:fixed) — see layout.css. */}
+          <div className="bg-gradient" />
           <div className="noise" />
 
           <div>
             {/* <Nav /> */}
-            <Hero         onOpenAI={() => setAiOpen(true)} started={heroStarted} onSplineLoaded={handleSplineReady} />
+            <Hero         onOpenAI={() => setAiOpen(true)} started={heroStarted} onSplineLoaded={handleSplineReady} visible={heroVisible} />
             <AboutMe />
             <WhatIDo />
             <MyJourney />

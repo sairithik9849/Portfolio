@@ -129,11 +129,16 @@ Hidden while the Hero (`#top`), the What I Do section (`#what-i-do`), **or** the
 
 ## Page Background Z-Order
 
+- `.bg-gradient` — the two `body` radial gradients, at `z:-1`, persistent across the page
 - `.noise` CSS texture at `z:2`, persistent across the page
 
 The old static `.grid-bg` is gone — do not reintroduce.
 
 `.noise` deliberately has **no `mix-blend-mode`** (plain 4% opacity) — overlay blending forced a full-viewport blend pass per scrolled frame; do not reintroduce it.
+
+### `.bg-gradient` — Composited, Not Repainted
+
+The two radial gradients that give the page its subtle lime/white glow used to live directly on `body` under `background-attachment: fixed`. A fixed-attachment background has no compositor layer of its own, so the browser **repaints** the gradient region on every scrolled frame — a real cost on weak GPUs. They now live on a dedicated `position: fixed; inset: 0; z-index: -1` sibling of `.noise` (`.bg-gradient`, rendered in `App.jsx` right before `.noise`, styled in `layout.css`). A `position: fixed` element gets its own compositor layer, so scrolling **composites** it instead of repainting it — same visual result, no per-frame paint cost. `body`'s own `background` in `tokens.css` is now just the flat `var(--bg)` fallback. **Do not move the gradients back onto `body` with `background-attachment: fixed`.**
 
 ## Layout Shell
 
@@ -186,3 +191,4 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not replace native `scrollTop` scroll with a Lenis virtual scroll container — Framer Motion's `useScroll` reads native scroll and breaks if replaced.
 - Do not reintroduce `.grid-bg`.
 - Do not add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.
+- Do not move the page background gradients back onto `body` with `background-attachment: fixed` — keep them on the composited `.bg-gradient` fixed layer.

@@ -66,7 +66,7 @@ function StarLayer({ layer, offsetY }) {
   )
 }
 
-export default function StarField() {
+export default function StarField({ visible = true }) {
   const reduced = useReducedMotion()
 
   // One motion value per layer — declared individually (not in a loop) to
@@ -77,8 +77,11 @@ export default function StarField() {
 
   // Single rAF callback drives all three layers — replaces the three separate
   // useAnimationFrame calls that previously lived inside each StarLayer.
+  // `visible` mirrors the App-level hero IntersectionObserver: once the hero
+  // scrolls off-screen the layers stop translating (and therefore repainting)
+  // instead of drifting forever behind content the user can no longer see.
   useAnimationFrame(() => {
-    if (reduced) return
+    if (reduced || !visible) return
     const pairs = [[offset0, 0], [offset1, 1], [offset2, 2]]
     for (const [offset, i] of pairs) {
       const next = offset.get() - LAYERS[i].speed
@@ -93,7 +96,7 @@ export default function StarField() {
   const springY = useSpring(rawY, SPRING_CONFIG)
 
   useEffect(() => {
-    if (reduced) return
+    if (reduced || !visible) return
 
     const onMove = (e) => {
       const centerX = window.innerWidth  / 2
@@ -104,7 +107,7 @@ export default function StarField() {
 
     window.addEventListener('pointermove', onMove, { passive: true })
     return () => window.removeEventListener('pointermove', onMove)
-  }, [rawX, rawY, reduced])
+  }, [rawX, rawY, reduced, visible])
 
   return (
     <div className="starfield" aria-hidden="true">

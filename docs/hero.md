@@ -50,11 +50,13 @@ Spline via `@splinetool/react-spline` + `@splinetool/runtime`.
 
 ### `onLoaded` Prop (Reveal Gate)
 
-`SplineScene` accepts an `onLoaded` prop. Both the `onLoad` callback and the 4s fallback call `onLoaded` when they fire — this propagates up through `Hero` (`onSplineLoaded`) to `App`, which forwards it to `createPreloadTracker().markSplineReady()`. The preloader curtain waits for this signal (plus HeroFluid's `markFluidReady`) before revealing. Do not remove the `onLoaded` call from either code path in `SplineScene.jsx`.
+`SplineScene` accepts an `onLoaded` prop. Both the `onLoad` callback and the 4s fallback call `onLoaded` when they fire — this propagates up through `Hero` (`onSplineLoaded`) to `App`, which forwards it to `createPreloadTracker().markSplineReady()`. The preloader curtain waits for this signal before revealing. (`HeroFluid` — previously a second reveal-gate signal — no longer exists in the component tree; the reveal now waits on `markSplineReady` alone.) Do not remove the `onLoaded` call from either code path in `SplineScene.jsx`.
 
-### Spline Pointer Forwarding (Load-Bearing)
+### Spline Pointer Forwarding (Load-Bearing, rAF-Coalesced)
 
 `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is **outside** `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
+
+The dispatch itself is throttled to at most once per `requestAnimationFrame`: raw pointer coordinates are stashed in a ref on every `pointermove` sample, and a single rAF flushes the latest one into the canvas. A high-polling-rate mouse can fire far more `pointermove` events than the display refreshes; each dispatch forces the Spline WebGL scene to re-raycast, so uncapped forwarding was a real per-mousemove GPU cost on weak iGPUs. The coalescing changes only the *rate*, not the tracking behavior — never revert to dispatching on every raw sample.
 
 ## Terminal
 
@@ -69,6 +71,8 @@ Copy lives in `src/data/terminal.js`; line shapes are documented there. The `hel
 Static import in `Hero.jsx`. Renders at `z:0`. Its `100vw` full-bleed extends past the `.shell` intentionally — `body { overflow-x: hidden }` in `global.css` is the containment; do not remove it.
 
 Three depth layers (small/many/fast → large/sparse/slow) drift upward via `useAnimationFrame` + `useMotionValue` (the same rAF pattern used by the former `InfiniteGrid`). A subtle `useSpring` parallax shifts all layers together on `window` `pointermove`. Both are frozen under `useReducedMotion()`.
+
+`StarField` accepts a `visible` prop (default `true`), forwarded from `Hero`'s own `visible` prop, which `App.jsx` sets from its existing `heroVisible` IntersectionObserver (the same state that already gates `AIOrb`). Both the drift rAF and the parallax `pointermove` listener early-return when `!visible`, so the ~1,600-box-shadow drift loop stops advancing (and therefore repainting) once the hero scrolls out of view, instead of running for the entire page lifetime. StarField is intentionally **not unmounted** off-screen — unmounting would regenerate random star positions and flash on return; pausing preserves the existing layout.
 
 **Legibility stack (inside `.starfield`):**
 1. `.starfield__vignette` — opaque `--bg`/`--bg-2` radial base; covers the page background within the hero viewport (intentional).
@@ -88,6 +92,8 @@ CSS partial: `src/styles/hero/starfield.css` (registered in `global.css` at the 
 - Never reintroduce `staggerChildren` on `HERO_PARENT` — it breaks per-phase ordering.
 - Never remove either load-fade path from `SplineScene` (the `onLoad` handler and the 4s `setTimeout` fallback) — both are needed.
 - Never remove the Spline pointer-forwarding in `Hero.jsx` without also removing letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
+- Never revert the Spline pointer-forwarding to dispatching on every raw `pointermove` sample — keep it rAF-coalesced (see above); uncapped forwarding re-raycasts the WebGL scene far faster than the display refreshes.
+- Never remove the `visible` early-return in `StarField`'s drift rAF or parallax listener — it is what stops the loop repainting once the hero scrolls off screen.
 - Never add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.
 - Never eager-load `@splinetool/react-spline` — keep it `React.lazy` inside `SplineScene.jsx`.
 - Never center the terminal with `transform: translateX(-50%)` — Framer Motion sets `transform: none` inline; bake the offset into `left` directly.

@@ -66,7 +66,7 @@ function SocialIcon({ name }) {
   return SOCIAL_ICONS[name] ?? null
 }
 
-export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
+export default function Hero({ onOpenAI, started = false, onSplineLoaded, visible = true }) {
   const splineRef = useRef(null)
   const robotHotspotRef = useRef(null)
   const [copied, setCopied] = useState(false)
@@ -96,6 +96,19 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
   const mouseX   = useMotionValue(0.5)
   const mouseY   = useMotionValue(0.5)
 
+  // Coalesces forwarded pointer events into at most one dispatch per animation
+  // frame. A high-polling-rate mouse can fire `pointermove` far faster than the
+  // display refreshes; dispatching into the Spline canvas on every raw sample
+  // forces the WebGL scene to re-raycast/re-render its cursor-tracking that
+  // often too. Batching to rAF caps the forwarded rate at display refresh
+  // without changing the tracking behavior itself.
+  const pendingPointerRef = useRef(null)
+  const pointerRafRef     = useRef(null)
+
+  useEffect(() => () => {
+    if (pointerRafRef.current) cancelAnimationFrame(pointerRafRef.current)
+  }, [])
+
   const handlePointerMove = useCallback(
     (e) => {
       if (e.pointerType !== 'mouse') return
@@ -107,18 +120,24 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
          the canvas container (e.g. mouse is over the H1 letters). This lets the
          robot track the cursor everywhere in the hero without blocking whileHover
          on the letter spans. bubbles:false prevents a dispatch feedback loop. */
-      if (splineRef.current && !splineRef.current.contains(e.target)) {
-        const canvas = splineRef.current.querySelector('canvas')
-        if (canvas) {
-          const opts = {
-            clientX: e.clientX, clientY: e.clientY,
-            screenX: e.screenX, screenY: e.screenY,
-            bubbles: false, cancelable: false,
-          }
-          canvas.dispatchEvent(new PointerEvent('pointermove', { ...opts, pointerType: 'mouse' }))
-          canvas.dispatchEvent(new MouseEvent('mousemove', opts))
-        }
+      if (!splineRef.current || splineRef.current.contains(e.target)) return
+
+      pendingPointerRef.current = {
+        clientX: e.clientX, clientY: e.clientY,
+        screenX: e.screenX, screenY: e.screenY,
       }
+      if (pointerRafRef.current) return // a flush is already scheduled this frame
+
+      pointerRafRef.current = requestAnimationFrame(() => {
+        pointerRafRef.current = null
+        const pending = pendingPointerRef.current
+        const canvas  = splineRef.current?.querySelector('canvas')
+        if (!pending || !canvas) return
+
+        const opts = { ...pending, bubbles: false, cancelable: false }
+        canvas.dispatchEvent(new PointerEvent('pointermove', { ...opts, pointerType: 'mouse' }))
+        canvas.dispatchEvent(new MouseEvent('mousemove', opts))
+      })
     },
     [mouseX, mouseY],
   )
@@ -167,7 +186,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded }) {
         }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       >
-        {started && <StarField />}
+        {started && <StarField visible={visible} />}
       </motion.div>
 
       {/* Full-cover 3D layer — absolutely fills the hero, below text z-index */}

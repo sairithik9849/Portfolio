@@ -48,6 +48,15 @@ export default function WhatIDo() {
   // Exposed to JSX click handlers; populated inside setup(), cleared on teardown.
   const scrollToIndexRef = useRef(null)
   const [active, setActive] = useState(0)
+  // Mount the desktop viz field only near/in view — all 5 Viz components carry
+  // their own rAF loops (VizData/VizAgents/VizSystems reschedule every frame for
+  // their entire mounted lifetime, only skipping work when inactive — never the
+  // wakeup). Unmounting off-screen fully stops that cost, mirroring the pattern
+  // MyJourney already uses (see useJourneyEngine.js pause/resume). This gate is
+  // independent of the pin/scrub ScrollTrigger below — pin geometry is measured
+  // off the word column (stackBase/stackKo), never off the viz field, so gating
+  // the field cannot perturb scrub or settle-snap math.
+  const [vizInView, setVizInView] = useState(false)
 
   // Scroll-progress MotionValues — set in the onUpdate callback below.
   // useMotionValue gives automatic subscriber cleanup on unmount (vs module-level
@@ -60,6 +69,24 @@ export default function WhatIDo() {
   // cleanly as the section ends. Only applied when Agents is active
   // (active === N - 1); all other words keep opacity: 1.
   const captionFade = useTransform(agentsProgress, [0.5, 1], [1, 0], { clamp: true })
+
+  // rootMargin pre-loads the field ~half a viewport before the section enters,
+  // so WID_PANEL_REVEAL still has a fully-mounted target to animate into by the
+  // time the section is actually visible — no pop-in on first scroll arrival.
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section || !('IntersectionObserver' in window)) {
+      setVizInView(true) // no IO support — fail open rather than never-render
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setVizInView(entry.isIntersecting),
+      { threshold: 0, rootMargin: '50% 0px 50% 0px' },
+    )
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const section   = sectionRef.current
@@ -430,7 +457,9 @@ export default function WhatIDo() {
           stage) so they are NOT clipped by the stage's clip-path:inset and can
           span the full 100vh. The section is position:relative and the
           containing block for these absolute elements. */}
-      <WidVisual progress={progress} agentsProgress={agentsProgress} active={active} reduced={reduced} />
+      {vizInView && (
+        <WidVisual progress={progress} agentsProgress={agentsProgress} active={active} reduced={reduced} />
+      )}
 
       {/* Caption — real DOM text (active blurb) for screen readers.
           Mirrors the field's geometry (same left/right/height). z:5 paints it

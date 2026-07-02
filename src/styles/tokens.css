@@ -82,11 +82,11 @@ body {
      which breaks ScrollTrigger's position:fixed pin. `clip` contains horizontal
      overflow without creating a scroll container. */
   overflow-x: clip;
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(201, 245, 88, 0.06), transparent 60%),
-    radial-gradient(900px 700px at -10% 30%, rgba(255, 255, 255, 0.025), transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
+  /* The two radial gradients previously lived here under
+     `background-attachment: fixed`, which repaints on every scrolled frame.
+     They now live on the composited `.bg-gradient` fixed layer — see
+     layout.css. This keeps only the flat fallback color. */
+  background: var(--bg);
 }
 
 a { color: inherit; text-decoration: none; }

@@ -31,6 +31,21 @@
   box-shadow: 0 0 12px var(--accent);
 }
 
+/* Composited replacement for `body { background-attachment: fixed }` — a fixed
+   background-attachment forces the browser to repaint the gradient region on
+   every scrolled frame (no GPU layer of its own). A `position: fixed` element
+   is promoted to its own compositor layer instead, so scrolling composites it
+   rather than repainting it. Same two radial-gradients, same visual result. */
+.bg-gradient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(201, 245, 88, 0.06), transparent 60%),
+    radial-gradient(900px 700px at -10% 30%, rgba(255, 255, 255, 0.025), transparent 60%);
+}
+
 .noise {
   position: fixed;
   inset: 0;

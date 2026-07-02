@@ -67,6 +67,16 @@ All five layers render absolutely stacked and cross-dissolve via opacity; each r
 
 Adding a capability requires: a `WHAT_I_DO` entry, a `WID_VIZ` entry, a new `Viz*.jsx` in `src/components/widviz/`, and a `VIZ` map entry in `WidVisual.jsx`.
 
+## Desktop Viz Field — Off-Screen Mount Gate
+
+Three of the five `Viz*` components (`VizData`, `VizAgents`, `VizSystems`) run a `requestAnimationFrame` loop that **reschedules every frame for the component's entire mounted lifetime** — an internal `isActive`/`dissolve` check skips the per-frame *work* but never the wakeup itself. Left unmounted-always (as it was originally), this meant ~3 rAF callbacks ran continuously for the whole page lifetime, even while the hero was on screen and this section nowhere near the viewport — a real cost on weak GPUs.
+
+`WhatIDo.jsx` now wraps the **desktop** `<WidVisual>` field (the one at the bottom of the section, not the mobile `frozen` list) in a `vizInView` gate: an `IntersectionObserver` on `sectionRef` with `rootMargin: '50% 0px 50% 0px'` (mounts ~half a viewport early so `WID_PANEL_REVEAL` still has time to play; unmounts the same distance after exit). This fully unmounts all 5 Viz components — and their rAF loops — off-screen, mirroring the pause/resume pattern `useJourneyEngine.js` already uses for the Journey canvas engine.
+
+This gate is independent of the pin/scrub `ScrollTrigger` above it — pin geometry is measured off the word column (`stackBase`/`stackKo`), never off the viz field, so mounting/unmounting the field cannot perturb scrub or settle-snap math. The mobile `<WidVisual frozen index={i} />` list is intentionally **not** gated — it renders one static frame each, no rAF loop to save.
+
+**Do not remove this gate or widen its `rootMargin` significantly** — it is the primary fix for WhatIDo's continuous main-thread cost on low-end GPUs.
+
 ## Per-Viz Scroll Slices — `widSlice.js`
 
 `widSlice(index, n)` returns the input/output ranges each viz maps `progress` through with `useTransform`:
