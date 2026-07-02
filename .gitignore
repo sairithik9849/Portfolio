@@ -31,7 +31,7 @@ dist-ssr
 .codex/
 package-lock.json
 .playwright-mcp/
-prompts/
+Notes/
 
 # Replit environment — not project config
 .replit

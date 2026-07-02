@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code across this repository.
+Guidance for Claude Code or any CLI across this repository.
 
 ## Project
 
@@ -34,6 +34,7 @@ These apply everywhere, regardless of the area being touched.
 - **Content:** All copy lives in `src/data/`. Never hardcode content inside components.
 - **CSS:** Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps floor.
 - **No silent regressions:** If existing styles, classes, or behavior must change, say so explicitly.
+- **Visual proof before "done":** After any hero/viz/CSS/animation change, invoke the `visual-verify` skill before claiming the change works. Type checks and lint are not a substitute.
 - **Respect existing architecture:** Prefer extending existing patterns over introducing new libraries, frameworks, or architectural rewrites. When an existing system can solve the problem, use it.
 - **Architecture First:** Before modifying code, understand the repository's existing architecture. Never import external architecture wholesale. Adapt external ideas to existing repository conventions whenever practical. Only recommend architectural changes when they provide clear long-term value and are intentionally approved. (Full operating-system context: `docs/skills.md`.)
 

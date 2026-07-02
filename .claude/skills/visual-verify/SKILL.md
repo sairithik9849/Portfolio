@@ -54,6 +54,24 @@ Name screenshots descriptively: `<feature>-<label>.png` (e.g. `hero-manifesto-xl
 
 If the caller specifies additional widths (e.g. mobile 375, 768), capture those too — but default to the four above.
 
+### Scrolling — Lenis, not native `window.scrollTo`
+
+`App.jsx` mounts Lenis on `window.__lenis`, and GSAP's ticker drives `lenis.raf` every frame (see `docs/architecture.md`). A native `window.scrollTo(...)` fights that rAF loop instead of moving the page — this is the cause of `window.scrollTo is not a function`-shaped failures seen in past sessions. When the page isn't in the reduced-motion branch (Step 4), scroll via `browser_evaluate`:
+
+```javascript
+window.__lenis?.scrollTo(target, { immediate: true })
+```
+
+`target` can be a selector string, element, or Y offset. `immediate: true` jumps without an animated tween, which is what verification needs. If `window.__lenis` is undefined, the page is already in the reduced-motion branch — native `scrollIntoView`/`scrollTo` works fine there.
+
+### Settle before capturing
+
+GSAP's ticker and ScrollTrigger keep rAF running continuously on this site, so a screenshot tool that waits on network-idle or renderer-quiescence can stall — this is the source of the frozen-renderer/CDP screenshot timeouts seen in past sessions. After a resize or scroll, use `mcp__playwright__browser_wait_for` with a short fixed delay (~300–500ms) before calling `browser_take_screenshot`, rather than relying on the page to go idle.
+
+### If the browser context dies mid-run
+
+If a tool call fails with "Target page, context or browser has been closed" (or similar), do **one** fresh `browser_navigate` to the same URL and retry the failed step. If it fails the same way again, stop — don't keep hammering a dead context — and report to the user what step failed and what you tried, per the standing "avoid rabbit holes" guidance for browser automation.
+
 ## Step 4 — Reduced-motion pass (animation changes only)
 
 When the change touches any Framer Motion variant, GSAP animation, CSS `@keyframes`, or `transition`, also verify the `prefers-reduced-motion` branch:
