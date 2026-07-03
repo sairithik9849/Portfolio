@@ -96,7 +96,7 @@ The engine maintains a `Map<frameIndex, HTMLImageElement>` cache for frames with
 
 ### DPR-scaled drawing
 
-`resize()` calls `canvas.width = clientWidth × dpr` then `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` — idempotent, so multiple `resize()` calls never accumulate scale. All drawing uses CSS pixel coordinates. Cover-fit math: `scale = max(cw/iw, ch/ih)`, centered horizontally.
+`resize()` calls `canvas.width = clientWidth × dpr` then `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` — idempotent, so multiple `resize()` calls never accumulate scale. `dpr` is `Math.min(window.devicePixelRatio || 1, 2)` — clamped, not raw: an uncapped DPR on a full-viewport canvas means a 3× display allocates a ~9× pixel backing store for no visible gain on a photo sequence. All drawing uses CSS pixel coordinates. Cover-fit math: `scale = max(cw/iw, ch/ih)`, centered horizontally.
 
 ### rAF loop
 

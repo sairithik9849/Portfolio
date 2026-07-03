@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/dev-server.ps1",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

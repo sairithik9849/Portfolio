@@ -118,7 +118,9 @@ export class ImageSequenceRenderer {
    */
   _applyDpr() {
     const canvas = this._canvas
-    const dpr    = window.devicePixelRatio || 1
+    // Clamp to 2x — a full-viewport canvas backing store at an uncapped 3x
+    // DPR is ~9x the pixel count of 1x for no visible gain on a photo sequence.
+    const dpr    = Math.min(window.devicePixelRatio || 1, 2)
     const w      = canvas.clientWidth
     const h      = canvas.clientHeight
     if (w === 0 || h === 0) return

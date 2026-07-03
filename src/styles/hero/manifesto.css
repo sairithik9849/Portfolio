@@ -114,14 +114,15 @@
   gap: 10px;
   padding: 16px 16px 17px;
   border: 1px solid var(--line);
+  /* Solid dark plate — no backdrop-filter; these four cards sit over the
+     drifting StarField, and a blurred backdrop re-samples every drift frame.
+     Raised opacity reads as the same panel weight without the repaint. */
   background:
     linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(10, 10, 10, 0.42) 40%
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(10, 10, 10, 0.94) 40%
     );
-  backdrop-filter: blur(14px) saturate(130%);
-  -webkit-backdrop-filter: blur(14px) saturate(130%);
   overflow: hidden;
   transition:
     border-color 280ms ease,
@@ -273,11 +274,14 @@
   letter-spacing: var(--tracking-normal);
   text-transform: none;
   color: var(--accent);
-  background: rgba(201, 245, 88, 0.08);
+  /* Solid dark plate with the lime tint layered on top — no backdrop-filter.
+     Same visual weight as the glass version without re-blurring the
+     drifting StarField behind it on every frame. */
+  background:
+    linear-gradient(rgba(201, 245, 88, 0.10), rgba(201, 245, 88, 0.10)),
+    rgba(9, 10, 8, 0.94);
   border: 1px solid var(--accent);
   border-radius: 6px;
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
   box-shadow: 0 0 20px rgba(201, 245, 88, 0.10);
   transform: skewX(-6deg);
   transition:

@@ -23,7 +23,6 @@
     rgba(255, 255, 255, 0.022) 2px 3px
   );
   pointer-events: none;
-  mix-blend-mode: overlay;
 }
 
 .terminal:hover {
@@ -356,7 +355,6 @@
   background: rgba(10, 10, 10, 0.97);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(8px);
   scrollbar-width: thin;
   scrollbar-color: var(--muted-2) transparent;
 }

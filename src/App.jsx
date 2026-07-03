@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import Lenis        from 'lenis'
 import { gsap }    from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -10,12 +10,15 @@ import WhatIDo from './components/WhatIDo'
 import MyJourney from './components/journey/MyJourney'
 import Projects     from './components/Projects'
 import Footer       from './components/Footer'
-import AIDrawer     from './components/AIDrawer'
 import AIOrb        from './components/AIOrb'
 import ReturnToTop  from './components/ReturnToTop'
 import Preloader    from './components/Preloader'
-import { createPreloadTracker } from './utils/preloadAssets'
 import { useHotkey } from './hooks/useHotkey'
+
+// AIDrawer carries its own chat UI + Framer transitions and is only ever
+// needed once the user opens it (Cmd+K or the orb) — deferred out of the
+// initial bundle instead of shipping unconditionally with the rest of the page.
+const AIDrawer = lazy(() => import('./components/AIDrawer'))
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -31,33 +34,22 @@ export default function App() {
   //                         during the ~1.5s cinematic floor.
   //
   //   revealed: true      → overlay sweeps up (translateY curtain) AND HERO_SEQUENCE
-  //                         cascade starts. Fires once the Spline robot is ready
-  //                         (or the ~6.5s safety ceiling). This ensures nothing
-  //                         heavy runs concurrently with the wipe.
+  //                         cascade starts. Granted immediately (before first
+  //                         paint) — Preloader's own bar-fill animation
+  //                         (FILL_DURATION_MS) is the real minimum-display
+  //                         floor, so the curtain no longer waits on the Spline
+  //                         robot too. The robot fades in on its own once
+  //                         loaded (SplineScene's independent opacity
+  //                         transition), even if that lands after reveal.
   const [mountContent, setMountContent] = useState(false)
-  const [revealed,     setRevealed]     = useState(false)
+  // Reveal permission is granted from the first render — Preloader's own
+  // bar-fill animation (FILL_DURATION_MS) is the real minimum-display floor,
+  // so there's nothing async left to gate this on.
+  const [revealed] = useState(true)
   // heroStarted gates the Hero entrance cascade — set only after the curtain
   // sweep finishes (Preloader's onRevealComplete) so the Framer spike that
   // schedules the full HERO_SEQUENCE never contends with the visible wipe.
   const [heroStarted,  setHeroStarted]  = useState(false)
-
-  // Stable ref to the tracker so signal methods are reachable in stable callbacks.
-  const trackerRef = useRef(null)
-
-  // Create the readiness tracker synchronously before the first paint (layout
-  // effect), so the cinematic floor timer starts as early as possible.
-  // setRevealed from useState is stable across renders — safe to close over.
-  // Cleanup disposes the tracker (clears its hard-ceiling timer) on unmount.
-  useLayoutEffect(() => {
-    if (trackerRef.current) return undefined
-    trackerRef.current = createPreloadTracker({
-      onReady: () => setRevealed(true),
-    })
-    return () => {
-      trackerRef.current?.dispose()
-      trackerRef.current = null
-    }
-  }, [])
 
   // Mount content one rAF after the overlay paints — starts Spline loading
   // under the opaque cover as early as possible.
@@ -66,21 +58,29 @@ export default function App() {
     return () => cancelAnimationFrame(id)
   }, [])
 
-  // Forward readiness signal to the tracker.
-  const handleSplineReady = useCallback(() => trackerRef.current?.markSplineReady(), [])
-
   // Fires once the curtain sweep fully completes — starts the Hero cascade on
   // a clean main thread, after all preloader visuals are gone.
   const handleRevealComplete = useCallback(() => setHeroStarted(true), [])
 
   const [aiOpen, setAiOpen] = useState(false)
+  // Sticky "ever opened" flag — once true, AIDrawer stays mounted so its chat
+  // history (internal state) survives subsequent closes/reopens, matching
+  // the pre-lazy behavior where it was always mounted.
+  const [hasOpenedAI, setHasOpenedAI] = useState(false)
   const [heroVisible,    setHeroVisible]    = useState(true)
   const [whatIdoVisible, setWhatIdoVisible] = useState(false)
   const [journeyVisible, setJourneyVisible] = useState(false)
   // True once the What I Do section has been reached and for the remainder of
   // the page — drives the Return-to-Hero floating marker visibility.
   const [returnVisible,  setReturnVisible]  = useState(false)
-  const toggleAI = useCallback(() => setAiOpen((o) => !o), [])
+  const openAI = useCallback(() => {
+    setAiOpen(true)
+    setHasOpenedAI(true)
+  }, [])
+  const toggleAI = useCallback(() => {
+    setAiOpen((o) => !o)
+    setHasOpenedAI(true)
+  }, [])
   const closeAI  = useCallback(() => setAiOpen(false), [])
 
   useHotkey('cmd+k', toggleAI)
@@ -227,9 +227,9 @@ export default function App() {
   return (
     <>
       {/* Preloader — mounts immediately, exits when the reveal fires.
-          beginExit: App sends true once the Spline robot is ready
-            (or the ~6.5s safety ceiling) → overlay translateY curtain plays,
-            HERO_SEQUENCE cascade starts. Content mounts one rAF after first paint. */}
+          beginExit: granted from first render — Preloader's own bar-fill
+            animation is the minimum-display floor, so the curtain lifts as
+            soon as that finishes. Content mounts one rAF after first paint. */}
       <Preloader beginExit={revealed} onRevealComplete={handleRevealComplete} />
 
       {/* Content tree — mounts one rAF after the overlay paints so the
@@ -244,17 +244,23 @@ export default function App() {
 
           <div>
             {/* <Nav /> */}
-            <Hero         onOpenAI={() => setAiOpen(true)} started={heroStarted} onSplineLoaded={handleSplineReady} visible={heroVisible} />
+            <Hero         onOpenAI={openAI} started={heroStarted} visible={heroVisible} />
             <AboutMe />
             <WhatIDo />
             <MyJourney />
             <Projects />
-            <Footer       onOpenAI={() => setAiOpen(true)} />
+            <Footer       onOpenAI={openAI} />
           </div>
 
-          <AIOrb onClick={() => setAiOpen(true)} hidden={heroVisible || whatIdoVisible || journeyVisible} />
+          <AIOrb onClick={openAI} hidden={heroVisible || whatIdoVisible || journeyVisible} />
           <ReturnToTop hidden={!returnVisible} />
-          <AIDrawer open={aiOpen} onClose={closeAI} />
+          {/* Mounted only after the first open — its chat-history state then
+              persists across subsequent closes/reopens like before lazy-loading. */}
+          {hasOpenedAI && (
+            <Suspense fallback={null}>
+              <AIDrawer open={aiOpen} onClose={closeAI} />
+            </Suspense>
+          )}
         </>
       )}
 

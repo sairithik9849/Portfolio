@@ -48,15 +48,23 @@ Spline via `@splinetool/react-spline` + `@splinetool/runtime`.
 
 `SplineScene` starts at `opacity:0` and crossfades to `1` (0.9s) when Spline fires `onLoad`. A 4s `setTimeout` fallback in `SplineScene.jsx` triggers the fade if `onLoad` never fires (slow/offline). **Do not remove either path** — both are needed for reliability.
 
-### `onLoaded` Prop (Reveal Gate)
+This fade is now **entirely independent of the preloader** — the curtain no longer waits for Spline (see "Three-Flag Preloader Handoff" in `docs/architecture.md`). On a slow connection the reveal can land before Spline has loaded; the robot simply fades in whenever it's ready, even after the rest of the hero is already visible and animating. `SplineScene` no longer accepts/calls an `onLoaded` prop up to `Hero`/`App` — nothing outside `SplineScene` needs to know when Spline is ready anymore.
 
-`SplineScene` accepts an `onLoaded` prop. Both the `onLoad` callback and the 4s fallback call `onLoaded` when they fire — this propagates up through `Hero` (`onSplineLoaded`) to `App`, which forwards it to `createPreloadTracker().markSplineReady()`. The preloader curtain waits for this signal before revealing. (`HeroFluid` — previously a second reveal-gate signal — no longer exists in the component tree; the reveal now waits on `markSplineReady` alone.) Do not remove the `onLoaded` call from either code path in `SplineScene.jsx`.
+### Visibility-Gated WebGL Pause
+
+`SplineScene` accepts a `visible` prop (forwarded from `Hero`'s own `visible`, which `App.jsx` sets from `heroVisible` — the same IntersectionObserver-backed flag `StarField` uses). It captures the `Application` instance from Spline's `onLoad(app)` callback and calls `app.stop()` when `visible` becomes `false`, `app.play()` when it becomes `true` again (guarded by `app.isStopped` so redundant calls are no-ops). Spline runs its own WebGL render loop for as long as the `Application` object exists — without this, that loop kept rendering at full rate even while the hero was scrolled completely out of view, the single largest always-on GPU cost on the page. This can only take effect after the hero has already revealed (the hero is on-screen for the entire preloader window), so it cannot interact with the reveal gate.
 
 ### Spline Pointer Forwarding (Load-Bearing, rAF-Coalesced)
 
 `handlePointerMove` in `Hero.jsx` re-dispatches synthetic `pointermove`+`mousemove` (`bubbles: false`) to the Spline canvas whenever the cursor is **outside** `.hero-spline`. Removing this requires also disabling letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
 
 The dispatch itself is throttled to at most once per `requestAnimationFrame`: raw pointer coordinates are stashed in a ref on every `pointermove` sample, and a single rAF flushes the latest one into the canvas. A high-polling-rate mouse can fire far more `pointermove` events than the display refreshes; each dispatch forces the Spline WebGL scene to re-raycast, so uncapped forwarding was a real per-mousemove GPU cost on weak iGPUs. The coalescing changes only the *rate*, not the tracking behavior — never revert to dispatching on every raw sample.
+
+`handlePointerMove` no longer reads `getBoundingClientRect()` on the raw event — that read (plus a pair of `useMotionValue`s it fed) was dead: nothing in the render tree ever consumed those motion values. Removed rather than fixed.
+
+## MatrixText (Role Text)
+
+The bracketed role string in the meta-row (`AUTOMATION WITH PURPOSE`, `SHIPPING PRODUCTION SYSTEMS`, …) is `MatrixText.jsx` — a per-character scramble-in/scramble-out cycle driven by a `setTimeout` chain, not Framer or CSS. It accepts a `visible` prop (forwarded the same way as `StarField`'s and `SplineScene`'s) that gates the entire effect: the timer chain only runs while `visible && !reduceMotion`, and its cleanup clears all pending timers on every dependency change. Before this, the cycle ran forever regardless of hero visibility, scheduling per-character React state updates on an element nobody could see once the user scrolled away. Reduced-motion is read via `useReducedMotion()` (reactive), not a one-time `matchMedia().matches` snapshot — do not revert to the one-time read.
 
 ## Terminal
 
@@ -99,3 +107,7 @@ CSS partial: `src/styles/hero/starfield.css` (registered in `global.css` at the 
 - Never center the terminal with `transform: translateX(-50%)` — Framer Motion sets `transform: none` inline; bake the offset into `left` directly.
 - Never move the scanline back to `.terminal::after` — it belongs on `.terminal .bar::after`; `.bar` needs `position: relative; overflow: hidden` to clip it.
 - Never shrink `.hero-manifesto` below `max-width: clamp(520px, 58%, 768px)` — the longest metric label truncates below 768px.
+- Never remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen (see "Visibility-Gated WebGL Pause").
+- Never re-wire `SplineScene`'s load fade back into the preloader's reveal gate — the whole point of decoupling them was to stop the curtain waiting on Spline.
+- Never remove the `visible` gate in `MatrixText`'s effect — without it the per-character scramble loop runs forever regardless of hero visibility.
+- Never revert `.terminal` (or `.mf-metric`, `.meta-row > span`, `.meta-social-btn`, `.manifesto-cta-btn`) glass treatment casually — `.terminal` is the intentional sole survivor of `backdrop-filter` in the hero; the rest were converted to solid plates because they sit over the drifting StarField. See "Glass" in `docs/design-system.md` before adding a new blurred surface here.

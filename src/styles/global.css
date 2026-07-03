@@ -3,6 +3,7 @@
    To add a new section: create src/styles/<name>.css and register it below
    in visual/section order, then update the Styling section in CLAUDE.md. */
 
+@import './fonts.css';
 @import './tokens.css';
 @import './preloader.css';
 @import './layout.css';

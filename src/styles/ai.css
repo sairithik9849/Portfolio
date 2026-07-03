@@ -9,8 +9,10 @@
   gap: 14px;
   padding: 10px 16px 10px 10px;
   border: 1px solid var(--line-2);
-  background: rgba(10, 10, 10, 0.7);
-  backdrop-filter: blur(20px);
+  /* Solid plate — no backdrop-filter; this is a position:fixed element that
+     stays visible while the user scrolls, so a blurred backdrop would
+     re-sample the scrolling page behind it every frame. */
+  background: rgba(10, 10, 10, 0.92);
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.25s ease;

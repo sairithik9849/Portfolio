@@ -404,7 +404,8 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
             const cs = childT < 0.6
               ? lerp(0.3, 1.1, easeOutBack(childT / 0.6))
               : lerp(1.1, 1.0, (childT - 0.6) / 0.4)
-            if (el) el.style.setProperty('--agent-glow', persona.glow)
+            // --agent-glow is static per agent (set once inline at mount below) —
+            // no need to re-write it on every frame.
             placeToken(el, lerp(STAGE_NODES[2].x, tx, ce), lerp(STAGE_NODES[2].y, ty, ce), childT, cs)
           })
           break
@@ -421,7 +422,6 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
             sim.agentProgress[i] = Math.min(elapsed / (sim.agentDurMult[i] * agentDur), 1)
             const angle = AGENT_BASE_ANGLES[i] + sim.agentRotation * persona.speedMult
             const r     = INNER_R + persona.radiusDelta
-            if (el) el.style.setProperty('--agent-glow', persona.glow)
             placeToken(
               el,
               CORE_X + r * Math.sin(angle),

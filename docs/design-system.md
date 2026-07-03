@@ -30,7 +30,7 @@ CSS is split into one partial per section/component in `src/styles/`. `global.cs
 
 ### Partials (in import order)
 
-`tokens.css`, `preloader.css`, `layout.css`, `nav.css`, then the hero sub-folder
+`fonts.css`, `tokens.css`, `preloader.css`, `layout.css`, `nav.css`, then the hero sub-folder
 (`hero/grid.css`, `hero/shell.css`, `hero/identity.css`, `hero/robot.css`, `hero/manifesto.css`,
 `hero/terminal.css`), `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, then the widviz
 sub-folder (`widviz/shell.css`, `widviz/backend.css`, `widviz/systems.css`, `widviz/data.css`,
@@ -73,7 +73,12 @@ this doc with a justified new role — do not silently add raw hex.
 
 ## Typography
 
-Fonts are loaded in `index.html`. Three typefaces form three reading registers:
+Fonts are self-hosted: `src/styles/fonts.css` declares `@font-face` rules pointing at
+`public/fonts/*.woff2` (latin + latin-ext subsets only, trimmed to the weights actually used —
+no 300 anywhere in the codebase). `index.html` preloads the hero h1 face
+(`ibm-plex-sans-condensed-normal-500-latin.woff2`) and preconnects to `prod.spline.design`; there
+is no Google Fonts request. `fonts.css` is imported first in `global.css`, ahead of `tokens.css`.
+Three typefaces form three reading registers:
 
 | Token | Family | Register | Use |
 |---|---|---|---|
@@ -151,8 +156,11 @@ Pair with `--radius-md` on bordered containers.
 
 ### Return-to-Hero marker (`return-to-top.css`)
 
-A 44×44px glass monolith (`backdrop-filter: blur(16px) saturate(150%)`, `--radius-md`, hairline
-`var(--line-2)` border) pinned top-right at z-index 40. Contains an icon-only upward chevron
+A 44×44px solid dark plate (`rgba(12, 12, 12, 0.92)`, `--radius-md`, hairline `var(--line-2)`
+border) pinned top-right at z-index 40 — no `backdrop-filter`. It's a `position: fixed` element
+that stays on screen while the user scrolls; blurring a fixed element re-samples the scrolling
+content behind it every frame, so the raised-opacity solid plate reads the same without the
+repaint. Contains an icon-only upward chevron
 (`currentColor`, `var(--fg-2)` at rest). On hover/focus: border lights to `var(--accent)`;
 a vertical lime gradient streak (`.return-top-ascent`) sweeps upward through the bezel via
 `translateY` (transform only, clipped by `overflow:hidden`); chevron color shifts to `var(--accent)`
@@ -181,8 +189,15 @@ Visual hierarchy uses **tonal layers and glow halos** — no traditional drop sh
 - **Borders:** Hairline `1px solid var(--line)` (8% bone) or `var(--line-2)` (16% bone).
 - **Glow:** `box-shadow` in `var(--accent)` or `var(--accent-2)` with blur 5–32px at 12–35%
   opacity, simulating light emission. Currently ad-hoc per component in CSS partials.
-- **Glass:** `backdrop-filter: blur(12px) saturate(150%)` for floating nav and suggestion pills.
-  See `nav.css` for the canonical implementation.
+- **Glass:** `backdrop-filter: blur(...)  saturate(...)` is reserved for `.terminal`
+  (`hero/terminal.css`) — the hero's one signature glass surface, and its internal
+  `.term-suggest` autocomplete dropdown. Every other floating panel that used to carry
+  `backdrop-filter` (hero metric cards, meta-row chips, social buttons, the CTA button, the AI
+  orb) is now a solid/raised-opacity plate instead. Reason: these sit over the always-drifting
+  StarField or stay on screen during scroll (`position: fixed`), and a blurred backdrop
+  re-samples the pixels behind it every frame it's visible — the single largest GPU cost on the
+  page before this was fixed. Default to a solid plate for new floating panels; only reach for
+  `backdrop-filter` on a static, non-scrolling surface where the glass effect is the point.
 - **Noise texture:** `layout.css:.noise` — fixed-position 4% opacity SVG fractal noise overlay.
   Do not add a second noise layer.
 
@@ -192,8 +207,8 @@ Visual hierarchy uses **tonal layers and glow halos** — no traditional drop sh
 
 **Using a color:** pick the token whose semantic role matches. Do not use raw hex in CSS.
 WebGL/canvas/Framer-Motion contexts that cannot read CSS vars may mirror the hex as a JS
-constant — always add a comment noting which token it mirrors (see `src/components/HeroFluid.jsx`
-and `src/components/widviz/VizData.jsx` for the established pattern).
+constant — always add a comment noting which token it mirrors (see
+`src/components/widviz/VizData.jsx` for the established pattern).
 
 **Adding a new section's CSS:** create `src/styles/<name>.css`, add `@import` to `global.css`.
 No other file needs updating.

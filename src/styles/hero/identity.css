@@ -48,8 +48,13 @@
     0 0 24px rgba(232, 196, 122, 0.28);
 }
 
-.hero h1 .hero-name-line { display: inline-block; will-change: transform; }
-.hero h1 .char { display: inline-block; vertical-align: baseline; will-change: transform; }
+/* No manual will-change: .hero-name-line is the only element Framer actually
+   animates (fadeUp on the motion.span) and it manages will-change itself
+   during the active transition. Individual .char spans are never animated —
+   a permanent will-change on ~20 letters was a standing promoted-layer cost
+   for no compositing benefit. */
+.hero h1 .hero-name-line { display: inline-block; }
+.hero h1 .char { display: inline-block; vertical-align: baseline; }
 .hero h1 .char--last { color: var(--accent-2); }
 .hero h1 .it { font-style: italic; color: var(--fg-2); }
 .hero h1 .hero-dot {

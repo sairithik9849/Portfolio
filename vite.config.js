@@ -30,6 +30,12 @@ export default defineConfig({
           ) {
             return 'vendor'
           }
+          // react/react-dom change far less often than app source and are
+          // shared by every route — split them into their own stable chunk
+          // so deploys that only touch app code don't invalidate this cache.
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'react-vendor'
+          }
         },
       },
     },

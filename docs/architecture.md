@@ -12,7 +12,7 @@ App.jsx (orchestration root)
 ├── Lenis + GSAP clock      App.jsx useEffect
 ├── Hero subsystem          → docs/hero.md
 │   ├── Hero.jsx            (#top)
-│   ├── SplineScene.jsx     (lazy @splinetool/react-spline)
+│   ├── SplineScene.jsx     (lazy @splinetool/react-spline; stop()/play() gated on hero visibility)
 │   └── StarField.jsx
 │
 ├── WhatIDo subsystem       → docs/what-i-do.md
@@ -32,7 +32,7 @@ App.jsx (orchestration root)
 │   └── src/components/visuals/Viz*.jsx
 │
 ├── AI subsystem            → docs/backend.md
-│   ├── AIDrawer.jsx
+│   ├── AIDrawer.jsx        (React.lazy — mounted only after first open, see "AIDrawer Lazy Load")
 │   ├── AIOrb.jsx
 │   └── api/chat.js         (Vercel serverless → Gemini)
 │
@@ -68,18 +68,47 @@ The ids in `nav.js` do not match component names — use this table for scroll t
 `App.jsx` uses three booleans — `mountContent`, `revealed`, and `heroStarted` — to separate the three distinct phases cleanly.
 
 - **`mountContent`** (set via `requestAnimationFrame` one frame after the overlay paints) mounts the full content tree **under the still-opaque overlay** so Spline can init while the bar animates.
-- **`revealed`** (set by `createPreloadTracker`'s `onReady` callback) sends `beginExit=true` to Preloader. The curtain (`translateY` sweep) lifts only when **both** this flag has fired **and** the single-fill bar has completed — whichever comes last. Preloader.jsx enforces the `fillDone && beginExit` gate internally. `onReady` fires once the Spline robot (`markSplineReady`) is ready — or the `HARD_CEILING_MS` (~6.5s) safety cap fires. There is no separate `MIN_DISPLAY_MS` timing floor in the tracker; the bar's `FILL_DURATION_MS` (~2.6s) is the effective display floor.
+- **`revealed`** is granted from the first render (`useState(true)`) — it is no longer gated on Spline readiness. It sends `beginExit=true` to Preloader, but the curtain (`translateY` sweep) still only lifts once Preloader's own bar-fill has finished: `Preloader.jsx` internally ANDs `fillDone && beginExit`, and since `beginExit` is already true, the bar's `FILL_DURATION_MS` (~2.6s WAAPI fill, `Preloader.jsx`) is the sole remaining gate. The Spline robot is **not** part of this gate at all — it fades in independently (see "Spline Visibility Gating" below) whenever it finishes loading, even if that lands after the curtain has already lifted. This means slow connections see the site reveal in ~2.6s instead of waiting up to the old ~6.5s Spline ceiling.
 - **`heroStarted`** (set from `Preloader`'s `onRevealComplete` → `AnimatePresence onExitComplete`) starts the `HERO_SEQUENCE` cascade. This deliberately fires **after the curtain finishes sweeping up**, so the heavy Framer reconciliation spike lands on a fully clean main thread with the preloader already gone.
 
 **Do not collapse these back into two or one flag** — separating `revealed` from `heroStarted` is what keeps the Framer spike off the preloader's visible frames. Collapsing them causes the cascade's main-thread cost to contend with the curtain sweep.
 
 **Do not gate `mountContent` on anything time-based** — content must mount early so both subsystems load under the opaque overlay during the cinematic window.
 
+**Do not re-couple `revealed` to Spline readiness** — the bar-fill floor plus SplineScene's independent fade-in is the intended design; re-adding a Spline wait here reintroduces the up-to-6.5s reveal delay this replaced.
+
 The four `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
 
-## `preloadAssets.js` Progress Model
+## Spline Visibility Gating
 
-The progress bar (Preloader.jsx) is a **single compositor-driven WAAPI animation** on `transform: scaleX` from 0→1 over `FILL_DURATION_MS` (~2.6s) with a near-linear ease — it runs off the main thread, so nothing that runs under the overlay can ever stutter it. `preloadAssets.js` does not drive the bar at all; it only tracks *when the reveal may happen* via `markSplineReady()`. The old two-phase ramp+race, `FILL_RAMP`, `RACE_DURATION_MS`, `MIN_DISPLAY_MS`, `rangeRef`, and `animRef` reassignment are gone.
+`SplineScene.jsx` captures the `Application` instance from `@splinetool/react-spline`'s `onLoad`
+callback and calls `app.stop()` / `app.play()` (guarded by `app.isStopped`) whenever its `visible`
+prop changes. `Hero.jsx` forwards its own `visible` prop (App's `heroVisible`, from the `#top`
+IntersectionObserver) straight through. Spline runs its own WebGL render loop for as long as the
+`Application` is alive — without this, that loop kept rendering at full rate even while the hero
+was scrolled completely out of view. This can only ever fire after the hero has already been
+revealed (the hero is on-screen for the entire preloader window), so it never interacts with the
+reveal gate above. Independently of this, `SplineScene`'s own `loaded` state drives a Framer
+opacity fade-in on the canvas wrapper — this is what lets the preloader curtain lift before Spline
+has actually finished loading; the robot simply fades in whenever it's ready.
+
+## AIDrawer Lazy Load
+
+`AIDrawer` is `React.lazy`-imported in `App.jsx` and mounted only after the user opens it for the
+first time (Cmd+K, the orb, or a footer/hero CTA — all routed through a shared `openAI` callback
+that also flips a sticky `hasOpenedAI` flag). Once mounted it is **never unmounted again**, even
+after closing — `AIDrawer` owns its own chat-history state internally, and keeping it mounted
+after the first open preserves that history across subsequent opens exactly as it behaved before
+lazy-loading. `open={aiOpen}` still controls its internal show/hide.
+
+`MyJourney` and the WhatIDo `WidVisual` field were evaluated for the same treatment and
+deliberately left eager: `MyJourney`'s root `#journey` section is looked up via
+`document.getElementById` by an `App.jsx` IntersectionObserver that only runs once
+(`[mountContent]` deps) — lazy-loading it would require that lookup to retry once the real section
+mounts, which the current effect doesn't do. `WidVisual` is already forced into the initial bundle
+regardless, because `WhatIDo.jsx`'s mobile blurb list renders five `<WidVisual frozen>` instances
+unconditionally (CSS-hidden on desktop, not JS-gated) — a lazy boundary there would add complexity
+with no deferred-load benefit under the current architecture.
 
 ## Lenis Momentum Scroll
 
@@ -192,3 +221,6 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not reintroduce `.grid-bg`.
 - Do not add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.
 - Do not move the page background gradients back onto `body` with `background-attachment: fixed` — keep them on the composited `.bg-gradient` fixed layer.
+- Do not re-gate the preloader's `revealed` flag on Spline readiness — see "Three-Flag Preloader Handoff."
+- Do not remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen.
+- Do not unmount `AIDrawer` on close (e.g. reverting to `{aiOpen && <AIDrawer/>}`) — it would drop chat history on every reopen; keep the `hasOpenedAI`-gated mount-once pattern.

@@ -199,8 +199,11 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
   // L3 uses CSS box-shadow (no Framer override) — unchanged.
 
   // ── Data particle — rises through layers at pulse peak ────────────────────
-  const particleY  = useTransform(pulseT, [0, 1], ['78%', '12%'])
-  const particleX  = useTransform(pulseT, [0, 1], ['54%', '44%'])
+  // .wifc-stage is a fixed 340×260px box (interface.css:43-44) — percentages
+  // converted to px so the particle can move via transform (x/y) instead of
+  // top/left, which triggers layout on every frame of the pulse.
+  const particleY  = useTransform(pulseT, [0, 1], [0.78 * 260, 0.12 * 260])
+  const particleX  = useTransform(pulseT, [0, 1], [0.54 * 340, 0.44 * 340])
   const particleOp = useTransform(pulseT, [0, 0.12, 0.80, 1], [0, 1, 0.9, 0])
 
   const sparkPoints                = buildSparkPoints(sparkData)
@@ -232,8 +235,8 @@ export default function VizInterface({ progress, index, isActive, reduced, froze
             className="wifc-particle"
             aria-hidden="true"
             style={{
-              top:     particleY,
-              left:    particleX,
+              x:       particleX,
+              y:       particleY,
               opacity: particleOp,
             }}
           />

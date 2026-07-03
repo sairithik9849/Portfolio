@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { motion, useMotionValue, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   HERO_PARENT,
   HERO_SEQUENCE,
@@ -66,7 +66,7 @@ function SocialIcon({ name }) {
   return SOCIAL_ICONS[name] ?? null
 }
 
-export default function Hero({ onOpenAI, started = false, onSplineLoaded, visible = true }) {
+export default function Hero({ onOpenAI, started = false, visible = true }) {
   const splineRef = useRef(null)
   const robotHotspotRef = useRef(null)
   const [copied, setCopied] = useState(false)
@@ -93,9 +93,6 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded, visibl
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
   }, [])
 
-  const mouseX   = useMotionValue(0.5)
-  const mouseY   = useMotionValue(0.5)
-
   // Coalesces forwarded pointer events into at most one dispatch per animation
   // frame. A high-polling-rate mouse can fire `pointermove` far faster than the
   // display refreshes; dispatching into the Spline canvas on every raw sample
@@ -112,9 +109,6 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded, visibl
   const handlePointerMove = useCallback(
     (e) => {
       if (e.pointerType !== 'mouse') return
-      const rect = e.currentTarget.getBoundingClientRect()
-      mouseX.set((e.clientX - rect.left) / rect.width)
-      mouseY.set((e.clientY - rect.top)  / rect.height)
 
       /* Forward to the Spline canvas when the real target is NOT already inside
          the canvas container (e.g. mouse is over the H1 letters). This lets the
@@ -139,7 +133,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded, visibl
         canvas.dispatchEvent(new MouseEvent('mousemove', opts))
       })
     },
-    [mouseX, mouseY],
+    [],
   )
 
   const handleDiscoverClick = useCallback(() => {
@@ -194,7 +188,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded, visibl
         <SplineScene
           scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
           className="spline-canvas"
-          onLoaded={onSplineLoaded}
+          visible={visible}
         />
       </div>
 
@@ -206,7 +200,7 @@ export default function Hero({ onOpenAI, started = false, onSplineLoaded, visibl
       >
         <motion.span layout transition={LAYOUT_TWEEN}>
           <span className="role-bracket role-bracket--left" aria-hidden="true">[</span>
-          <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={0} />
+          <MatrixText phrases={ROLES} scrambleDuration={1400} holdDuration={3000} delay={0} visible={visible} />
           <span className="role-bracket role-bracket--right" aria-hidden="true">]</span>
         </motion.span>
         <motion.span layout transition={LAYOUT_TWEEN} className="meta-syslog">

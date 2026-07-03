@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useReducedMotion } from 'framer-motion'
 
 const GREEN_HOLD_MS = 220
 
@@ -11,10 +12,9 @@ export default function MatrixText({
   scrambleDuration = 1400,
   holdDuration = 2800,
   delay = 0,
+  visible = true,
 }) {
-  const reduceMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduceMotion = useReducedMotion()
 
   const [chars, setChars] = useState(() =>
     reduceMotion
@@ -23,7 +23,10 @@ export default function MatrixText({
   )
 
   useEffect(() => {
-    if (reduceMotion) return
+    // Also pauses while the hero is scrolled out of view — this loop ran
+    // forever regardless of visibility before, cycling per-character React
+    // state updates on an element nobody could see.
+    if (reduceMotion || !visible) return
 
     const timers = []
     let phraseIdx = 0
@@ -112,7 +115,7 @@ export default function MatrixText({
     return () => {
       clearTimers()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible, reduceMotion]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <span className="matrix-wrap">

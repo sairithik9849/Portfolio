@@ -11,6 +11,7 @@ Personal portfolio for **Sairithik Komuravelly (Sai)**. Goal: best-in-class deve
 ```bash
 npm install         # install
 npm run dev         # frontend only
+npm run dev:clean   # kill stale node on 5173/5174, then start dev
 vercel dev          # frontend + serverless API (required when touching /api)
 npm run build       # production build → dist/
 npm run preview     # preview production build
@@ -21,7 +22,7 @@ vercel --prod       # production deploy
 
 ## Dev Server Hygiene
 
-Before starting a Vite dev server, check for and kill stale/running servers to avoid port cycling. Do not spawn redundant background dev servers.
+Run `npm run dev:clean` before starting work — it wraps `scripts/dev-server.ps1`, which frees ports 5173/5174 of stale node processes and starts a single dev server. Don't hand-roll the port check or spawn redundant background dev servers.
 
 ## Global Rules
 
@@ -37,6 +38,7 @@ These apply everywhere, regardless of the area being touched.
 - **Visual proof before "done":** After any hero/viz/CSS/animation change, invoke the `visual-verify` skill before claiming the change works. Type checks and lint are not a substitute.
 - **Respect existing architecture:** Prefer extending existing patterns over introducing new libraries, frameworks, or architectural rewrites. When an existing system can solve the problem, use it.
 - **Architecture First:** Before modifying code, understand the repository's existing architecture. Never import external architecture wholesale. Adapt external ideas to existing repository conventions whenever practical. Only recommend architectural changes when they provide clear long-term value and are intentionally approved. (Full operating-system context: `docs/skills.md`.)
+- **Lint hygiene:** A pre-existing lint error surfaced during verification gets fixed in the same session, not stepped around. The lint gate stays green — generated output (e.g. `dist/`, `brag-output/`) is excluded from linting, never left to error.
 
 ## Routing Table
 
