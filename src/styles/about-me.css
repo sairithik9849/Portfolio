@@ -2,10 +2,32 @@
 .about-me {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
   padding: clamp(40px, 7vh, 80px) 0 clamp(80px, 14vh, 160px);
 }
 
+/* Flex column so the tech block below the statement can grow into whatever
+   leftover height the section has (real extra height only exists on desktop,
+   where .about-me carries min-height:100vh — see hero-about-stack.css) and
+   vertically center itself within that space.
+   width:100% is required here: `.shell`'s centering (max-width + margin:auto)
+   depends on a definite cross-size. In normal block flow, width:auto already
+   resolves to "fill available width" so it works implicitly — but as a flex
+   item, width:auto is resolved by the flex algorithm instead, and combined
+   with auto margins that collapses the box to content size and centers THAT
+   (the bug this fixes). Explicit width:100% restores the definite size the
+   max-width clamp + margin:auto centering trick depends on. */
+.about-me-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
 .about-me .section-head {
+  width: 100%;
   padding-top: 0;
   grid-template-columns: 96px 1fr auto;
   gap: 28px;
@@ -68,6 +90,98 @@
   font-family: inherit;
 }
 
+/* ---- tech row ("what I build with") ---- */
+/* flex:1 + justify-content:center lets this block absorb whatever leftover
+   height .about-me-body has and center the kicker+row within it; margin-top
+   is the floor so the gap under the statement never collapses to zero when
+   there's no leftover height (mobile, reduced-motion — see media queries). */
+.about-me-tech {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: clamp(48px, 8vh, 96px);
+}
+
+/* Centered mono kicker flanked by hairline rules, matching the HUD label language.
+   Gold (--accent-2) marks it as metadata/emphasis, consistent with its use
+   elsewhere for role strings and index prefixes (see design-system.md). */
+.about-me-tech__kicker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin: 0 0 clamp(24px, 4vh, 44px);
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  color: var(--accent-2);
+}
+
+.about-me-tech__kicker::before,
+.about-me-tech__kicker::after {
+  content: '';
+  flex: 0 1 clamp(32px, 8vw, 120px);
+  height: 1px;
+  background: var(--line);
+}
+
+.about-me-tech__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(36px, 5.5vw, 80px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-me-tech__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Icon inherits its color so the cream→lime hover propagates through fill=currentColor. */
+.about-me-tech__icon {
+  display: inline-flex;
+  color: var(--fg);
+  transition:
+    color 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: filter;
+}
+
+.about-me-tech__icon svg {
+  display: block;
+  width: 46px;
+  height: 46px;
+}
+
+.about-me-tech__label {
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-snug);
+  color: var(--muted);
+  transition: color 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Lime tint + soft lime glow halo — reuses the statement highlight glow values. */
+.about-me-tech__item:hover .about-me-tech__icon {
+  color: var(--accent);
+  filter:
+    drop-shadow(0 0 8px rgba(201, 245, 88, 0.55))
+    drop-shadow(0 0 18px rgba(201, 245, 88, 0.3));
+}
+
+.about-me-tech__item:hover .about-me-tech__label {
+  color: var(--fg-2);
+}
+
 @media (max-width: 980px) {
   .about-me { padding: 0 0 clamp(60px, 10vh, 96px); }
   .about-me .section-head {
@@ -78,8 +192,13 @@
     font-size: clamp(28px, 6vw, 48px);
     max-width: none;
   }
+  .about-me-tech { margin-top: clamp(40px, 7vh, 72px); }
+  .about-me-tech__row { gap: clamp(24px, 7vw, 40px); }
+  .about-me-tech__icon svg { width: 38px; height: 38px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .about-me-word { opacity: 1 !important; }
+  .about-me-tech__icon,
+  .about-me-tech__label { opacity: 1 !important; }
 }

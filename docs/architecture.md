@@ -46,6 +46,10 @@ App.jsx (orchestration root)
 
 `Nav → Hero → AboutMe → WhatIDo → MyJourney → Projects → Footer`
 
+`Hero` and `AboutMe` are wrapped together in a `.hero-about-stack` div — see "Hero → AboutMe
+Sticky-Stack Transition" below. This wrapper does not change render order, only how the two
+sections visually overlap during that scroll band.
+
 `AIOrb` + `ReturnToTop` + `AIDrawer` are fixed overlays at the end of the tree.
 
 **`<Nav />` is currently commented out in `App.jsx`** (temporarily hidden) — its import and visibility wiring remain intact; uncomment the JSX to restore it.
@@ -83,14 +87,42 @@ The four `IntersectionObserver` effects in `App.jsx` have `mountContent` in thei
 
 `SplineScene.jsx` captures the `Application` instance from `@splinetool/react-spline`'s `onLoad`
 callback and calls `app.stop()` / `app.play()` (guarded by `app.isStopped`) whenever its `visible`
-prop changes. `Hero.jsx` forwards its own `visible` prop (App's `heroVisible`, from the `#top`
-IntersectionObserver) straight through. Spline runs its own WebGL render loop for as long as the
-`Application` is alive — without this, that loop kept rendering at full rate even while the hero
-was scrolled completely out of view. This can only ever fire after the hero has already been
-revealed (the hero is on-screen for the entire preloader window), so it never interacts with the
-reveal gate above. Independently of this, `SplineScene`'s own `loaded` state drives a Framer
-opacity fade-in on the canvas wrapper — this is what lets the preloader curtain lift before Spline
-has actually finished loading; the robot simply fades in whenever it's ready.
+prop changes. `Hero.jsx` forwards its own `visible` prop (App's `heroVisible`) straight through.
+Spline runs its own WebGL render loop for as long as the `Application` is alive — without this,
+that loop kept rendering at full rate even while the hero was scrolled completely out of view. This
+can only ever fire after the hero has already been revealed (the hero is on-screen for the entire
+preloader window), so it never interacts with the reveal gate above. Independently of this,
+`SplineScene`'s own `loaded` state drives a Framer opacity fade-in on the canvas wrapper — this is
+what lets the preloader curtain lift before Spline has actually finished loading; the robot simply
+fades in whenever it's ready.
+
+`heroVisible` is driven by an `IntersectionObserver` on **`#hero-sentinel`**, not on `#top` (the
+Hero root) — see "Hero → AboutMe Sticky-Stack Transition" below for why.
+
+## Hero → AboutMe Sticky-Stack Transition
+
+`Hero` and `AboutMe` are wrapped in a `.hero-about-stack` div (`App.jsx`). On desktop
+(`min-width: 981px`) with motion allowed, `src/styles/hero-about-stack.css` makes `.hero`
+`position: sticky; top: 0` — it pins to the viewport top — while `.about-me` becomes an opaque
+`--bg-2` card with rounded top corners and a hairline `--line` top border, so it visually slides up
+and covers the pinned hero as the user scrolls. This is **pure CSS `position: sticky`** — no GSAP
+(would be a third `ScrollTrigger` site, violating the two-site cap in `docs/animation.md`), no
+Framer scroll-scrub. Below 981px and under `prefers-reduced-motion: reduce`, both sections stay in
+normal document flow (no pin, no card background).
+
+**Z-index override, load-bearing:** `.hero` also carries the shared `.shell` class, which sets
+`z-index: 3` (`layout.css`) — that would otherwise paint the pinned hero *above* the incoming
+`.about-me` card (`z-index: 2`), hiding the transition entirely. `hero-about-stack.css` scopes
+`.hero-about-stack .hero { z-index: 1; }` to override this for the pinned hero only; the global
+`.shell` rule and every other section using it are untouched.
+
+**`#hero-sentinel`** is a 1px `aria-hidden` div placed **between** `<Hero>` and `<AboutMe>` in the
+JSX — deliberately not before Hero. Because it sits in normal (non-sticky) flow at the Hero/AboutMe
+boundary, it scrolls out of the viewport at exactly the scroll position where AboutMe's card has
+fully covered the pinned hero (`scrollY ≈` hero height), which is the moment `heroVisible` should
+flip to `false` to pause the two WebGL contexts (StarField, Spline). A sentinel on `#top` (the Hero
+root) would never report `false` while sticky, since the pinned hero stays geometrically in the
+viewport indefinitely.
 
 ## AIDrawer Lazy Load
 
@@ -223,4 +255,6 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not move the page background gradients back onto `body` with `background-attachment: fixed` — keep them on the composited `.bg-gradient` fixed layer.
 - Do not re-gate the preloader's `revealed` flag on Spline readiness — see "Three-Flag Preloader Handoff."
 - Do not remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen.
+- Do not re-point the `heroVisible` observer from `#hero-sentinel` back to `#top` — while the hero is sticky-pinned it never leaves the viewport, so an observer on `#top` would never report `false` and the WebGL pause would never fire.
+- Do not remove the `.hero-about-stack .hero { z-index: 1; }` override in `hero-about-stack.css` — `.hero` inherits `z-index: 3` from the shared `.shell` class, which would otherwise paint the pinned hero above the incoming AboutMe card.
 - Do not unmount `AIDrawer` on close (e.g. reverting to `{aiOpen && <AIDrawer/>}`) — it would drop chat history on every reopen; keep the `hasOpenedAI`-gated mount-once pattern.

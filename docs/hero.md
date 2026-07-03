@@ -8,6 +8,16 @@ Hero entrance cascade, Spline robot, and StarField. Loaded on demand via the rou
 
 `StarField` `z:0` → `SplineScene` `z:1` → text/H1 `z:2`
 
+## Hero Root Position (Sticky-Stack)
+
+The `.hero` root is `position: relative` unconditionally (`hero/shell.css`). On desktop
+(`min-width: 981px`) with motion allowed, `src/styles/hero-about-stack.css` layers
+`position: sticky; top: 0; z-index: 1` on top of that — the hero pins to the viewport top while
+`AboutMe` slides up and covers it. See "Hero → AboutMe Sticky-Stack Transition" in
+`docs/architecture.md` for the full mechanism, including why `heroVisible` (the prop gating
+StarField/Spline's WebGL render loop) is driven by a sentinel at the Hero/AboutMe boundary rather
+than an observer on `#top` itself.
+
 ## Hero Entrance Cascade
 
 `Hero.jsx` drives `animate={started ? 'show' : 'hidden'}` where `started` is the `heroStarted` flag from `App.jsx` — the entire cascade holds at `hidden` until **after** the preloader curtain has fully swept up. `heroStarted` is set from `Preloader`'s `onRevealComplete` (`AnimatePresence onExitComplete`), which fires ~0.88s after `revealed` becomes true. This ensures the Framer reconciliation spike that schedules all ~5.6s of `HERO_SEQUENCE` delays lands on a clean main thread with the overlay already gone. The Spline robot is unaffected (its crossfade is outside the cascade, driven by its own `onLoad`). See `docs/architecture.md` for the three-flag preloader handoff.

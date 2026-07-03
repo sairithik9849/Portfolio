@@ -149,7 +149,14 @@ export default function App() {
   // never surface over the hero.
   useEffect(() => {
     if (!mountContent) return undefined
-    const hero = document.getElementById('top')
+    // Watches #hero-sentinel (top of .hero-about-stack), not #top (the Hero
+    // itself) — while the hero is sticky-pinned under AboutMe it stays
+    // geometrically in the viewport, so an observer on #top would never
+    // report false and the WebGL-pause optimization (StarField/Spline
+    // app.stop()) would never fire. The sentinel leaves the viewport at the
+    // same scroll position the pin visually resolves (AboutMe fully covers
+    // the hero), so timing is unchanged from the pre-stack behavior.
+    const hero = document.getElementById('hero-sentinel')
 
     if (!hero || !('IntersectionObserver' in window)) {
       return undefined
@@ -244,8 +251,22 @@ export default function App() {
 
           <div>
             {/* <Nav /> */}
-            <Hero         onOpenAI={openAI} started={heroStarted} visible={heroVisible} />
-            <AboutMe />
+            {/* hero-about-stack: CSS-only sticky-pin transition (see
+                hero-about-stack.css) — the Hero pins under AboutMe on desktop.
+                #hero-sentinel sits at the Hero/AboutMe boundary in normal
+                (non-sticky) flow — NOT before the Hero — so it scrolls out of
+                the viewport at exactly the scroll position where AboutMe's
+                sticky-relative card has fully covered the pinned hero, giving
+                the visibility observer below the right moment to pause
+                StarField/Spline instead of #top (which stays geometrically
+                in the viewport for as long as the hero is pinned). */}
+            <div className="hero-about-stack">
+              <Hero onOpenAI={openAI} started={heroStarted} visible={heroVisible} />
+              {/* 1px, not 0px — a zero-area target is unreliable across
+                  IntersectionObserver implementations. */}
+              <div id="hero-sentinel" aria-hidden="true" style={{ height: 1 }} />
+              <AboutMe />
+            </div>
             <WhatIDo />
             <MyJourney />
             <Projects />

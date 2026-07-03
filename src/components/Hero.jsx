@@ -168,7 +168,6 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
       {...HERO_PARENT}
       animate={started ? 'show' : 'hidden'}
       onPointerMove={handlePointerMove}
-      style={{ position: 'relative' }}
     >
       {/* Phase 1 — StarField mounts only after the preloader has revealed
            (started=true) so Chrome never rasterizes 1330 box-shadows behind an

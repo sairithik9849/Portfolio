@@ -1,0 +1,37 @@
+/* ---- hero → about-me sticky-stack transition ----
+   The Hero pins to the top of the viewport while AboutMe scrolls up and
+   covers it, reading as a card sliding over the previous section. Pure CSS
+   `position: sticky` — no JS scroll rig, no GSAP (see docs/animation.md
+   two-site cap), no Framer scrub. Desktop + motion-allowed only; mobile and
+   reduced-motion keep normal document flow (the hero already becomes
+   height:auto below 980px — see hero/shell.css). */
+.hero-about-stack {
+  position: relative;
+}
+
+@media (min-width: 981px) and (prefers-reduced-motion: no-preference) {
+  .hero-about-stack .hero {
+    position: sticky;
+    top: 0;
+    /* .hero also carries the shared `.shell` class, which sets z-index:3
+       (layout.css) — that would otherwise paint the pinned hero ABOVE the
+       incoming AboutMe card (z-index:2). Scoped to this stack only; the
+       global `.shell` rule and Hero's own internal z-order (StarField/
+       SplineScene/text, all relative to Hero's own stacking context) are
+       untouched. */
+    z-index: 1;
+  }
+
+  .hero-about-stack .about-me {
+    position: relative;
+    z-index: 2; /* paints above the pinned hero (z-index: auto) */
+    min-height: 100vh; /* always fully covers the pinned hero beneath it */
+    background: var(--bg-2);
+    /* var(--radius-lg) (8px, the largest non-pill radius token) reads as
+       barely-rounded on a viewport-wide card — literal value, no token
+       equivalent exists for a curve this size. */
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+    border-top: 1px solid var(--line);
+  }
+}
