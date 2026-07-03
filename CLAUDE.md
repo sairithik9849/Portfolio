@@ -53,6 +53,7 @@ Read the listed doc before working in each area. Read only what the task require
 | `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                      | `docs/what-i-do.md`     |
 | `src/components/journey/`, `src/lib/journey/`, `src/hooks/useJourneyEngine.js`, `src/data/journey.js`                              | `docs/journey.md`       |
 | `src/components/ReturnToTop.jsx`, `src/styles/return-to-top.css`                                                                    | `docs/architecture.md`  |
+| `src/components/ScrollProgressFrame.jsx`, `src/styles/scroll-progress-frame.css`                                                    | `docs/architecture.md`  |
 | `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                        | `docs/backend.md`       |
 | Skills, skill composition, development workflow, Architecture First, design/component intake                                        | `docs/skills.md`        |
 

@@ -156,8 +156,10 @@ Pair with `--radius-md` on bordered containers.
 
 ### Return-to-Hero marker (`return-to-top.css`)
 
-A 44×44px solid dark plate (`rgba(12, 12, 12, 0.92)`, `--radius-md`, hairline `var(--line-2)`
-border) pinned top-right at z-index 40 — no `backdrop-filter`. It's a `position: fixed` element
+A 44×44px solid dark plate (`rgba(12, 12, 12, 0.92)`, `--radius-md`, hairline
+`rgba(237, 237, 223, 0.35)` border — stronger than the shared `--line-2` so the plate reads
+clearly over busy scroll content) pinned top-right at z-index 40 — no `backdrop-filter`. It's a
+`position: fixed` element
 that stays on screen while the user scrolls; blurring a fixed element re-samples the scrolling
 content behind it every frame, so the raised-opacity solid plate reads the same without the
 repaint. Contains an icon-only upward chevron

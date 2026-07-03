@@ -19,7 +19,9 @@
   /* Solid dark plate — no backdrop-filter; a blurred fixed element re-rasterizes
      the scrolling content behind it every frame. Raised opacity reads identically. */
   background: rgba(12, 12, 12, 0.92);
-  border: 1px solid var(--line-2);
+  /* Stronger than the shared --line-2 (16% bone) so the plate reads clearly
+     against busy scroll content behind it — --line-2 alone was too faint here. */
+  border: 1px solid rgba(237, 237, 223, 0.35);
   border-radius: var(--radius-md);
 
   /* Clip the ascending lime streak so it never overflows the bezel */

@@ -124,6 +124,65 @@ flip to `false` to pause the two WebGL contexts (StarField, Spline). A sentinel 
 root) would never report `false` while sticky, since the pinned hero stays geometrically in the
 viewport indefinitely.
 
+## Scroll Progress Frame
+
+`src/components/ScrollProgressFrame.jsx` (styles: `src/styles/scroll-progress-frame.css`) is a
+fixed overlay, mounted as a sibling of `AIOrb` / `ReturnToTop` at the end of the `mountContent`
+tree in `App.jsx`. It renders a scroll-driven progress indicator that is *born* on the AboutMe
+card during the Hero → AboutMe sticky-stack transition (see above) and grows into a full frame
+around the viewport as the rest of the page scrolls.
+
+**Behavior, in scroll order:**
+1. **Birth.** As `.about-me` rises over the pinned Hero, a line is born at the horizontal center
+   of the card's top edge and fills outward toward both top corners, hugging the card's 32px
+   radius. It is visually glued to the card's top border, so it rides up with the card and lands
+   exactly at the viewport top the instant the pin resolves.
+2. **Rails.** Once the top is full, it stays full while the left + right rails draw downward
+   (mirrored), driven by the remaining page scroll, reaching the viewport bottom at the end of
+   the page.
+3. **Close.** In the last ~2% of scroll, a bottom edge draws in from both bottom corners toward
+   center, completing a full rectangular border.
+4. Reverse (scrolling up) retracts the same way, spring-smoothed.
+
+**Rendering approach — one fixed SVG, two mirrored half-paths.** The three phases are not a single
+directional draw (top = center→corners, rails = top→down, bottom = corners→center), so each half
+path is ordered top-center → corner → rail → corner → bottom-center. A single monotonic
+`strokeDashoffset` sweep (`pathLength={1}`, offset `1 → 0`) then draws exactly that sequence. The
+right half is the left half's mirror (opposite arc sweep-flags) and shares the same dash-offset
+value, so the two halves stay perfectly symmetric off one motion value. A single `<linearGradient>`
+(`--accent` → `--accent-2`, vertical) is shared by both paths — this avoids the seams that 4
+separate DOM edges (`scaleX`/`scaleY`) would introduce at the corners, and lets a single stroke
+express the 32px corner radius that a multi-element approach can't.
+
+**Birth → frame handoff.** There is only one SVG frame element, not two overlapping renders. During
+birth, the whole `<g>` is translated down (`translateY = (1 − birthProgress) · 100vh`) so its top
+edge sits on the card's top border; at `birthProgress = 1` (pin resolved) the translate reaches 0,
+and because `.about-me` spans the same full viewport width as the frame, the frame's 32px corners
+are geometrically identical to where the birth edge already was — pixel-aligned, no jump. The
+corner radius is a constant 32px throughout (matches the card's own radius token — no morph needed).
+
+**Phase mapping.** Segment lengths (`topHalf`, `cornerArc`, `rail`, `bottomHalf`) are computed from
+the live viewport size on mount/resize, giving two boundary fractions: `fTop` (birth/top phase ends)
+and `fBottomStart` (rails end, bottom close begins). Two `useScroll` sources drive the draw: a
+card-scoped one (`target: aboutRef, offset: ['start end','start start']`) for birth, and the
+document-level one for rails + bottom close, gated to start at `sPin` — the document scroll
+fraction at which `#about`'s top reaches the viewport top, derived from `aboutRef.current.offsetTop`
+and `document.documentElement.scrollHeight`. The two sources are combined with a plain conditional
+(`birthProgress.get() < 1 ? birthDraw.get() : railDraw.get()`), which is continuous at the handoff
+because both sources agree on `fTop` there — deliberately not `Math.max`, which would snap the top
+segment to full during birth. The combined value is spring-smoothed (`stiffness: 250, damping: 40`,
+matching the AboutMe/reference component convention) before being converted to `strokeDashoffset`.
+
+**Fallback (mobile / reduced-motion).** `ScrollProgressFrame` self-locates `#about` via
+`document.getElementById` (no prop, no edit to `AboutMe.jsx`) and also tracks a `matchMedia`
+listener for `(min-width: 981px) and (prefers-reduced-motion: no-preference)` — the exact query
+`hero-about-stack.css` uses to gate the pin. When that query doesn't match (or Framer's
+`useReducedMotion()` is true), it renders a plain fixed top bar (`scaleX` tracking document
+`scrollYProgress`, same gradient, horizontal) instead of the SVG frame — there is no card edge to
+be born from when the Hero never pins.
+
+**z-index:** 32 — above Nav (30), below ReturnToTop (40) / AIOrb (50).
+
 ## AIDrawer Lazy Load
 
 `AIDrawer` is `React.lazy`-imported in `App.jsx` and mounted only after the user opens it for the
@@ -177,8 +236,14 @@ fifth `mountContent`-gated `IntersectionObserver` on `#what-i-do`:
 - **Scrolling back above What I Do:** `isIntersecting` becomes false and `top > 0` again → hidden.
 
 The component mirrors `AIOrb`'s `hidden`-prop contract: `aria-hidden`, `tabIndex -1`,
-`pointer-events: none` while hidden. Click calls `scrollToId('top')` from `src/utils/scrollTo.js`.
-Entrance/exit uses the `RETURN_MARKER` variant from `src/animations/variants.js`.
+`pointer-events: none` while hidden. Click calls `scrollToTop()` from `src/utils/scrollTo.js` —
+**not** `scrollToId('top')`. Hero (`#top`) is `position: sticky` during the Hero→AboutMe
+sticky-stack transition (see above); once scrolled past it, its `getBoundingClientRect()` reflects
+wherever the sticky containing block clamps it (the Hero/About boundary), not the true page top,
+so a selector-based scroll lands on AboutMe instead. `scrollToTop()` targets the numeric document
+position `0` instead (`window.__lenis.scrollTo(0)` / native `window.scrollTo({top: 0})`), which
+sidesteps the sticky rect entirely. Entrance/exit uses the `RETURN_MARKER` variant from
+`src/animations/variants.js`.
 
 ## AIOrb Visibility
 

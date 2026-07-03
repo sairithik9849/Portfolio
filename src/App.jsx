@@ -12,6 +12,7 @@ import Projects     from './components/Projects'
 import Footer       from './components/Footer'
 import AIOrb        from './components/AIOrb'
 import ReturnToTop  from './components/ReturnToTop'
+import ScrollProgressFrame from './components/ScrollProgressFrame'
 import Preloader    from './components/Preloader'
 import { useHotkey } from './hooks/useHotkey'
 
@@ -275,6 +276,7 @@ export default function App() {
 
           <AIOrb onClick={openAI} hidden={heroVisible || whatIdoVisible || journeyVisible} />
           <ReturnToTop hidden={!returnVisible} />
+          <ScrollProgressFrame />
           {/* Mounted only after the first open — its chat-history state then
               persists across subsequent closes/reopens like before lazy-loading. */}
           {hasOpenedAI && (

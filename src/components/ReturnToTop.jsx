@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { RETURN_MARKER } from '../animations/variants'
-import { scrollToId } from '../utils/scrollTo'
+import { scrollToTop } from '../utils/scrollTo'
 
 // Upward chevron SVG — stroke-based so it scales cleanly and inherits
 // currentColor from the parent button. Sized to sit inside the glass monolith.
@@ -49,7 +49,7 @@ export default function ReturnToTop({ hidden = false }) {
   return (
     <motion.button
       className="return-top"
-      onClick={() => scrollToId('top')}
+      onClick={scrollToTop}
       aria-label="Return to top"
       aria-hidden={hidden}
       tabIndex={hidden ? -1 : 0}

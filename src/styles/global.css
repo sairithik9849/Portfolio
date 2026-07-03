@@ -20,6 +20,7 @@
 @import './components.css';
 @import './about-me.css';
 @import './hero-about-stack.css';
+@import './scroll-progress-frame.css';
 @import './WhatIDo.css';
 /* what-i-do viz — split into per-viz partials (cascade order preserved) */
 @import './widviz/shell.css';

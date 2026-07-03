@@ -1,0 +1,44 @@
+/* ---- Scroll Progress Frame ----
+   Born on the AboutMe card's top edge, rides it up to the viewport top as
+   the Hero pin resolves, then draws a rounded-rectangle frame around the
+   viewport as the rest of the page scrolls. See docs/architecture.md,
+   "Scroll Progress Frame", for the full design and the JS-side math.
+   z-index 32: above Nav (30), below ReturnToTop (40) / AIOrb (50). */
+
+.scroll-progress-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+  pointer-events: none;
+  /* translateY is applied to the inner <g>, not this root — isolate the
+     compositor layer to the piece that actually animates. */
+}
+
+.scroll-progress-frame__path {
+  fill: none;
+  stroke: url(#scroll-progress-frame-gradient);
+  stroke-width: 3.5px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  shape-rendering: geometricPrecision;
+}
+
+.scroll-progress-frame g {
+  will-change: transform;
+}
+
+/* ---- Fallback: mobile / reduced-motion ----
+   The Hero never pins below 981px or under reduced-motion (see
+   hero-about-stack.css's identical media query), so there is no card edge
+   for a birth phase to ride — just a plain left-to-right top bar. */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 32;
+  height: 3.5px;
+  pointer-events: none;
+  transform-origin: left;
+  background: linear-gradient(to right, var(--accent), var(--accent-2));
+}
