@@ -1,7 +1,24 @@
 /* ─── My Journey (04) ──────────────────────────────────────────────────────── */
-/* Apple-style scroll storytelling: a sticky viewport that stays pinned while  */
-/* the outer scroll container advances. One scroll-progress value drives the   */
-/* canvas, chapter, and chapter name indicator simultaneously.                 */
+/* Sticky-visual + scrolling-timeline: the avatar canvas pins on the right    */
+/* while a gradient-spine timeline (translated from the 21st.dev Timeline     */
+/* component) scrolls past on the left. One shared scroll-progress value      */
+/* drives the avatar scrub and the spine's fill height together, so both      */
+/* finish at the same scroll position. Each chapter is a cinematic scene —    */
+/* shared grammar (spine, marker, quote/deck/metadata/chips), bespoke         */
+/* featured visual per chapter. See docs/journey.md.                         */
+
+:root {
+  /* Distance from the viewport's left edge to the timeline's resting
+     (shell-aligned) x position. Shared with ScrollProgressFrame's relay
+     motion (see ScrollProgressFrame.jsx) so the frame's left rail and this
+     section's spine translate to/from the exact same point — the two read
+     as one continuous line handed off between them. */
+  --journey-gutter-x: calc(max(0px, (100vw - var(--shell-max)) / 2) + var(--space-gutter));
+
+  /* Sticky year-marker offset — clears the fixed nav (~64px) with headroom.
+     Composed from existing spacing tokens rather than a bare pixel value. */
+  --journey-sticky-offset: calc(var(--space-xxl) - var(--space-lg));
+}
 
 /* ─── Section ───────────────────────────────────────────────────────────────── */
 .journey {
@@ -10,33 +27,69 @@
   border-top: 1px solid var(--line);
 }
 
-/* ─── Scroll container ───────────────────────────────────────────────────────── */
-/* Provides the scroll budget. Height is a CSS variable — change it without    */
-/* touching component code. Default: 5 × 100vh, one viewport per chapter.     */
-.journey-scroll-container {
-  position: relative;
-  height: var(--journey-scroll-length, 500vh);
+/* ─── Desktop/tablet wrapper (≥ 768px) ───────────────────────────────────────── */
+/* Hidden by default (mobile-first); shown at the tablet breakpoint below.     */
+.journey-desktop {
+  display: none;
 }
 
-/* ─── Sticky viewport ────────────────────────────────────────────────────────── */
-/* Stays pinned to the top of the viewport while journey-scroll-container      */
-/* scrolls past. overflow:hidden prevents the canvas from leaking.             */
-.journey-sticky {
+/* Full content-height wrapper — no fixed vh scroll budget; height is driven  */
+/* by the timeline entries themselves (see .journey-timeline__entry).         */
+.journey-timeline {
+  position: relative;
+}
+
+/* Full-bleed row: NOT shell-constrained, so the avatar can sit flush to the  */
+/* viewport's right edge. The left column pads itself to the shell gutter    */
+/* via --journey-gutter-x instead.                                            */
+.journey-timeline__row {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* ─── Left: scrolling timeline column ────────────────────────────────────── */
+/* flex: 1 1 100% + z-index: 1 — the text track now spans the full row width  */
+/* and layers above the full-bleed avatar backdrop below. padding-left keeps  */
+/* the shell-gutter alignment, so the text itself does not move.             */
+.journey-timeline__track {
+  flex: 1 1 100%;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  padding-left: var(--journey-gutter-x);
+  padding-right: var(--space-xl);
+  padding-top: var(--space-xxl);
+}
+
+/* ─── Full-bleed avatar backdrop ─────────────────────────────────────────── */
+/* Pulled out of flex flow so it spans the entire section width/height       */
+/* (resolves against .journey-timeline's position: relative) instead of a    */
+/* 55% column. The sticky pin now lives on .journey-stage below; this layer  */
+/* is just the full-bleed positioning box. pointer-events: none since it's   */
+/* purely decorative and sits behind the interactive text track.             */
+.journey-timeline__avatar {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ─── Stage (canvas + scrim) ──────────────────────────────────────────────── */
+/* Sticky pin moved here from .journey-timeline__avatar so the canvas still   */
+/* pins for exactly the same scroll duration as before — the avatar's parent  */
+/* is now full-height/absolute (not itself sticky), so this is the element    */
+/* that actually stays fixed on screen while .journey-timeline__row scrolls.  */
+.journey-stage {
   position: sticky;
   top: 0;
-  width: 100%;
   height: 100vh;
+  width: 100%;
   overflow: hidden;
 }
 
-/* ─── Stage (z-index 0): canvas + scrim ─────────────────────────────────────── */
-.journey-stage {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-/* The canvas fills the stage; drawing dimensions are set by the engine. */
 .journey-canvas {
   position: absolute;
   inset: 0;
@@ -45,11 +98,12 @@
   height: 100%;
 }
 
-/* Scrim: always present between canvas and text.                               */
-/* Left gradient: primary legibility layer (text lives on the left ~40%).      */
-/* Top + bottom vignettes: soften the frame near section boundaries.           */
-/* Uses literal rgba values because CSS custom properties (--bg = #070707)     */
-/* cannot be composed inside rgba() without CSS color-mix support.             */
+/* Scrim: the left field reads as a calm, near-black surface for the hero    */
+/* quotes + line-art visuals to sit on; the right third stays clear so the   */
+/* avatar remains legible and the primary visual focus. Multi-stop so the    */
+/* darkening tapers smoothly instead of a hard edge.                        */
+/* Uses literal rgba values because CSS custom properties (--bg = #070707)    */
+/* cannot be composed inside rgba() without CSS color-mix support.          */
 .journey-scrim {
   position: absolute;
   inset: 0;
@@ -57,51 +111,33 @@
   background:
     linear-gradient(
       to right,
-      rgba(7, 7, 7, 1.00)  0%,
-      rgba(7, 7, 7, 0.93)  18%,
-      rgba(7, 7, 7, 0.72)  36%,
-      rgba(7, 7, 7, 0.22)  58%,
-      transparent          100%
+      rgba(7, 7, 7, 0.94)  0%,
+      rgba(7, 7, 7, 0.90)  35%,
+      rgba(7, 7, 7, 0.55)  50%,
+      transparent          68%
     ),
     linear-gradient(
       to bottom,
-      rgba(7, 7, 7, 0.50)  0%,
-      transparent          30%
+      rgba(7, 7, 7, 0.40)  0%,
+      transparent          22%
     ),
     linear-gradient(
       to top,
-      rgba(7, 7, 7, 0.55)  0%,
-      transparent          35%
+      rgba(7, 7, 7, 0.45)  0%,
+      transparent          26%
     );
 }
 
-/* ─── Content (z-index 1): three-zone flex column ──────────────────────────── */
-/* Top: section identity header                                                */
-/* Middle (flex:1): chapter content, vertically centered                      */
-.journey-content {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-/* Shell stretched to full height so flex column spans 100vh. */
-.journey-shell {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding-top: var(--space-xl);
-  padding-bottom: var(--space-xl);
-}
-
-/* ─── Section identity header (top strip) ────────────────────────────────── */
+/* ─── Section identity header (top of the track column) ─────────────────── */
 /* width: fit-content constrains the border-bottom to the text width only.    */
-/* Mirrors the 03 What I Do SectionHead type treatment: serif idx + title.    */
+/* Mirrors the 03 What I Do SectionHead type treatment.                       */
 .journey-header {
   display: flex;
   align-items: baseline;
   gap: var(--space-md);
   width: fit-content;
   flex-shrink: 0;
+  margin-bottom: var(--space-xxl);
 }
 
 .journey-header__idx {
@@ -126,61 +162,511 @@
   font-style: italic;
 }
 
-/* ─── Chapter area (middle, flex-grows to fill space) ────────────────────── */
-/* max-width keeps text within the left ~40% column.                          */
-.journey-left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-lg);
-  max-width: 500px;
-  width: 42%;
+/* ─── Timeline body: entries + spine, spine height measured against this ──── */
+.journey-timeline__body {
+  position: relative;
 }
 
-/* ─── Chapter content ────────────────────────────────────────────────────────── */
-.journey-chapter {
+/* ─── Entry ───────────────────────────────────────────────────────────────── */
+/* Each chapter gets roughly one viewport of dwell — "every scroll delivers   */
+/* one idea" — with generous top/bottom breathing room rather than a dense    */
+/* stack. min-height (not height) so a chapter with more metadata/skills      */
+/* never clips. Capped with min() so the dwell doesn't keep growing on tall/  */
+/* large-monitor viewports — vh alone made 2560×1440 screens scroll through   */
+/* far more empty space per year than a 1280×900 laptop sees.                */
+.journey-timeline__entry {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xl);
+  min-height: min(92vh, 820px);
+  padding-bottom: var(--space-xxl);
+}
+
+.journey-timeline__entry:last-child {
+  min-height: min(70vh, 620px);
+  padding-bottom: var(--space-xl);
+}
+
+/* Sticky year + label + dot marker — clears the fixed nav via
+   --journey-sticky-offset. Fixed width (not min-width) so every chapter's
+   marker occupies identical horizontal space regardless of label length —
+   the scene content column's start x must never shift between chapters. */
+.journey-timeline__marker {
+  position: sticky;
+  top: var(--journey-sticky-offset);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  align-self: flex-start;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+/* Centered on the spine (spine sits at left: 19px within .journey-timeline__body).
+   margin-top nudges the dot down from the row's flex-start edge to sit
+   optically level with the year line's cap-height, now that the marker
+   holds two stacked lines instead of one. */
+.journey-timeline__dot {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 8px;
+  margin-left: 13px;
+  border-radius: var(--radius-full);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+.journey-timeline__marker-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.journey-timeline__year {
+  font-family: var(--serif);
+  font-size: var(--text-display-sm);
+  font-weight: 400;
+  color: var(--fg-2);
+}
+
+/* Reuses the shared .kicker utility (layout.css) for font/tracking/case,
+   overriding only its default muted color to the journey section's green —
+   grouped with the year as one sticky heading instead of living beside the
+   quote. */
+.journey-timeline__marker-label {
+  color: var(--accent);
+}
+
+/* The scene's content column — sized to its own content and centered within */
+/* its entry's min-height slot (the entry itself stays align-items:flex-start */
+/* so the sticky marker's own positioning is untouched). `gap` is a fixed,    */
+/* moderate value between bands — airier than a tight huddle, but the column */
+/* no longer stretches to fill the (capped) slot, which is what produced     */
+/* large empty gaps between quote/visual/metadata/chips on tall viewports.   */
+.journey-timeline__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  max-width: 460px;
+  align-self: center;
+}
+
+/* ─── Shared grammar: quote block (hero quote + deck) ─────────────────────── */
+.journey-quote-block {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-/* Chapter name — lime, medium display serif replacing the old odometer number */
-.journey-chapter__name {
-  display: block;
-  font-family: var(--serif);
-  font-size: var(--text-display-lg);   /* ~36px */
-  font-weight: 400;
-  letter-spacing: var(--tracking-tight);
-  line-height: 1.1;
-  color: var(--accent);                /* lime */
-}
-
-.journey-chapter__title {
+/* The hero quote is always the single largest element on screen — every     */
+/* other band in a scene is sized to support it, never compete with it.      */
+.journey-quote-block__quote {
   margin: 0;
+  display: flex;
+  flex-direction: column;
   font-family: var(--serif);
-  font-size: var(--text-display-md);   /* 32px */
+  font-size: var(--text-display-2xl);
   font-weight: 400;
   letter-spacing: var(--tracking-tight);
-  line-height: 1.15;
-  color: var(--accent-2);              /* gold */
+  line-height: 1.05;
+  color: var(--fg);
 }
 
-.journey-chapter__body {
+.journey-quote-block__line {
+  display: block;
+}
+
+/* Each chapter's final quote line is its narrative "punch" by content
+   design (e.g. "thinks.", "to go deeper.") — rendered in --accent instead
+   of --fg as a static color swap, no size/weight change. Used standalone
+   (no display:block) in JourneyMobile's joined single-line heading, and
+   combined with .journey-quote-block__line on desktop's per-line spans. */
+.journey-quote-block__line--accent {
+  color: var(--accent);
+}
+
+.journey-quote-block__deck {
   margin: 0;
   font-family: var(--sans);
-  font-size: var(--text-body);         /* 14px */
-  line-height: 1.75;
+  font-size: var(--text-body);
+  line-height: 1.7;
   color: var(--fg-2);
   max-width: 44ch;
 }
 
-/* ─── Mobile layout (≤ 767px) ────────────────────────────────────────────────── */
-/* Desktop sticky is hidden on mobile. A flat chapter list is shown instead.    */
-
-.journey-scroll-container {
-  display: none;
+/* The deck's one **marked** phrase (see src/data/journey.js,
+   src/lib/journey/deckEmphasis.js) — a restrained subset of the hero
+   manifesto's established emphasis pattern (hero/manifesto.css's `.serif`
+   spans): same family/style/color, deliberately without its size bump or
+   glow, since Journey's deck box is narrower and already has a scene visual
+   competing for attention. */
+.journey-quote-block__deck-emphasis {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--accent-2);
 }
+
+/* ─── Shared grammar: metadata ────────────────────────────────────────────── */
+/* Still supporting copy, never competing with the quote — but readable:     */
+/* brighter text than the old --muted treatment, each icon in its own small   */
+/* outlined chip rather than floating bare beside the text. */
+.journey-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* --mono (not --sans) — matches design-system.md's documented use-case for
+   the mono register ("metadata tags"), so this reads as structured data
+   rather than another line of prose. --tracking-wider is the token's own
+   inline comment target ("roles, metadata labels"). Color stays --fg-2 —
+   unchanged from the earlier readability fix. */
+.journey-meta__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--mono);
+  font-size: var(--text-md);
+  letter-spacing: var(--tracking-wider);
+  color: var(--fg-2);
+}
+
+.journey-meta__icon-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  color: var(--fg-2);
+}
+
+.journey-meta__icon {
+  color: inherit;
+}
+
+/* Clickable institution rows (MGIT / Saras Analytics / Stevens) — opens in a
+   new tab. The "this is a link" affordance (underline + arrow) is withheld
+   until hover so the row reads as plain text at rest, matching the rest of
+   the metadata list. */
+.journey-meta__link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.journey-meta__link-arrow {
+  display: inline-block;
+  margin-left: var(--space-xs);
+  opacity: 0;
+  transform: translate(-2px, 1px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.journey-meta__link:hover,
+.journey-meta__link:focus-visible {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.journey-meta__link:hover .journey-meta__link-arrow,
+.journey-meta__link:focus-visible .journey-meta__link-arrow {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+/* ─── Shared grammar: skill chips ─────────────────────────────────────────── */
+.journey-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.journey-chips__chip {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-full);
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-2);
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.journey-chips__chip:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ─── Spine ───────────────────────────────────────────────────────────────── */
+/* Absolutely positioned within .journey-timeline__body so its left:19px      */
+/* aligns with .journey-timeline__dot's 20px center (13px margin + 7px half-  */
+/* width) — both measured from the same ancestor's left edge (x:0), which is  */
+/* the section's --journey-gutter-x-aligned resting position. position:       */
+/* absolute is load-bearing here beyond layout: it's what keeps the spine's   */
+/* JS-driven height (see JourneyTimeline.jsx's ResizeObserver) OUT of the      */
+/* body's own auto-height calculation — without it the spine's height feeds   */
+/* back into the very measurement that sets it, growing without bound.        */
+.journey-timeline__spine {
+  position: absolute;
+  left: 19px;
+  top: 0;
+  width: 2px;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.journey-timeline__spine-track {
+  position: absolute;
+  inset: 0;
+  background: var(--line);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+.journey-timeline__spine-fill {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  background: linear-gradient(to bottom, var(--accent), var(--accent-2));
+  border-radius: var(--radius-full);
+}
+
+.journey-timeline__spine-fill--static {
+  height: 100%;
+}
+
+/* ─── Scene: shared root + visual container ───────────────────────────────── */
+/* position:relative + z-index:0 establishes a local stacking context so a
+   scene's own absolutely-positioned visual (e.g. Foundation's background
+   grid, given z-index:-1) can sit behind that scene's own text without
+   escaping below the section's avatar/scrim layers further up the tree. */
+.journey-scene {
+  position: relative;
+  z-index: 0;
+}
+
+/* Every scene's featured visual lives here — constrained to the content     */
+/* column's width by default so it never bleeds into the avatar's clear      */
+/* third; scenes that need full field width (e.g. Leap) opt out explicitly.  */
+.journey-scene__visual {
+  max-width: 460px;
+}
+
+/* ─── Scene: Foundation — cramped, quiet origin ───────────────────────────── */
+/* Deliberately the smallest footprint of the five scenes: extra top space   */
+/* pushes the whole block down, reading as humble/early rather than grand.   */
+.journey-scene--foundation {
+  padding-top: var(--space-xxl);
+}
+
+.journey-scene--foundation .journey-scene__visual {
+  position: absolute;
+  z-index: -1;
+  width: 400px;
+  margin: 0;
+  pointer-events: none;
+  transform: translate(-24px, -56px);
+}
+
+.journey-scene--foundation .journey-scene__visual svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Blueprint grid lines — pathLength:1 + stroke-dasharray:1 1 is the same
+   normalized-draw technique SceneLeap's route arc uses, so strokeDashoffset
+   (1 → 0) draws each line regardless of its actual on-screen length. With
+   no inline dashoffset (the reduced-motion path), the browser's default
+   stroke-dashoffset:0 already reads as "fully drawn". */
+.journey-grid-line {
+  stroke: var(--accent);
+  stroke-width: 0.3;
+  stroke-dasharray: 1 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.45;
+}
+
+/* ─── Scene: Scale — dense, energetic, converging-threads-led ─────────────── */
+.journey-scene--scale .journey-scene__visual {
+  margin-top: var(--space-lg);
+}
+
+.journey-threads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.journey-threads__field {
+  width: 100%;
+  height: 56px;
+  overflow: visible;
+}
+
+.journey-threads__line {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.journey-threads__line--erratic {
+  stroke: var(--fg-2);
+  stroke-width: 0.5;
+  opacity: 0.55;
+}
+
+.journey-threads__line--smooth {
+  stroke: var(--accent);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+}
+
+.journey-threads__caption {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.journey-threads__value {
+  font-family: var(--serif);
+  font-size: var(--text-display-3xl);
+  line-height: 1;
+  color: var(--accent);
+}
+
+.journey-threads__unit {
+  font-family: var(--sans);
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+/* ─── Scene: Leap — airiest, horizontal distance is the metaphor ─────────── */
+.journey-scene--leap .journey-scene__visual {
+  max-width: 100%;
+  width: 100%;
+  margin: var(--space-xl) 0;
+}
+
+.journey-route-wrap {
+  position: relative;
+}
+
+.journey-route {
+  width: 100%;
+  height: 64px;
+  overflow: visible;
+}
+
+/* The traveling plane marker — positioned via left/top percentages sampled
+   from the same Bézier the arc is drawn with (SceneLeap.jsx), not a CSS
+   transform-on-SVG (whose coordinate space doesn't map cleanly to the
+   viewBox's non-pixel units). pointer-events:none since it's decorative. */
+.journey-route__plane {
+  position: absolute;
+  color: var(--accent);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.journey-route__arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.journey-route__point {
+  fill: var(--accent);
+}
+
+.journey-route__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-sm);
+  font-family: var(--sans);
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+/* ─── Scene: Build — engineered, log-cascade rows executing ──────────────── */
+.journey-scene--build .journey-scene__visual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.journey-log-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.journey-log-line__tick {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.journey-log-line__bar {
+  height: 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+
+.journey-log-line--0 .journey-log-line__bar { width: 100%; }
+.journey-log-line--1 .journey-log-line__bar { width: 82%; }
+.journey-log-line--2 .journey-log-line__bar { width: 64%; }
+.journey-log-line--3 .journey-log-line__bar { width: 46%; }
+
+/* ─── Scene: Today — open, forward, the only idle-alive visual ───────────── */
+.journey-scene--today .journey-scene__visual {
+  margin-top: var(--space-lg);
+}
+
+.journey-terminal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: 32px;
+}
+
+.journey-terminal__prompt {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* transform-origin: left so the stretch-into-a-line keyframe (TODAY_CURSOR,
+   variants.js) grows rightward from the cursor's own resting position
+   rather than expanding from its center. */
+.journey-terminal__cursor {
+  display: inline-block;
+  width: 12px;
+  height: 26px;
+  background: var(--accent);
+  border-radius: 1px;
+  transform-origin: left center;
+}
+
+/* ─── Mobile layout (≤ 767px) ────────────────────────────────────────────────── */
+/* Single-column timeline: no pin, no avatar canvas, no featured visuals —    */
+/* a light typographic adaptation. The spine still draws with scroll.        */
 
 .journey-mobile {
   display: flex;
@@ -188,7 +674,17 @@
   padding: 0 var(--space-gutter) var(--space-xxl);
 }
 
+.journey-mobile__header-row {
+  margin: var(--space-xl) 0 var(--space-xl);
+}
+
+.journey-mobile__track {
+  position: relative;
+  padding-left: var(--space-xl);
+}
+
 .journey-mobile__chapter {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -200,6 +696,21 @@
   border-bottom: none;
 }
 
+/* Centered on .journey-mobile__spine (left: 19px within .journey-mobile__track).
+   .journey-mobile__chapter's own left edge already sits at track's
+   padding-left (--space-xl, 48px), so this offsets back by 48 - 13 = -35px
+   to land the dot's left edge at 13px from track's edge (center ≈ 20px). */
+.journey-mobile__dot {
+  position: absolute;
+  left: -35px;
+  top: calc(var(--space-xl) + 6px);
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
 .journey-mobile__header {
   display: flex;
   align-items: center;
@@ -207,92 +718,102 @@
 }
 
 .journey-mobile__num {
-  color: var(--accent-2);
+  color: var(--fg-2);
 }
 
 .journey-mobile__nav-title {
-  color: var(--muted);
-  text-transform: none;
+  color: var(--accent);
+  text-transform: uppercase;
   letter-spacing: var(--tracking-snug);
 }
 
-.journey-mobile__title {
+.journey-mobile__quote {
   margin: 0;
   font-family: var(--serif);
   font-size: var(--text-display-sm);   /* 28px */
   font-weight: 400;
   letter-spacing: var(--tracking-tight);
-  line-height: 1.2;
+  line-height: 1.15;
   color: var(--fg);
 }
 
-.journey-mobile__body {
+.journey-mobile__deck {
   margin: 0;
   font-family: var(--sans);
   font-size: var(--text-body);
-  line-height: 1.75;
+  line-height: 1.7;
   color: var(--fg-2);
 }
 
-/* ─── Tablet + desktop (≥ 768px): show sticky, hide mobile flat list ──────── */
+/* Positioned relative to .journey-mobile__track's own padding box (its
+   containing block for absolute positioning), independent of track's own
+   padding-left — 19px lands the spine inside the 48px reserve, dot-centered. */
+.journey-mobile__spine {
+  position: absolute;
+  left: 19px;
+  top: 0;
+  width: 2px;
+  overflow: hidden;
+}
+
+.journey-mobile__spine-track {
+  position: absolute;
+  inset: 0;
+  background: var(--line);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
+}
+
+.journey-mobile__spine-fill {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  background: linear-gradient(to bottom, var(--accent), var(--accent-2));
+  border-radius: var(--radius-full);
+}
+
+.journey-mobile__spine-fill--static {
+  height: 100%;
+}
+
+/* ─── Tablet + desktop (≥ 768px): show desktop wrapper, hide mobile list ──── */
 @media (min-width: 768px) {
   .journey-mobile {
     display: none;
   }
 
-  .journey-scroll-container {
+  .journey-desktop {
     display: block;
   }
 }
 
 /* ─── Tablet adjustments (768px – 980px) ─────────────────────────────────────── */
+/* Track/avatar sizing overrides removed — both now inherit the full-bleed    */
+/* base rules above (track: 100% width layered over an absolute avatar        */
+/* backdrop) rather than the old 55%/45% flex split.                          */
 @media (min-width: 768px) and (max-width: 980px) {
-  .journey-left {
-    width: 58%;
-    max-width: 420px;
-    gap: var(--space-md);
+  .journey-timeline__content {
+    max-width: 380px;
   }
 
-  .journey-chapter__name {
-    font-size: var(--text-display-md);  /* step down one scale on tablet */
-  }
-
-  .journey-chapter__title {
-    font-size: var(--text-display-sm);  /* 28px */
-  }
-
-  /* Heavier left scrim on tablet since the canvas takes more relative width */
-  .journey-scrim {
-    background:
-      linear-gradient(
-        to right,
-        rgba(7, 7, 7, 1.00)  0%,
-        rgba(7, 7, 7, 0.96)  25%,
-        rgba(7, 7, 7, 0.80)  50%,
-        rgba(7, 7, 7, 0.30)  75%,
-        transparent          100%
-      ),
-      linear-gradient(to bottom, rgba(7, 7, 7, 0.50) 0%, transparent 30%),
-      linear-gradient(to top,   rgba(7, 7, 7, 0.55) 0%, transparent 35%);
+  .journey-quote-block__quote {
+    font-size: var(--text-display-xl);  /* step down one scale on tablet */
   }
 }
 
 /* ─── Large desktop (≥ 1280px) ───────────────────────────────────────────────── */
 @media (min-width: 1280px) {
-  .journey-chapter__title {
-    font-size: var(--text-display-lg);  /* 36px */
-  }
-
-  .journey-chapter__body {
-    font-size: var(--text-md);          /* 13px */
+  .journey-quote-block__quote {
+    font-size: var(--text-display-2xl);  /* 56px — largest element on screen, but no longer the full 80px scale */
   }
 }
 
 /* ─── Reduced-motion ─────────────────────────────────────────────────────────── */
-/* The canvas draws a single static frame; chapter content is fully readable.  */
-/* The sticky layout is preserved so the section height / composition is the   */
-/* same, but no scroll-driven animation occurs.                                */
+/* Spine renders fully-drawn and static (see the `reduced` branch in           */
+/* JourneyTimeline.jsx / JourneyMobile.jsx); avatar shows one static frame.    */
 @media (prefers-reduced-motion: reduce) {
-  /* No transition overrides needed — counter and nav (which had transitions)   */
-  /* have been removed; JOURNEY_CHAPTER animation is bypassed in the component. */
+  .journey-timeline__spine,
+  .journey-mobile__spine {
+    transform: none !important;
+  }
 }

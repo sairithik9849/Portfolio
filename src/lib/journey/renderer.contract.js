@@ -6,8 +6,8 @@
  * details such as frame indices, image elements, or canvas APIs. Swapping
  * the underlying source (WebP sequence → WebM video → Three.js scene) means
  * writing a new Renderer class and updating the `useJourneyEngine` instantiation
- * line. Nothing in MyJourney.jsx, JourneyChapter, JourneyCounter, or JourneyNav
- * needs to change.
+ * line. Nothing in the UI layer (MyJourney.jsx, JourneyTimeline.jsx,
+ * JourneyMobile.jsx) needs to change.
  *
  * @property {(progress: number) => void} setProgress
  *   Receive the normalized scroll progress in [0, 1].

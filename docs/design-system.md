@@ -69,6 +69,10 @@ All other color tokens in `tokens.css` (`--bg*`, `--fg-2`, `--muted*`, `--line*`
 colored element, **assign it to the role that matches its semantic purpose**. If none fits, update
 this doc with a justified new role — do not silently add raw hex.
 
+`--accent`'s "brand moments" use is mostly static (not interactive) — e.g. My Journey's per-chapter
+quote (`journey.css`'s `.journey-quote-block__line--accent`), where each card's final quote line
+renders in lime as the narrative punch, distinct from the token's primarily-interactive rows above.
+
 ---
 
 ## Typography

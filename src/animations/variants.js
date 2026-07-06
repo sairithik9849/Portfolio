@@ -130,16 +130,6 @@ export const WID_DRAW = {
 // Each viz's ambient element transitions to this when isActive becomes false.
 export const WID_AMBIENT_REST = { opacity: 0 }
 
-// ─── My Journey section variants ─────────────────────────────────────────────
-
-// Chapter body transition — one chapter exits before the next enters
-// (AnimatePresence mode="wait"). Blur + translateY gives depth without flash.
-export const JOURNEY_CHAPTER = {
-  initial:  { opacity: 0, filter: 'blur(8px)', y: 40 },
-  animate:  { opacity: 1, filter: 'blur(0px)', y: 0,  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
-  exit:     { opacity: 0, filter: 'blur(8px)', y: -40, transition: { duration: 0.30, ease: [0.22, 1, 0.36, 1] } },
-}
-
 // ─── Return-to-Hero floating marker ─────────────────────────────────────────
 // Entrance: slides in from above (y: -12) with a soft scale + fade.
 // Exit: collapses back up faster (0.28s) so it doesn't linger over content.
@@ -183,4 +173,23 @@ export const TERM_SUGGEST = {
   hidden: { opacity: 0, y: -4 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.14, ease: 'easeOut' } },
   exit:   { opacity: 0, y: -4, transition: { duration: 0.10, ease: 'easeIn' } },
+}
+
+// ─── My Journey scene primitives ────────────────────────────────────────────
+
+// Today scene's terminal-cursor idle loop — the one featured visual allowed
+// to keep a whisper of life at rest (see docs/journey.md, "Motion"), signaling
+// the journey is ongoing rather than closed: a steady blink, then occasionally
+// stretching into a short horizontal line before snapping back to a cursor —
+// one combined keyframe cycle so the blink and the stretch never fight each
+// other for the same element. Transform/opacity only. Off under reduced motion.
+export const TODAY_CURSOR = {
+  opacity: [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1],
+  scaleX:  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1],
+  transition: {
+    duration: 6.2,
+    repeat: Infinity,
+    ease: 'linear',
+    times: [0, 0.08, 0.09, 0.17, 0.18, 0.26, 0.27, 0.35, 0.36, 0.6, 0.66, 0.72, 1],
+  },
 }

@@ -1,44 +1,102 @@
 // Journey chapters — all copy lives here; never hardcoded in components.
-// Chapter order drives the nav indicator, counter, and AnimatePresence key.
 //
-// Note: chapter switching is driven by normalized scroll progress divided evenly
-// across chapter count. The original frame landmarks (chapter 01 ≈ frames 1-35,
-// 02 ≈ 36-75, 03 ≈ 76-110, 04 ≈ 111-150, 05 ≈ 151-192) are reference only
-// and are not read by any rendering or UI code.
+// Each chapter is a *scene*: a hero quote (always the dominant element) plus
+// a bespoke featured visual selected by `scene`, unified by a shared grammar
+// (spine, sticky year marker, label, deck, metadata, skill chips). See
+// docs/journey.md for the full contract and `src/components/journey/scenes/`
+// for the scene components this `scene` key selects between.
+//
+// No emoji anywhere — `metadata[].icon` is a key into the monoline SVG set
+// in `src/components/journey/MetaIcon.jsx`.
+//
+// `deck` may wrap one short phrase in `**double-asterisks**` to mark it for
+// gold (--accent-2) italic emphasis — parsed by
+// `src/lib/journey/deckEmphasis.js` and rendered by QuoteBlock.jsx /
+// JourneyMobile.jsx. Keep the marked phrase short (under ~50 characters) so
+// it never wraps past a line or two — see docs/journey.md.
+//
+// Entry order drives both the timeline's stacking order and the avatar's
+// frame mapping — there is no per-entry frame range; the avatar frame is
+// driven by normalized scroll progress across the whole sequence.
 export const JOURNEY = [
   {
-    id:              'origin',
-    chapterNumber:   '01',
-    navigationTitle: 'Where It Began',
-    title:           'Computer Science in India',
-    body:            'My journey into software engineering began in Hyderabad, India, where I pursued a Bachelor\'s degree in Computer Science and Engineering at Mahatma Gandhi Institute of Technology. It was there that I built my foundation in algorithms, databases, operating systems, and software engineering while discovering that I genuinely enjoyed building software that solves real-world problems.',
+    id: 'origin',
+    year: '2019',
+    label: 'Beginnings',
+    quote: ['Before I knew', 'what I was', 'doing.'],
+    deck: 'Four years of learning the fundamentals, solving countless problems, and discovering that I genuinely enjoy building software. This was where I built my understanding of algorithms, systems, databases, and software engineering principles. More importantly, it taught me to **think critically, stay curious, and keep improving** with every project I built.',
+    scene: 'foundation',
+    visual: {},
+    metadata: [
+      { icon: 'location', text: 'Hyderabad, India' },
+      { icon: 'degree', text: 'B.E. Computer Science & Engineering' },
+      { icon: 'institution', text: 'MGIT', href: 'https://mgit.ac.in/' },
+    ],
+    skills: ['Algorithms', 'Data Structures', 'Operating Systems', 'Databases'],
   },
   {
-    id:              'saras',
-    chapterNumber:   '02',
-    navigationTitle: 'Building at Scale',
-    title:           'Saras Analytics',
-    body:            'My first industry experience taught me what production software really means. At Saras Analytics, I designed and scaled robust Node.js microservices processing more than 10 million daily requests. Using Redis caching and circuit breakers, I reduced latency by 60% while improving peak reliability. Alongside the backend, I built React.js and Redux dashboards for exploring large-scale Snowflake datasets.',
+    id: 'saras',
+    year: '2021',
+    label: 'First Real Project',
+    quote: ['Real users', 'are the best', 'teachers.'],
+    deck: "I kept Node.js microservices running under **10 million requests a day**, where every slow response meant a dashboard hanging in front of a real user. I added Redis caching in front of the database with circuit breakers built in, so the system could serve most requests from memory and only hit the database when it needed to.",
+    scene: 'scale',
+    visual: {
+      latency: { value: 60, prefix: '−', suffix: '%', unit: 'latency' },
+      threadCount: 4,
+    },
+    metadata: [
+      { icon: 'role', text: 'Software Engineer' },
+      { icon: 'institution', text: 'Saras Analytics', href: 'https://www.sarasanalytics.com/' },
+      { icon: 'location', text: 'Hyderabad, India' },
+    ],
+    skills: ['Node.js', 'Redis', 'Snowflake', 'React'],
   },
   {
-    id:              'usa',
-    chapterNumber:   '03',
-    navigationTitle: 'A Leap Across the World',
-    title:           "Master's in the United States",
-    body:            'Driven by a desire to deepen my understanding of computer science, I moved to the United States to pursue a Master\'s degree in Computer Science at Stevens Institute of Technology. It was one of the biggest decisions of my life and opened the door to new opportunities, perspectives, and challenges.',
+    id: 'usa',
+    year: '2022',
+    label: 'New Horizons',
+    quote: ['I crossed', 'an ocean', 'to bet on myself.'],
+    deck: "Moving halfway across the world was about more than earning a Master's degree. It challenged me to **adapt, become independent, and grow** both as an engineer and as a person. Every unfamiliar experience became an opportunity to learn something new.",
+    scene: 'leap',
+    visual: {
+      route: { from: 'India', to: 'United States' },
+    },
+    metadata: [
+      { icon: 'location', text: 'Hoboken, NJ' },
+      { icon: 'degree', text: 'M.S. Computer Science' },
+      { icon: 'institution', text: 'Stevens Institute of Technology', href: 'https://www.stevens.edu/' },
+    ],
+    skills: ['Distributed Systems', 'Systems Design', 'Research'],
   },
   {
-    id:              'stevens',
-    chapterNumber:   '04',
-    navigationTitle: 'Learning by Building',
-    title:           'Software Engineer at Stevens',
-    body:            'Alongside graduate school, I worked as a Software Engineer supporting the Mechanical Engineering Department. I built software tools, maintained computing infrastructure, and developed solutions that helped faculty and staff streamline their day-to-day operations. This experience reinforced the importance of building software that makes people\'s work easier.',
+    id: 'stevens',
+    year: '2023',
+    label: 'Enabling Others',
+    quote: ['I built tools', 'that helped others', 'move faster.'],
+    deck: "My focus shifted from building features to building foundations. From managing lab infrastructure to automating everyday tasks, I learned that **small improvements can create a lasting impact** when they make other people's work easier.",
+    scene: 'build',
+    visual: {},
+    metadata: [
+      { icon: 'server', text: 'Managed 50+ Lab Workstations' },
+      { icon: 'workflow', text: 'Automated Python Workflows' },
+      { icon: 'database', text: 'Optimized System Architecture' },
+    ],
+    skills: ['Infrastructure', 'Tooling', 'Automation'],
   },
   {
-    id:              'today',
-    chapterNumber:   '05',
-    navigationTitle: 'Today',
-    title:           'Building the Future with AI',
-    body:            'I graduated from Stevens Institute of Technology with a perfect 4.00 GPA and earned a certificate in Databases. What excites me most today is the opportunity to build intelligent software powered by AI. Modern AI tools have fundamentally changed how I approach software engineering, making it possible to design systems that retrieve context, use tools, reason through problems, and continuously improve. Building these kinds of systems makes me feel like the possibilities are limitless.',
+    id: 'today',
+    year: 'Present',
+    label: 'Today',
+    quote: ['Now I build', 'software that', 'thinks for itself.'],
+    deck: 'Designing autonomous systems where large language models retrieve context and execute multi-step logic. Focused on building **resilient agentic workflows** and writing the technical narratives that make complex systems understandable.',
+    scene: 'today',
+    visual: {},
+    metadata: [
+      { icon: 'terminal', text: 'Custom Claude Code Workflows' },
+      { icon: 'network', text: 'Engineered MCP Servers' },
+      { icon: 'cogbolt', text: 'Agentic Harness Orchestration' },
+    ],
+    skills: ['Claude Code', 'Agentic Harnesses', 'AI Skill Writing'],
   },
 ]

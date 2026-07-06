@@ -149,14 +149,17 @@ export default function ScrollProgressFrame() {
   const prefersReducedMotion = useReducedMotion()
   const [frameMode, setFrameMode] = useState(false)
   const aboutRef = useRef(null)
+  const journeyRef = useRef(null)
 
-  // Self-locates the AboutMe card — #about already exists in the committed
-  // DOM by the time this sibling's own layout effect runs (ScrollProgressFrame
-  // mounts after AboutMe in App.jsx). Declared before the useScroll calls
-  // below so this assignment's layout effect fires first, guaranteeing
-  // useScroll's internal target-measurement effect sees a populated ref.
+  // Self-locates the AboutMe card and the My Evolution section — both
+  // already exist in the committed DOM by the time this sibling's own
+  // layout effect runs (ScrollProgressFrame mounts after both in App.jsx).
+  // Declared before the useScroll calls below so this assignment's layout
+  // effect fires first, guaranteeing useScroll's internal target-measurement
+  // effect sees populated refs.
   useLayoutEffect(() => {
     aboutRef.current = document.getElementById('about')
+    journeyRef.current = document.getElementById('journey')
   }, [])
 
   useEffect(() => {
@@ -184,6 +187,29 @@ export default function ScrollProgressFrame() {
   })
   // Whole-document progress drives the rails + bottom close once pinned.
   const { scrollYProgress: pageProgress } = useScroll()
+
+  // Relay handoff with My Evolution's timeline spine (see JourneyTimeline.jsx
+  // and --journey-gutter-x in journey.css): as #journey arrives, both rails
+  // fade out while the spine translates in from the left edge; as #journey
+  // leaves, both rails fade back in while the spine retreats to the edge.
+  // The right rail has no spine of its own to hand off to, but it fades in
+  // lockstep with the left so the frame never sits half-open around the
+  // sticky avatar. journeyEnter/journeyExit mirror MyJourney.jsx's
+  // sectionEnter/sectionExit exactly (same target, same offsets) so the
+  // relay and this fade move in lockstep.
+  const { scrollYProgress: journeyEnter } = useScroll({
+    target: journeyRef,
+    offset: ['start end', 'start start'],
+  })
+  const { scrollYProgress: journeyExit } = useScroll({
+    target: journeyRef,
+    offset: ['end end', 'end start'],
+  })
+  const railOpacity = useTransform(
+    [journeyEnter, journeyExit],
+    ([je, jx]) => (je < 1 ? 1 - je : jx),
+  )
+  const railOpacitySpring = useSpring(railOpacity, PROGRESS_SPRING)
 
   const birthDraw = useTransform(birthProgress, [0, 1], [0, fTop])
   const railDraw = useTransform(pageProgress, [sPin, 0.98, 1], [fTop, fBottomStart, 1])
@@ -241,14 +267,14 @@ export default function ScrollProgressFrame() {
           d={leftHalf}
           pathLength={1}
           strokeDasharray="1 1"
-          style={{ strokeDashoffset: dashOffset }}
+          style={{ strokeDashoffset: dashOffset, opacity: railOpacitySpring }}
         />
         <motion.path
           className="scroll-progress-frame__path"
           d={rightHalf}
           pathLength={1}
           strokeDasharray="1 1"
-          style={{ strokeDashoffset: dashOffset }}
+          style={{ strokeDashoffset: dashOffset, opacity: railOpacitySpring }}
         />
       </motion.g>
     </svg>

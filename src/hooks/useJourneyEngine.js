@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import { ImageSequenceRenderer } from '../lib/journey/ImageSequenceRenderer'
-import { progressToChapter, chapterMidpointProgress } from '../lib/journey/journeyProgress'
+import { chapterMidpointProgress } from '../lib/journey/journeyProgress'
 import { JOURNEY } from '../data/journey'
 
 const CHAPTER_COUNT = JOURNEY.length
@@ -11,23 +11,20 @@ const CHAPTER_COUNT = JOURNEY.length
  *
  * Contract:
  *  - Instantiates the renderer on mount; destroys on unmount.
- *  - Wires scroll progress to the renderer without React state (zero re-renders
- *    for frame changes).
- *  - The only intentional re-render: when the active chapter index changes
- *    at a chapter boundary crossing.
+ *  - Wires scroll progress to the renderer without React state — zero
+ *    re-renders for frame changes. The avatar scrub is not tied to any
+ *    active-chapter concept; it just tracks the passed-in progress value.
  *  - Wires ResizeObserver → renderer.resize().
  *  - Wires IntersectionObserver on `sectionRef` → renderer.pause()/resume()
  *    so the rAF loop stops firing ~60×/s when the section is off-screen.
  *
  * @param {import('framer-motion').MotionValue<number>} scrollYProgress - 0→1
  * @param {{ reduced?: boolean, staticProgress?: number, sectionRef?: React.RefObject }} options
- * @returns {{ canvasRef: React.RefObject<HTMLCanvasElement>, activeIndex: number }}
+ * @returns {{ canvasRef: React.RefObject<HTMLCanvasElement> }}
  */
 export function useJourneyEngine(scrollYProgress, { reduced = false, staticProgress, sectionRef } = {}) {
-  const canvasRef       = useRef(null)
-  const rendererRef     = useRef(null)
-  const activeIndexRef  = useRef(0)  // guard: skip setState when index unchanged
-  const [activeIndex, setActiveIndex] = useState(0)
+  const canvasRef   = useRef(null)
+  const rendererRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -70,11 +67,6 @@ export function useJourneyEngine(scrollYProgress, { reduced = false, staticProgr
     // `.on('change', …)` fires on every Lenis tick without React re-renders.
     const unsubscribe = scrollYProgress.on('change', (p) => {
       renderer.setProgress(p)
-      const next = progressToChapter(p, CHAPTER_COUNT)
-      if (next !== activeIndexRef.current) {
-        activeIndexRef.current = next
-        setActiveIndex(next)
-      }
     })
 
     const ro = new ResizeObserver(() => renderer.resize())
@@ -89,5 +81,5 @@ export function useJourneyEngine(scrollYProgress, { reduced = false, staticProgr
     }
   }, [scrollYProgress, reduced, staticProgress, sectionRef])
 
-  return { canvasRef, activeIndex }
+  return { canvasRef }
 }
