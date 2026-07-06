@@ -40,8 +40,6 @@ A bare cascade root — sets `initial:'hidden'` and propagates to all children. 
 
 `SAIRITHIK` fades up as a single unit at `T.name`; `KOMURAVELLY.` follows 120 ms later (`T.name + 0.12`), both using `fadeUp(delay, 0.7)`. Under reduced motion the 120 ms offset collapses to 0. Each word is wrapped in `<motion.span className="hero-name-line">` inside the `h1`; individual `HeroLetter` spans carry only `whileHover` (no entrance variant).
 
-Legacy exports from `variants.js` that are **no longer used by `Hero.jsx`**: `HERO_LETTER`, `HERO_LINE_PARENT`, `HERO_INNER_STAGGER`, `HERO_CHILD`, `HERO_CHILD_FADE` — retained for stability.
-
 ### Reduced Motion
 
 `useReducedMotion()` in `Hero.jsx` sets `T = HERO_SEQUENCE_INSTANT` (all delays 0) and `dur = 0` (all durations 0) — entire sequence collapses to instant show. Apply the same `T`/`dur` pattern to any new Hero-level animation.

@@ -111,8 +111,8 @@ export default function StarField({ visible = true }) {
 
   return (
     <div className="starfield" aria-hidden="true">
-      {/* 1. Opaque deep-space base — covers HeroFluid within the hero viewport
-             (intentional; accepted in the integration plan). */}
+      {/* 1. Opaque deep-space base — gives the hero its own dark backdrop over
+             the fixed page background layers within the hero viewport. */}
       <div className="starfield__vignette" />
 
       {/* 2. Star layers — parallax wrapper composes with per-layer drift. */}

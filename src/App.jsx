@@ -2,8 +2,6 @@ import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import Lenis        from 'lenis'
 import { gsap }    from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-// eslint-disable-next-line no-unused-vars
-import Nav          from './components/Nav'
 import Hero         from './components/Hero'
 import AboutMe      from './components/AboutMe'
 import WhatIDo from './components/WhatIDo'
@@ -251,7 +249,6 @@ export default function App() {
           <div className="noise" />
 
           <div>
-            {/* <Nav /> */}
             {/* hero-about-stack: CSS-only sticky-pin transition (see
                 hero-about-stack.css) — the Hero pins under AboutMe on desktop.
                 #hero-sentinel sits at the Hero/AboutMe boundary in normal

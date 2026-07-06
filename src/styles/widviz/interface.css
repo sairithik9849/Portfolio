@@ -495,13 +495,6 @@
   justify-content: space-between;
 }
 
-.wifc-glass-kicker {
-  font-family: var(--mono);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-widest);
-  color: var(--muted);
-}
-
 /* Panel title in the header â€” lime accent with subtle glow */
 .wifc-glass-title {
   font-family: var(--mono);
@@ -509,14 +502,6 @@
   letter-spacing: var(--tracking-widest);
   color: var(--accent);
   text-shadow: 0 0 8px rgba(201, 245, 88, 0.5);
-}
-
-/* Mode badge in the metrics row â€” gold, non-interactive metadata */
-.wifc-glass-mode {
-  font-family: var(--mono);
-  font-size: var(--text-xs);
-  letter-spacing: var(--tracking-widest);
-  color: var(--accent-2);
 }
 
 .wifc-glass-row--metrics {

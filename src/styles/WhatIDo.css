@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    WHAT I DO — scroll-pinned word scrub
-   Architecture: dual-layer knockout (no mix-blend-mode — HeroFluid shader
-   behind the page would shimmer). Base stack = --fg cream words. Accent band
+   Architecture: dual-layer knockout (no mix-blend-mode — the animated page
+   background behind would shimmer). Base stack = --fg cream words. Accent band
    clips the knockout stack (--bg dark words) via overflow:hidden. Both stacks
    share one GSAP-driven y transform so glyphs register pixel-perfectly.
    ───────────────────────────────────────────────────────────────────────────── */
@@ -34,8 +34,8 @@
 }
 
 /* Stage: the interactive area — word column (full-width, left), caption (absolute).
-   .wid-right is absolutely positioned against --band-w so gap is unused for
-   layout but kept for any future flex siblings. */
+   The caption block is absolutely positioned against --viz-left so gap is unused
+   for layout but kept for any future flex siblings. */
 .wid-stage {
   flex: 0 0 auto;
   display: flex;
@@ -46,7 +46,7 @@
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
-  /* position:relative so .wid-right absolute-positions against this element. */
+  /* position:relative so the absolute caption block anchors to this element. */
   position: relative;
   /* clip-path clips past words at the stage top and sides while letting
      upcoming words overflow below (the -100vh bottom offset keeps them visible

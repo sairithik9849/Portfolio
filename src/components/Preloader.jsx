@@ -2,7 +2,7 @@
 //
 //   1. Bar: a compositor-driven WAAPI animation on transform:scaleX that fills
 //      0 → 1 over FILL_DURATION_MS with a near-linear ease. Runs off the main
-//      thread, so HeroFluid/Spline eval can never stutter it. No hold, no second
+//      thread, so Spline scene eval can never stutter it. No hold, no second
 //      segment — a single smooth sweep all the way to 100.
 //
 //   2. Curtain: when BOTH the fill has finished AND beginExit fires (assets ready

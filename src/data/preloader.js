@@ -3,7 +3,7 @@
 export const PRELOADER_NAME = 'SAIRITHIK KOMURAVELLY'
 
 // Each entry fires when progress crosses the `at` threshold.
-export const STATUS_PHASES = [
+const STATUS_PHASES = [
   { at: 0.00, label: 'INITIALIZING' },
   { at: 0.20, label: 'COMPILING SHADERS' },
   { at: 0.45, label: 'LOADING ASSETS' },

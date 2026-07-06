@@ -30,8 +30,8 @@ CSS is split into one partial per section/component in `src/styles/`. `global.cs
 
 ### Partials (in import order)
 
-`fonts.css`, `tokens.css`, `preloader.css`, `layout.css`, `nav.css`, then the hero sub-folder
-(`hero/grid.css`, `hero/shell.css`, `hero/identity.css`, `hero/robot.css`, `hero/manifesto.css`,
+`fonts.css`, `tokens.css`, `preloader.css`, `layout.css`, then the hero sub-folder
+(`hero/starfield.css`, `hero/shell.css`, `hero/identity.css`, `hero/robot.css`, `hero/manifesto.css`,
 `hero/terminal.css`), `ai.css`, `components.css`, `about-me.css`, `WhatIDo.css`, then the widviz
 sub-folder (`widviz/shell.css`, `widviz/backend.css`, `widviz/systems.css`, `widviz/data.css`,
 `widviz/interface.css`, `widviz/agents.css`), `journey.css`, `projects.css`, `footer.css`.
@@ -87,7 +87,7 @@ Three typefaces form three reading registers:
 | Token | Family | Register | Use |
 |---|---|---|---|
 | `--serif` | **IBM Plex Sans Condensed** | Display | Headlines, index numbers, statement pieces. Set with tight line-height and negative tracking. Note: legacy token name — it is a condensed sans-serif, not a true serif. |
-| `--mono` | **JetBrains Mono** | HUD / Code | Terminal, metadata tags, nav labels, button text. Wide letter-spacing (`--tracking-wide` to `--tracking-widest`) for all-caps HUD text. |
+| `--mono` | **JetBrains Mono** | HUD / Code | Terminal, metadata tags, button text. Wide letter-spacing (`--tracking-wide` to `--tracking-widest`) for all-caps HUD text. |
 | `--sans` | **Geist** | Reading | Body paragraphs, UI descriptions, conversational copy. |
 
 Type scale and letter-spacing tokens are defined in `tokens.css` (`:root`) with inline usage
@@ -119,7 +119,7 @@ comments. Use the scale tokens (`--text-*`), never literal `px` sizes.
 | `--radius-sm` | 2px | Status badges, input fields, terminal panels |
 | `--radius-md` | 6px | Buttons (typically paired with `skewX(-6deg)`) |
 | `--radius-lg` | 8px | Cards, elevated panels |
-| `--radius-full` | 999px | Pill-shaped nav, suggestion chips |
+| `--radius-full` | 999px | Pill-shaped suggestion chips |
 
 ---
 
@@ -139,18 +139,6 @@ comments. Use the scale tokens (`--text-*`), never literal `px` sizes.
 These document the portfolio's **current interaction language** — how key UI elements behave.
 They are patterns, not frozen specs; the design language can evolve, but changes should update
 this section to stay current.
-
-### Navigation highlight (`nav.css:53–64`)
-
-A `.nav-tab-cursor` pill element (`background: var(--accent)`, `border-radius: 999px`) is
-absolutely positioned inside the nav strip and animated via Framer Motion to slide behind the
-hovered tab. On hover, tab text flips from `var(--fg-2)` to `var(--bg)` (deep obsidian) for
-maximum contrast against the lime fill.
-
-### Card hover (`projects.css:19`, `projects.css:97`)
-
-On project card hover, the index number colors to `var(--accent)`. The card visual panel gains a
-`box-shadow` lime glow: `0 0 10px var(--accent)`. Transition on the glow, not layout properties.
 
 ### Skew decoration (`hero/robot.css:90`, `hero/manifesto.css:282`)
 

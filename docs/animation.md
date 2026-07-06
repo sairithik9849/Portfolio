@@ -32,14 +32,12 @@ See `docs/hero.md` for the full Hero entrance sequence. The relevant exports fro
 - `HERO_SEQUENCE` — timing table `{ grid, meta, name, manifesto, metrics, cta, terminal, footer, robot }` in seconds. Edit to shift phase start times.
 - `HERO_SEQUENCE_INSTANT` — paired table with all values 0; used when `useReducedMotion()` is true.
 - `fadeUp(delay, duration?)` — factory returning `{ hidden, show }` for a single delayed fade-up. Use for every new hero element; pass `T[key]` as the delay.
-- `HERO_CHILD`, `HERO_CHILD_FADE` — still exported for legacy use; no longer used in `Hero.jsx` directly.
-- `HERO_LETTER`, `HERO_LINE_PARENT`, `HERO_INNER_STAGGER` — exported but **no longer used by `Hero.jsx`** (retained for stability).
+
+(The former legacy exports `HERO_CHILD`, `HERO_CHILD_FADE`, `HERO_LETTER`, `HERO_LINE_PARENT`, and `HERO_INNER_STAGGER` were unused and have been deleted from `variants.js`.)
 
 ### What I Do Shared Variants
 
-- `WID_PANEL_REVEAL` — panel `whileInView` fade
-- `WID_DRAW` — shared `pathLength` draw transition for structural SVG edges
-- `WID_AMBIENT_REST` — `opacity:0` rest target; ambient elements return to this when `isActive` is false
+- `WID_PANEL_REVEAL` — panel `whileInView` fade (the only shared WhatIDo variant; the former `WID_DRAW` / `WID_AMBIENT_REST` exports were unused and deleted)
 
 ### My Journey Variants
 
@@ -72,7 +70,7 @@ Two sections use `useScroll`/`useTransform` from Framer Motion rather than `whil
 
 **Adding a shared variant:** Add to `src/animations/variants.js` and import at the usage site — never define inline.
 
-**Adding a new Hero cascade phase:** Add a key to `HERO_SEQUENCE` (and a matching `0` to `HERO_SEQUENCE_INSTANT`), then use `fadeUp(T.newKey, duration)` at the call site. Do not use `HERO_CHILD` or raw variant objects.
+**Adding a new Hero cascade phase:** Add a key to `HERO_SEQUENCE` (and a matching `0` to `HERO_SEQUENCE_INSTANT`), then use `fadeUp(T.newKey, duration)` at the call site. Do not define raw variant objects inline.
 
 **Adding scroll-reveal to a new section:** Wrap with `<motion.div variants={STAGGER_PARENT} initial="hidden" whileInView="show" viewport={{ once: true }}>` and use `STAGGER_CHILD` on children, or `REVEAL` on a standalone element.
 

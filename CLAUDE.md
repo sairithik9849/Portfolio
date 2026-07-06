@@ -31,7 +31,7 @@ These apply everywhere, regardless of the area being touched.
 - **Language:** JavaScript only. No TypeScript, no type annotations. ES6+ (arrow fns, destructuring, async/await, optional chaining). `const` default, `let` for reassignment, never `var`. ES modules throughout.
 - **Stack:** React + Vite (SPA) frontend; Vercel Serverless Functions in `/api` (no Express).
 - **Animation default:** Framer Motion for all component-level animation — no react-spring, no component-level CSS keyframes. GSAP is used in exactly two places only — see `docs/animation.md`.
-- **3D bundles:** `HeroFluid` and `@splinetool/react-spline` are `React.lazy`. Never eager-load (~600 KB).
+- **3D bundles:** `@splinetool/react-spline` is `React.lazy` (see `SplineScene.jsx`). Never eager-load (~600 KB).
 - **Content:** All copy lives in `src/data/`. Never hardcode content inside components.
 - **CSS:** Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps floor.
 - **No silent regressions:** If existing styles, classes, or behavior must change, say so explicitly.
@@ -46,7 +46,7 @@ Read the listed doc before working in each area. Read only what the task require
 
 | When touching…                                                                                                                     | Read                    |
 | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, ReturnToTop, hotkeys, cursor, nav/footer wiring, project-card visuals, Hero↔AboutMe sticky-stack transition | `docs/architecture.md`  |
+| `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, ReturnToTop, hotkeys, cursor, footer wiring, project-card visuals, Hero↔AboutMe sticky-stack transition | `docs/architecture.md`  |
 | Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                   | `docs/animation.md`     |
 | `src/styles/`, colors, typography, spacing, radii, layout shell, interaction patterns                                              | `docs/design-system.md` |
 | `Hero.jsx`, `SplineScene`, `StarField`, robot, `src/styles/hero-about-stack.css`                                                   | `docs/hero.md`          |

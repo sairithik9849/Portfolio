@@ -7,7 +7,6 @@
 @import './tokens.css';
 @import './preloader.css';
 @import './layout.css';
-@import './nav.css';
 /* hero — split into per-component partials (cascade order preserved) */
 @import './hero/starfield.css';
 @import './hero/shell.css';

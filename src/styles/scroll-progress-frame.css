@@ -3,7 +3,7 @@
    the Hero pin resolves, then draws a rounded-rectangle frame around the
    viewport as the rest of the page scrolls. See docs/architecture.md,
    "Scroll Progress Frame", for the full design and the JS-side math.
-   z-index 32: above Nav (30), below ReturnToTop (40) / AIOrb (50). */
+   z-index 32: below ReturnToTop (40) / AIOrb (50). */
 
 .scroll-progress-frame {
   position: fixed;

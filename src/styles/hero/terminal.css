@@ -101,16 +101,6 @@
 }
 .terminal .body { padding: 8px 14px 0; }
 
-.terminal .ln {
-  display: flex;
-  gap: 10px;
-  color: var(--fg-2);
-  margin-bottom: 4px;
-}
-
-.terminal .ln .n { color: var(--muted); width: 18px; text-align: right; flex-shrink: 0; }
-.terminal .ln.k { color: var(--accent); }
-.terminal .ln .c { color: var(--muted); }
 .terminal .cur {
   display: inline-block;
   width: 7px;
@@ -241,7 +231,6 @@
   transition: color 150ms ease;
 }
 .term-link-sep,
-.term-link-purpose,
 .term-link-display {
   color: var(--muted);
 }

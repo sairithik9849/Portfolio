@@ -61,54 +61,6 @@ export const HERO_PARENT = {
   },
 }
 
-// Real spring physics — stiffness 70, damping 18, mass 0.9 gives a soft overshoot
-export const HERO_CHILD = {
-  variants: {
-    hidden: { opacity: 0, y: 60 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { type: 'spring', stiffness: 70, damping: 18, mass: 0.9 },
-    },
-  },
-}
-
-export const HERO_CHILD_FADE = {
-  variants: {
-    hidden: { opacity: 0, y: 24 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1] },
-    },
-  },
-}
-
-export const HERO_LETTER = {
-  variants: {
-    hidden: { opacity: 0, y: 24 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { type: 'spring', stiffness: 260, damping: 22, mass: 0.6 },
-    },
-  },
-}
-
-export const HERO_LINE_PARENT = {
-  variants: {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.025, delayChildren: 0.05 } },
-  },
-}
-
-export const HERO_INNER_STAGGER = {
-  variants: {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.12 } },
-  },
-}
-
 // ─── WhatIDo live-system viz shared variants ──────────────────────────────────
 
 // Panel-level entrance — bezel fades in when section enters the viewport.
@@ -119,16 +71,6 @@ export const WID_PANEL_REVEAL = {
   viewport: { once: true, margin: '-60px 0px' },
   transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
 }
-
-// Shared pathLength draw transition used by every viz's structural SVG edges.
-export const WID_DRAW = {
-  duration: 0.6,
-  ease: [0.22, 1, 0.36, 1],
-}
-
-// The "at rest" animate target for all ambient elements.
-// Each viz's ambient element transitions to this when isActive becomes false.
-export const WID_AMBIENT_REST = { opacity: 0 }
 
 // ─── Return-to-Hero floating marker ─────────────────────────────────────────
 // Entrance: slides in from above (y: -12) with a soft scale + fade.

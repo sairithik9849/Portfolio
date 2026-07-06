@@ -85,10 +85,6 @@ This gate is independent of the pin/scrub `ScrollTrigger` above it — pin geome
 
 `useTransform` clamps, so edge vizzes (i=0, i=n-1) need no manual clamping. **Use this helper for any new viz** rather than hand-rolling ranges.
 
-## `widDwell.js` — Dead Code
-
-`src/utils/widDwell.js` is a plateau transfer function (flat dwell around each snap point, smoothstep between) whose fixed points are the `i/(n-1)` snap targets — but **nothing imports it**. The dwell shaping was removed when snapping moved to Lenis. Comments in `WhatIDo.jsx` still reference it (`DWELL_HOLD`, "fixed points of widDwell") — read those as historical. If you reintroduce dwell shaping, this is the helper to use.
-
 ## Frozen Mode — Mobile / Reduced-Motion Fallback
 
 On mobile and `prefers-reduced-motion`, `.wid-mobile-blurbs` lists all five blurbs, each with `<WidVisual frozen index={i} />`. A frozen panel renders one viz seeded at its snap point (`frozenProgress = index/(N-1)`) with `reduced`+`frozen` true so it resolves to its final static frame. Keep both the pinned desktop path and the frozen mobile path working — they are not interchangeable.

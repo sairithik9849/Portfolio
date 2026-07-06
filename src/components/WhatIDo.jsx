@@ -257,7 +257,7 @@ export default function WhatIDo() {
         // ── Click / keyboard navigation ────────────────────────────────────
         // Smooth-scrolls to the scroll position that centers word `targetIdx`
         // in the lime band. Cancels any in-flight settle to prevent fighting.
-        // Snap points are fixed points of widDwell so targetIdx/(N-1) is the
+        // Progress is linear across the word portion, so targetIdx/(N-1) is the
         // correct raw progress target without any inverse transform needed.
         const scrollToIndex = (targetIdx) => {
           clearSnapState()

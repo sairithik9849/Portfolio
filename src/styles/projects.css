@@ -1,49 +1,4 @@
 /* ---- projects ---- */
-.projects {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-top: 1px solid var(--line-2);
-}
-
-.project {
-  display: grid;
-  grid-template-columns: 100px 1.1fr 1.3fr;
-  border-bottom: 1px solid var(--line-2);
-  padding: 48px 0;
-  position: relative;
-  transition: background 0.3s ease;
-}
-
-.project:hover { background: rgba(255, 255, 255, 0.012); }
-.project:hover .pj-num { color: var(--accent); }
-
-.project .pj-num {
-  font-family: var(--serif);
-  font-size: var(--text-display-4xl);
-  line-height: 0.9;
-  color: var(--muted);
-  font-weight: 400;
-  padding-left: 0;
-  transition: color 0.3s;
-}
-
-.project .pj-info { padding-right: 32px; }
-.project .pj-info h3 { font-family: var(--serif); font-size: var(--text-display-xl); letter-spacing: var(--tracking-tight); line-height: 1; margin: 0 0 6px; }
-.project .pj-info .role { font-family: var(--mono); font-size: var(--text-sm); color: var(--accent-2); letter-spacing: var(--tracking-wider); text-transform: uppercase; margin-bottom: 18px; }
-.project .pj-info p { color: var(--fg-2); font-size: var(--text-body); line-height: 1.6; margin: 0 0 18px; max-width: 48ch; }
-
-.project .pj-info .stack { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
-.project .pj-info .stack span {
-  font-family: var(--mono);
-  font-size: var(--text-xs);
-  border: 1px solid var(--line-2);
-  padding: 4px 8px;
-  letter-spacing: var(--tracking-wide);
-  color: var(--fg-2);
-  text-transform: uppercase;
-}
-
 .pj-visual {
   border: 1px solid var(--line-2);
   min-height: 280px;

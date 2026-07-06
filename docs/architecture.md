@@ -2,7 +2,7 @@
 
 App-shell wiring, render order, preloader handoff, scrolling, observers, and cross-cutting singletons. Loaded on demand via the routing table in `CLAUDE.md`.
 
-**Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, nav/footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
+**Scope:** `App.jsx` wiring, preloader flags, Lenis setup, IntersectionObservers, AIOrb, footer, project-card visuals, and content data mapping. Hero internals → `docs/hero.md`. WhatIDo rig → `docs/what-i-do.md`. Animation variants → `docs/animation.md`.
 
 ## Subsystem Map
 
@@ -44,7 +44,7 @@ App.jsx (orchestration root)
 
 ## Section Render Order (`App.jsx`)
 
-`Nav → Hero → AboutMe → WhatIDo → MyJourney → Projects → Footer`
+`Hero → AboutMe → WhatIDo → MyJourney → Projects → Footer`
 
 `Hero` and `AboutMe` are wrapped together in a `.hero-about-stack` div — see "Hero → AboutMe
 Sticky-Stack Transition" below. This wrapper does not change render order, only how the two
@@ -52,20 +52,20 @@ sections visually overlap during that scroll band.
 
 `AIOrb` + `ReturnToTop` + `AIDrawer` are fixed overlays at the end of the tree.
 
-**`<Nav />` is currently commented out in `App.jsx`** (temporarily hidden) — its import and visibility wiring remain intact; uncomment the JSX to restore it.
+There is no site nav — the former `<Nav />` component was removed entirely; sections are reached by scrolling, hotkeys, and in-page anchor links.
 
-## Section id ↔ Component ↔ Nav Label
+## Section id ↔ Component
 
-The ids in `nav.js` do not match component names — use this table for scroll targets and anchor links:
+Section DOM ids do not match component names — use this table for scroll targets and anchor links:
 
-| Component | DOM id | Nav label |
-|-----------|--------|-----------|
-| `Hero` | `#top` | "Index" |
-| `AboutMe` | `#about` | "About" |
-| `WhatIDo` | `#what-i-do` | "What I Do" |
-| `MyJourney` | `#journey` | "My Evolution" |
-| `Projects` | `#work` | "Work" |
-| `Footer` | `#contact` | "Contact" |
+| Component | DOM id |
+|-----------|--------|
+| `Hero` | `#top` |
+| `AboutMe` | `#about` |
+| `WhatIDo` | `#what-i-do` |
+| `MyJourney` | `#journey` |
+| `Projects` | `#work` |
+| `Footer` | `#contact` |
 
 ## Three-Flag Preloader Handoff
 
@@ -192,7 +192,7 @@ the right path is untouched, so the frame's right rail keeps drawing normally th
 target so the timeline's spine translates in/out in lockstep with this fade — the two are designed
 to never both be fully opaque at the same screen position.
 
-**z-index:** 32 — above Nav (30), below ReturnToTop (40) / AIOrb (50).
+**z-index:** 32 — below ReturnToTop (40) / AIOrb (50).
 
 ## AIDrawer Lazy Load
 
@@ -226,7 +226,7 @@ Key behaviours:
 
 Framer Motion's `useScroll` reads native `scrollTop` transparently — do not replace native scroll with a virtual Lenis scroll container.
 
-**Anchor scrolling goes through `scrollToId(id)` (`src/utils/scrollTo.js`)** — it routes through `window.__lenis.scrollTo` when Lenis exists and falls back to native `scrollIntoView`. Use it (Hero and Nav already do) instead of raw `scrollIntoView` for any new in-page link.
+**Anchor scrolling goes through `scrollToId(id)` (`src/utils/scrollTo.js`)** — it routes through `window.__lenis.scrollTo` when Lenis exists and falls back to native `scrollIntoView`. Use it (Hero already does) instead of raw `scrollIntoView` for any new in-page link.
 
 ## ReturnToTop Visibility
 
@@ -281,10 +281,6 @@ The two radial gradients that give the page its subtle lime/white glow used to l
 
 `.shell` = `max-width: 1440px; padding: 0 24px`. All sections use it. Hero overrides to flush-left (`padding-left/right: 0; overflow: visible`). `body { overflow-x: clip }` is load-bearing — **`clip`, not `hidden`**: `hidden` makes body a scroll container which breaks ScrollTrigger's `position: fixed` pin; `clip` contains horizontal overflow without creating a scroll container. Spline canvas and `StarField`'s `100vw` full-bleed both extend past the shell intentionally.
 
-## Nav Visibility
-
-Driven by an `IntersectionObserver` on `#top` (Hero root). Toggles `opacity`/`y`/`pointer-events` so a hidden nav is never accidentally clickable. (Nav is currently commented out in `App.jsx` — see render-order note above.)
-
 ## Footer Mount Animation
 
 `Footer.jsx` uses a delayed `initial/animate` fade (delay = `HERO_SEQUENCE.footer`, 5.3s) rather than `whileInView`. It participates in the hero reload sequence even though it is off-screen at page load. Do not revert it to `REVEAL` / `whileInView`.
@@ -299,18 +295,17 @@ All copy lives in `src/data/` — never hardcode inside components.
 
 | File | Exports / Used by |
 |---|---|
-| `nav.js` | Nav links |
 | `aboutMe.js` | `ABOUT_ME_STATEMENT`, `ABOUT_ME_HIGHLIGHT`, `ABOUT_ME_EMPHASES` → `AboutMe.jsx` |
 | `whatIDo.js` | `WHAT_I_DO` entries → `WhatIDo.jsx` |
 | `widViz.js` | `WID_VIZ` keyed by id → `WidVisual.jsx` / `Viz*.jsx` |
 | `projects.js` | Project entries → `Projects.jsx` / `ProjectVisual.jsx` |
 | `agent.js` | AI persona data |
-| `preloader.js` | `PRELOADER_NAME`, `STATUS_PHASES`, `getStatusLabel(progress)` → `Preloader.jsx` |
+| `preloader.js` | `PRELOADER_NAME`, `getStatusLabel(progress)` → `Preloader.jsx` |
 | `journey.js` | `JOURNEY` entries → `MyJourney.jsx` / `JourneyTimeline.jsx` / `JourneyMobile.jsx` |
 
 ## Common Edits
 
-**Adding a new page section:** Add the component to the render order in `App.jsx`, add an `IntersectionObserver` if needed for AIOrb gating, add an entry to the section-id table above, add an entry to `nav.js`, and create `src/styles/<name>.css` (see `docs/design-system.md`).
+**Adding a new page section:** Add the component to the render order in `App.jsx`, add an `IntersectionObserver` if needed for AIOrb gating, add an entry to the section-id table above, and create `src/styles/<name>.css` (see `docs/design-system.md`).
 
 **Adding a new in-page anchor link:** Use `scrollToId(id)` from `src/utils/scrollTo.js` — never use raw `scrollIntoView`.
 
