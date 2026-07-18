@@ -1,1 +1,1 @@
-C:/Users/pandu/OneDrive/Desktop/Portfolio/CLAUDE.md
+CLAUDE.md
