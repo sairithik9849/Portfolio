@@ -1,7 +1,10 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import importSplineRuntime from '../utils/preloadSpline'
 
-const Spline = lazy(() => import('@splinetool/react-spline'))
+// Shares the import reference with preloadSplineRuntime (utils/preloadSpline.js)
+// so both resolve from the same module-cache entry instead of double-fetching.
+const Spline = lazy(importSplineRuntime)
 
 // If the Spline domain is unreachable or load hangs, treat as ready after this
 // delay so the reveal isn't trapped waiting for a blocked resource.

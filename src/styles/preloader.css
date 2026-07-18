@@ -145,10 +145,10 @@
   top: 0;
   left: 0;
   transform-style: preserve-3d;
-  /* Hint the compositor to keep these elements on their own layer.
-     preserve-3d limits full independent promotion, but this helps the
-     browser pre-allocate a layer and reduces rasterisation cost. */
-  will-change: transform;
+  /* No will-change here: preserve-3d + translucent depth-sorted faces
+     (.face-back) prevent independent compositor promotion regardless, so the
+     hint only costs an allocated layer with no smoothness benefit — worst at
+     the exact moment (cold start) layer setup is most contended. */
 }
 
 /* Initial Z-pattern positions + per-box animations */

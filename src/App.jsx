@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, useTransition, lazy, Suspense } from 'react'
 import Lenis        from 'lenis'
 import { gsap }    from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -49,6 +49,18 @@ export default function App() {
   // sweep finishes (Preloader's onRevealComplete) so the Framer spike that
   // schedules the full HERO_SEQUENCE never contends with the visible wipe.
   const [heroStarted,  setHeroStarted]  = useState(false)
+  // sectionsMounted gates the below-fold tree (WhatIDo/MyJourney/Projects/
+  // Footer/AIOrb/ReturnToTop/ScrollProgressFrame) — mounted one idle tick
+  // after reveal instead of in the same synchronous commit as Hero/AboutMe.
+  // They're invisible under the overlay and off-screen at reveal time, so
+  // splitting them out shrinks the one giant commit mountContent used to
+  // trigger, keeping that work from landing on the preloader's visible frames.
+  const [sectionsMounted, setSectionsMounted] = useState(false)
+  // Lets the sectionsMounted commit below be time-sliced by React instead of
+  // blocking a frame outright — it's still the biggest single commit left
+  // (WhatIDo/MyJourney/Projects/Footer), so marking it non-urgent keeps it
+  // from producing its own long task even after being moved post-reveal.
+  const [, startSectionsTransition] = useTransition()
 
   // Mount content one rAF after the overlay paints — starts Spline loading
   // under the opaque cover as early as possible.
@@ -58,8 +70,18 @@ export default function App() {
   }, [])
 
   // Fires once the curtain sweep fully completes — starts the Hero cascade on
-  // a clean main thread, after all preloader visuals are gone.
-  const handleRevealComplete = useCallback(() => setHeroStarted(true), [])
+  // a clean main thread, after all preloader visuals are gone. Below-fold
+  // sections are scheduled a beat later via requestIdleCallback (falling
+  // back to setTimeout where unsupported, e.g. Safari) so their mount
+  // doesn't compete with the Hero cascade Framer just kicked off; a 500ms
+  // timeout ceiling keeps them from being starved indefinitely on a busy tab.
+  const handleRevealComplete = useCallback(() => {
+    setHeroStarted(true)
+    const schedule = typeof requestIdleCallback === 'function'
+      ? requestIdleCallback
+      : (cb) => setTimeout(cb, 0)
+    schedule(() => startSectionsTransition(() => setSectionsMounted(true)), { timeout: 500 })
+  }, [startSectionsTransition])
 
   const [aiOpen, setAiOpen] = useState(false)
   // Sticky "ever opened" flag — once true, AIDrawer stays mounted so its chat
@@ -92,7 +114,14 @@ export default function App() {
   // and Lenis fires lenis.on('scroll', ScrollTrigger.update) so ScrollTrigger
   // always reads a Lenis-smoothed scroll position. This prevents the double-rAF
   // jitter that would occur if both ran their own requestAnimationFrame loops.
+  //
+  // Gated on heroStarted (post-reveal) rather than mount: native scroll is
+  // locked until reveal anyway (see the overflow effect below), so there's
+  // nothing for Lenis to smooth yet, and ScrollTrigger's initial measurement
+  // pass is a forced-layout cost that has no reason to compete with the
+  // preloader's still-visible cube animation for the main thread.
   useEffect(() => {
+    if (!heroStarted) return undefined
     if (typeof window === 'undefined') return undefined
 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -125,7 +154,7 @@ export default function App() {
       lenis.destroy()
       delete window.__lenis
     }
-  }, [])
+  }, [heroStarted])
 
   // Lock native scroll until the reveal fires so no wheel input leaks to the
   // page during warm-up (content is mounted but hidden under the overlay).
@@ -141,11 +170,12 @@ export default function App() {
     else window.__lenis.start()
   }, [aiOpen])
 
-  // IntersectionObservers depend on mountContent so they re-run once the DOM
-  // nodes (#top, #what-i-do, #journey) actually exist. Previously the empty dep
-  // array caused them to run at App mount when those ids weren't in the tree yet,
-  // silently no-op'ing — heroVisible would stay true forever and AIOrb would
-  // never surface over the hero.
+  // IntersectionObservers depend on the DOM nodes they watch actually
+  // existing — running before that silently no-ops (e.g. heroVisible would
+  // stay true forever and AIOrb would never surface over the hero). The
+  // hero-sentinel observer depends on mountContent (Hero mounts immediately);
+  // the below-fold observers (#what-i-do, #journey) depend on sectionsMounted
+  // since those sections now mount a beat later (see handleRevealComplete).
   useEffect(() => {
     if (!mountContent) return undefined
     // Watches #hero-sentinel (top of .hero-about-stack), not #top (the Hero
@@ -171,7 +201,7 @@ export default function App() {
   }, [mountContent])
 
   useEffect(() => {
-    if (!mountContent) return undefined
+    if (!sectionsMounted) return undefined
     const section = document.getElementById('what-i-do')
 
     if (!section || !('IntersectionObserver' in window)) {
@@ -185,7 +215,7 @@ export default function App() {
 
     observer.observe(section)
     return () => observer.disconnect()
-  }, [mountContent])
+  }, [sectionsMounted])
 
   // Show the Return-to-Hero marker once #what-i-do is reached and keep it
   // visible for the remainder of the page (Journey / Projects / Footer).
@@ -194,7 +224,7 @@ export default function App() {
   // rootMargin trims the bottom so the marker appears only once the section
   // is meaningfully engaged, not the instant its top edge crosses the fold.
   useEffect(() => {
-    if (!mountContent) return undefined
+    if (!sectionsMounted) return undefined
     const section = document.getElementById('what-i-do')
 
     if (!section || !('IntersectionObserver' in window)) {
@@ -210,11 +240,11 @@ export default function App() {
 
     observer.observe(section)
     return () => observer.disconnect()
-  }, [mountContent])
+  }, [sectionsMounted])
 
   // Hide AIOrb while #journey is on screen, mirroring the WhatIDo IO pattern.
   useEffect(() => {
-    if (!mountContent) return undefined
+    if (!sectionsMounted) return undefined
     const section = document.getElementById('journey')
 
     if (!section || !('IntersectionObserver' in window)) {
@@ -228,7 +258,7 @@ export default function App() {
 
     observer.observe(section)
     return () => observer.disconnect()
-  }, [mountContent])
+  }, [sectionsMounted])
 
   return (
     <>
@@ -265,15 +295,29 @@ export default function App() {
               <div id="hero-sentinel" aria-hidden="true" style={{ height: 1 }} />
               <AboutMe />
             </div>
-            <WhatIDo />
-            <MyJourney />
-            <Projects />
-            <Footer       onOpenAI={openAI} />
+            {/* Below-fold sections mount one idle tick after reveal
+                (sectionsMounted, set from handleRevealComplete) instead of in
+                the same synchronous commit as Hero/AboutMe — they're
+                off-screen and invisible under the overlay at reveal time, so
+                splitting them out of mountContent's single big commit keeps
+                that work off the preloader's visible frames. */}
+            {sectionsMounted && (
+              <>
+                <WhatIDo />
+                <MyJourney />
+                <Projects />
+                <Footer onOpenAI={openAI} />
+              </>
+            )}
           </div>
 
-          <AIOrb onClick={openAI} hidden={heroVisible || whatIdoVisible || journeyVisible} />
-          <ReturnToTop hidden={!returnVisible} />
-          <ScrollProgressFrame />
+          {sectionsMounted && (
+            <>
+              <AIOrb onClick={openAI} hidden={heroVisible || whatIdoVisible || journeyVisible} />
+              <ReturnToTop hidden={!returnVisible} />
+              <ScrollProgressFrame />
+            </>
+          )}
           {/* Mounted only after the first open — its chat-history state then
               persists across subsequent closes/reopens like before lazy-loading. */}
           {hasOpenedAI && (

@@ -9,6 +9,7 @@ import {
 import Terminal from './Terminal'
 import HeroLetter from './HeroLetter'
 import SplineScene from './SplineScene'
+import { preloadSplineRuntime } from '../utils/preloadSpline'
 import StarField from './StarField'
 import MatrixText from './MatrixText'
 import TextScramble from './TextScramble'
@@ -83,6 +84,16 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
     )
     observer.observe(el)
     return () => observer.disconnect()
+  }, [])
+
+  // Warm the react-spline chunk's network fetch as soon as Hero mounts —
+  // well before `started` gates the actual <SplineScene> render below. This
+  // overlaps the fetch/parse with the preloader's still-visible cinematic
+  // floor so the robot doesn't pay for a cold network fetch after reveal;
+  // the WebGL context + shader compile (the real main-thread cost) still
+  // only happens once `started` mounts the component.
+  useEffect(() => {
+    preloadSplineRuntime()
   }, [])
 
   const handleEmailClick = useCallback((e) => {
@@ -182,13 +193,25 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
         {started && <StarField visible={visible} />}
       </motion.div>
 
-      {/* Full-cover 3D layer — absolutely fills the hero, below text z-index */}
+      {/* Full-cover 3D layer — absolutely fills the hero, below text z-index.
+          SplineScene mounts only after the preloader has revealed (started=true),
+          mirroring the StarField gate above: WebGL context creation + shader
+          compilation is real main-thread work, and gating it here keeps that
+          stall off the still-visible preloader frames instead of contending
+          with the cube loader's cold-start animation. The robot fades in on
+          its own once loaded (SplineScene's independent opacity transition),
+          so it simply appears a beat after the curtain instead of being
+          pre-warmed underneath it. Wrapper stays always-mounted — its layout
+          comes from CSS insets (robot.css), not from SplineScene's content —
+          so gating the child causes no shift. */}
       <div className="hero-spline" ref={splineRef}>
-        <SplineScene
-          scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-          className="spline-canvas"
-          visible={visible}
-        />
+        {started && (
+          <SplineScene
+            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+            className="spline-canvas"
+            visible={visible}
+          />
+        )}
       </div>
 
       {/* Phase 2a — meta-row fades alongside the name cascade */}
