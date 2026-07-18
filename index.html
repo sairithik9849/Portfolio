@@ -19,7 +19,9 @@
 
     <!-- Fonts are self-hosted from /public/fonts (see src/styles/fonts.css) —
          no third-origin round trip. Preload the hero h1 face (IBM Plex Sans
-         Condensed 500) since it's the largest above-fold text. -->
+         Condensed 500) since it's the largest above-fold text, and the
+         preloader HUD's mono face (JetBrains Mono) so the percent/status
+         text doesn't FOUT-swap mid-animation on a cold load. -->
     <link
       rel="preload"
       href="/fonts/ibm-plex-sans-condensed-normal-500-latin.woff2"
@@ -27,7 +29,23 @@
       type="font/woff2"
       crossorigin
     />
+    <link
+      rel="preload"
+      href="/fonts/jetbrains-mono-normal-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="preconnect" href="https://prod.spline.design" />
+    <!-- Warms the network fetch for the hero robot's scene data. The runtime
+         chunk itself (@splinetool/react-spline) is preloaded from JS instead
+         (src/utils/preloadSpline.js) since Vite hashes lazy-chunk filenames
+         at build time, so a static href here can't target it reliably. -->
+    <link
+      rel="prefetch"
+      href="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+      crossorigin
+    />
   </head>
   <body>
     <div id="root"></div>
