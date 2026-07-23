@@ -83,6 +83,21 @@ Section DOM ids do not match component names — use this table for scroll targe
 
 The four `IntersectionObserver` effects in `App.jsx` have `mountContent` in their dep array so they attach only after the Hero DOM actually exists; do not change their deps back to `[]`.
 
+## Staged Hero Mount (post-`heroStarted`)
+
+`heroStarted` flipping true is itself a single commit — it's also the commit that starts the `HERO_SEQUENCE` cascade (see above). Two more things used to gate directly on `started` in that same commit: StarField's mount (~1,600-box-shadow raster) and SplineScene's mount (WebGL context creation + shader compile). Piling both of those plus the Framer cascade reconciliation into one commit produced a visible freeze (~2s on a cold first load) right as the curtain finished lifting.
+
+Both are now staged across separate `requestAnimationFrame`s in `Hero.jsx`, driven off `started`:
+
+- `mountStars` flips true on the first rAF after `started`.
+- `mountSpline` flips true on a second, nested rAF (one frame after `mountStars`).
+
+Each gets a browser paint between it and the others, turning one long main-thread task into several short ones. This is invisible to the user: StarField's wrapper `motion.div` already fades in on a `T.grid` delay, and SplineScene fades in independently once `loaded` — a mount arriving 1-2 frames later than `started` is masked by those fades.
+
+The Lenis + GSAP `ScrollTrigger` init (`App.jsx`, keyed on `heroStarted`) is idle-deferred the same way — wrapped in `requestIdleCallback` (with a `setTimeout` fallback, 500ms ceiling) instead of running synchronously in the `heroStarted` effect. Its initial measurement pass is a forced-layout cost, and native scroll is locked until reveal anyway, so there's no UX cost to it going live a beat later.
+
+**Do not re-collapse `mountStars`/`mountSpline` back onto `started` directly**, and **do not make the Lenis/ScrollTrigger init synchronous on `heroStarted` again** — both reintroduce the single-commit pile-up this staging exists to avoid.
+
 ## Spline Visibility Gating
 
 `SplineScene.jsx` captures the `Application` instance from `@splinetool/react-spline`'s `onLoad`

@@ -75,6 +75,30 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
   const copyTimerRef = useRef(null)
   const prefersReducedMotion = useReducedMotion()
 
+  // Staged mount for the two GPU-heavy children (StarField's ~1,600-box-shadow
+  // raster and Spline's WebGL context + shader compile). Both used to gate on
+  // `started` directly, landing in the SAME commit as the curtain-lift — that
+  // synchronous pile-up is the first-load reveal freeze. Chaining them across
+  // two rAFs gives the browser a paint in between each, turning one long task
+  // into several short ones. The wrapper fade-ins (T.grid delay below, and
+  // SplineScene's own `loaded` fade) already mask a mount arriving a couple
+  // frames late, so this changes nothing visually.
+  const [mountStars, setMountStars] = useState(false)
+  const [mountSpline, setMountSpline] = useState(false)
+  const splineRafRef = useRef(null)
+
+  useEffect(() => {
+    if (!started) return undefined
+    const starsId = requestAnimationFrame(() => {
+      setMountStars(true)
+      splineRafRef.current = requestAnimationFrame(() => setMountSpline(true))
+    })
+    return () => {
+      cancelAnimationFrame(starsId)
+      if (splineRafRef.current) cancelAnimationFrame(splineRafRef.current)
+    }
+  }, [started])
+
   useEffect(() => {
     const el = robotHotspotRef.current
     if (!el) return
@@ -182,7 +206,12 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
     >
       {/* Phase 1 — StarField mounts only after the preloader has revealed
            (started=true) so Chrome never rasterizes 1330 box-shadows behind an
-           opaque curtain. Wrapper holds at opacity:0 until T.grid then fades in. */}
+           opaque curtain. It's staged one rAF after `started` (mountStars, see
+           the effect above) rather than in the same commit — that commit is
+           also where the curtain-lift + Framer cascade land, and piling the
+           raster on top of them is what caused the first-load reveal freeze.
+           Wrapper holds at opacity:0 until T.grid then fades in, which masks
+           the one-frame-late child mount. */}
       <motion.div
         variants={{
           hidden: { opacity: 0 },
@@ -190,22 +219,22 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
         }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       >
-        {started && <StarField visible={visible} />}
+        {mountStars && <StarField visible={visible} />}
       </motion.div>
 
       {/* Full-cover 3D layer — absolutely fills the hero, below text z-index.
-          SplineScene mounts only after the preloader has revealed (started=true),
-          mirroring the StarField gate above: WebGL context creation + shader
-          compilation is real main-thread work, and gating it here keeps that
-          stall off the still-visible preloader frames instead of contending
-          with the cube loader's cold-start animation. The robot fades in on
-          its own once loaded (SplineScene's independent opacity transition),
-          so it simply appears a beat after the curtain instead of being
-          pre-warmed underneath it. Wrapper stays always-mounted — its layout
-          comes from CSS insets (robot.css), not from SplineScene's content —
-          so gating the child causes no shift. */}
+          SplineScene mounts only after the preloader has revealed, mirroring
+          the StarField gate above: WebGL context creation + shader compilation
+          is real main-thread work. It's staged a further rAF behind StarField
+          (mountSpline) so the two heaviest mounts on the page never share a
+          frame with each other or with the curtain-lift/Framer-cascade commit.
+          The robot fades in on its own once loaded (SplineScene's independent
+          opacity transition), so it simply appears a beat after the curtain
+          instead of being pre-warmed underneath it. Wrapper stays
+          always-mounted — its layout comes from CSS insets (robot.css), not
+          from SplineScene's content — so gating the child causes no shift. */}
       <div className="hero-spline" ref={splineRef}>
-        {started && (
+        {mountSpline && (
           <SplineScene
             scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
             className="spline-canvas"
