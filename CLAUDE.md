@@ -22,7 +22,7 @@ vercel --prod       # production deploy
 
 ## Dev Server Hygiene
 
-Run `npm run dev:clean` before starting work — it wraps `scripts/dev-server.ps1`, which frees ports 5173/5174 of stale node processes and starts a single dev server. Don't hand-roll the port check or spawn redundant background dev servers.
+Run `npm run dev:clean` before starting work — it kills any stale `node` process holding ports 5173/5174, then starts a single dev server. Don't hand-roll the port check or spawn redundant background dev servers.
 
 ## Global Rules
 
@@ -44,18 +44,18 @@ These apply everywhere, regardless of the area being touched.
 
 Read the listed doc before working in each area. Read only what the task requires.
 
-| When touching…                                                                                                                     | Read                    |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| When touching…                                                                                                                                                                    | Read                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, ReturnToTop, hotkeys, cursor, footer wiring, project-card visuals, Hero↔AboutMe sticky-stack transition | `docs/architecture.md`  |
-| Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                   | `docs/animation.md`     |
-| `src/styles/`, colors, typography, spacing, radii, layout shell, interaction patterns                                              | `docs/design-system.md` |
-| `Hero.jsx`, `SplineScene`, `StarField`, robot, `src/styles/hero-about-stack.css`                                                   | `docs/hero.md`          |
-| `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                      | `docs/what-i-do.md`     |
-| `src/components/journey/`, `src/lib/journey/`, `src/hooks/useJourneyEngine.js`, `src/data/journey.js`                              | `docs/journey.md`       |
-| `src/components/ReturnToTop.jsx`, `src/styles/return-to-top.css`                                                                    | `docs/architecture.md`  |
-| `src/components/ScrollProgressFrame.jsx`, `src/styles/scroll-progress-frame.css`                                                    | `docs/architecture.md`  |
-| `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                        | `docs/backend.md`       |
-| Skills, skill composition, development workflow, Architecture First, design/component intake                                        | `docs/skills.md`        |
+| Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                                                                  | `docs/animation.md`     |
+| `src/styles/`, colors, typography, spacing, radii, layout shell, interaction patterns                                                                                             | `docs/design-system.md` |
+| `Hero.jsx`, `SplineScene`, `StarField`, robot, `src/styles/hero-about-stack.css`                                                                                                  | `docs/hero.md`          |
+| `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                                                                     | `docs/what-i-do.md`     |
+| `src/components/journey/`, `src/lib/journey/`, `src/hooks/useJourneyEngine.js`, `src/data/journey.js`                                                                             | `docs/journey.md`       |
+| `src/components/ReturnToTop.jsx`, `src/styles/return-to-top.css`                                                                                                                  | `docs/architecture.md`  |
+| `src/components/ScrollProgressFrame.jsx`, `src/styles/scroll-progress-frame.css`                                                                                                  | `docs/architecture.md`  |
+| `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                                                                       | `docs/backend.md`       |
+| Skills, skill composition, development workflow, Architecture First, design/component intake                                                                                      | `docs/skills.md`        |
 
 ## Extending the Docs
 

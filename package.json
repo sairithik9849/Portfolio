@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/dev-server.ps1",
+    "dev:clean": "lsof -t -a -i :5173,5174 -c node | xargs kill -9; vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
