@@ -96,7 +96,27 @@
   line-height: 1.6;
 }
 
-@media (max-width: 980px) {
+/* ── Tier split — see docs/mobile.md §3.2 ───────────────────────────────────
+   Tablet derives from DESKTOP (structure kept, scale retuned); phone gets the
+   reduced structure. Previously both tiers shared one `max-width: 980px`
+   block, which handed 768–980px the phone layout. */
+
+/* Tablet (768–980) — desktop structure, tightened. Keeps the 12-column grid
+   and the three-column section-head including .right, which the phone tier
+   drops for want of horizontal room. */
+@media (min-width: 768px) and (max-width: 980px) {
+  .row { gap: 20px; }
+  .section-head {
+    grid-template-columns: 80px 1fr auto;
+    gap: 24px;
+    padding-top: 96px;
+    padding-bottom: 40px;
+  }
+  .section-head .right { max-width: 200px; }
+}
+
+/* Phone (< 768) */
+@media (max-width: 767px) {
   .row { grid-template-columns: repeat(6, 1fr); }
   .section-head { grid-template-columns: 72px 1fr; gap: 20px; }
   .section-head .right { display: none; }

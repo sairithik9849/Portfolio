@@ -134,6 +134,54 @@ comments. Use the scale tokens (`--text-*`), never literal `px` sizes.
 
 ---
 
+## Breakpoint Tiers
+
+Full detail, rationale, and the mobile translation plan live in **`docs/mobile.md`** —
+that doc wins on any breakpoint conflict with this one. Summary:
+
+```
+   0 ──────── 767 │ 768 ──────── 980 │ 981 ──────────►
+   [   PHONE      ]│[   TABLET       ]│[   DESKTOP    ]
+    vertical        desktop mechanics,  full
+    translation     retuned scale       choreography
+```
+
+**Every tier-defining `@media` width in `src/styles/` is `768px` or `981px`**, written in
+exactly these three forms — `768px` belongs to tablet:
+
+```css
+@media (max-width: 767px)                        { /* phone   */ }
+@media (min-width: 768px) and (max-width: 980px) { /* tablet  */ }
+@media (min-width: 981px)                        { /* desktop */ }
+```
+
+Never `max-width: 768px` or `min-width: 769px`. Both conventions coexisted before Phase 0.5
+and collided at exactly 768px (iPad portrait). Audit with
+`grep -rn "min-width: 769px\|max-width: 768px" src/styles` — must return nothing.
+
+Intra-tier refinements (e.g. `@media (max-width: 460px)` tightening a grid *within* the phone
+tier) are allowed and are not violations — they refine inside a tier, they don't define one.
+
+Tablet is derived from **desktop** — it keeps the desktop mechanics (pin, scrub, sticky-stack)
+with scaled type, tighter spacing, and narrower stages. It is not a wide phone layout.
+
+### Pointer capability is a separate axis
+
+`@media (pointer: coarse), (hover: none)` applies at **any width** and is orthogonal to the
+tiers above. A tablet running desktop layouts has no hover; so does a touch laptop at 1440px.
+
+- Every `:hover` style needs a coarse-pointer counterpart (tap or scroll-triggered).
+- Keep pointer rules **co-located** with the component they override — the established pattern
+  is `hero/robot.css:140`. Do not create a global responsive stylesheet.
+- Width and pointer are different problems. Adding a breakpoint does not fix a hover bug.
+
+### Do not tokenize breakpoints
+
+CSS custom properties cannot be read inside `@media` queries. The tier system is a documented
+convention enforced by review. Do not add PostCSS, Sass, or a build plugin to work around this.
+
+---
+
 ## Interaction Patterns
 
 These document the portfolio's **current interaction language** — how key UI elements behave.

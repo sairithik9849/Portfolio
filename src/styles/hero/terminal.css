@@ -465,7 +465,7 @@
   }
 }
 
-@media (max-height: 720px) and (min-width: 769px) {
+@media (max-height: 720px) and (min-width: 768px) {
   .terminal {
     max-width: 486px;
     font-size: var(--text-sm);
@@ -484,7 +484,7 @@
   .terminal { max-width: 100%; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .terminal { font-size: var(--text-sm); }
   .terminal .bar { padding: 4px 10px; }
   .terminal .body { padding: 6px 10px 0; }

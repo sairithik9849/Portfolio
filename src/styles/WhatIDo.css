@@ -296,11 +296,18 @@
 /* ── mobile / coarse-pointer / reduced-motion static fallback ───────────────
    No pin, no ScrollTrigger, no animated scrub. Words stack naturally. Band
    is hidden. All five blurbs listed inline below the word stack.
-   The comma-OR includes prefers-reduced-motion: reduce so desktop users with
-   motion disabled also get the coherent static layout instead of the
-   scroll-pinned path (which never runs under reduced motion anyway, leaving
-   position:absolute stacks overlapping at top-left). */
-@media (max-width: 980px), (prefers-reduced-motion: reduce) {
+   Every arm of the comma-OR must mirror an arm of WhatIDo.jsx's DESKTOP_QUERY
+   ('(min-width: 981px) and (pointer: fine) and (prefers-reduced-motion:
+   no-preference)'). Where the two disagree, the pin does not run AND this
+   fallback does not apply, so .wid-stack--base / .wid-stack--ko stay
+   position:absolute at top-left inside a .wid-left whose height is never set
+   by JS — the word stacks collapse and overlap.
+
+   That is exactly what happened at >=981px with a coarse pointer (iPad
+   landscape, touch laptops): DESKTOP_QUERY excluded them via `pointer: fine`
+   but this list only covered width and reduced-motion. Hence the
+   `(pointer: coarse)` arm — it is load-bearing, not defensive. */
+@media (max-width: 980px), (pointer: coarse), (prefers-reduced-motion: reduce) {
   .what-i-do {
     min-height: auto;
     display: block;

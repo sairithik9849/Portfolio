@@ -83,7 +83,7 @@
   }
 }
 
-@media (max-height: 900px) and (min-height: 721px) and (min-width: 769px) {
+@media (max-height: 900px) and (min-height: 721px) and (min-width: 768px) {
   .hero h1 {
     font-size: min(clamp(90px, 9.6vw, 152px), 17vh);
     white-space: nowrap;
@@ -98,7 +98,7 @@
   }
 }
 
-@media (max-height: 720px) and (min-width: 769px) {
+@media (max-height: 720px) and (min-width: 768px) {
   .hero h1 {
     font-size: min(clamp(80px, 8.8vw, 134px), 14vh);
     white-space: nowrap;

@@ -318,7 +318,7 @@
   }
 }
 
-@media (max-height: 900px) and (min-height: 721px) and (min-width: 769px) {
+@media (max-height: 900px) and (min-height: 721px) and (min-width: 768px) {
   .hero-manifesto {
     gap: clamp(28px, 4.5vh, 48px);
   }
@@ -346,7 +346,7 @@
   }
 }
 
-@media (max-height: 720px) and (min-width: 769px) {
+@media (max-height: 720px) and (min-width: 768px) {
   .hero-manifesto {
     gap: clamp(14px, 2.4vh, 22px);
   }
@@ -383,7 +383,7 @@
   .manifesto-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .manifesto-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .manifesto-cta { flex-direction: column; align-items: flex-start; }
 }

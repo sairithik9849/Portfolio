@@ -188,6 +188,11 @@
     grid-template-columns: 72px 1fr;
     gap: 20px;
   }
+  /* This head drops to two columns, so it owns its third child. layout.css
+     restores `.section-head .right` for the tablet tier (768–980) where the
+     grid is still three columns; without this it would wrap to a second row
+     at column width. Revisit when AboutMe is migrated to the tier system. */
+  .about-me .section-head .right { display: none; }
   .about-me-statement {
     font-size: clamp(28px, 6vw, 48px);
     max-width: none;

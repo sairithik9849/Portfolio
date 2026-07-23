@@ -272,7 +272,7 @@
   }
 }
 
-@media (max-height: 720px) and (min-width: 769px) {
+@media (max-height: 720px) and (min-width: 768px) {
   .ai-orb {
     right: 20px;
     bottom: 20px;
