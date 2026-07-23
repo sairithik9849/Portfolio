@@ -17,17 +17,16 @@ Check the 5-hour usage shown in the statusline. **If it is above 50%, state the 
 
 Never spawn a redundant dev server. Check whether one is already running:
 
-```powershell
+```bash
 # Try both common Vite ports in order
-$ports = @(5173, 5174)
-$activePort = $null
-foreach ($port in $ports) {
-  try {
-    $resp = Invoke-WebRequest -Uri "http://localhost:$port" -UseBasicParsing -TimeoutSec 3
-    if ($resp.StatusCode -eq 200) { $activePort = $port; break }
-  } catch {}
-}
-$activePort  # $null means none running
+activePort=""
+for port in 5173 5174; do
+  if curl -sf -o /dev/null "http://localhost:$port"; then
+    activePort=$port
+    break
+  fi
+done
+echo "$activePort"  # empty means none running
 ```
 
 - If a server is already up, reuse that port.
