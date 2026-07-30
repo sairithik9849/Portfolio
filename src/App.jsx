@@ -13,6 +13,16 @@ import ReturnToTop  from './components/ReturnToTop'
 import ScrollProgressFrame from './components/ScrollProgressFrame'
 import Preloader    from './components/Preloader'
 import { useHotkey } from './hooks/useHotkey'
+import { scheduleIdle, cancelScheduledIdle } from './utils/scheduleIdle'
+
+// Safari-only waits — ordered so the sections commit lands before the
+// ScrollTrigger measurement pass, and both clear the hero cascade's opening
+// beats (HERO_SEQUENCE grid 0.10s → metrics 1.50s).
+// ponytail: hand-tuned floors, not measurements. If the real-device gate still
+// shows a freeze, raise these and/or route Hero's mountSpline through
+// scheduleIdle too (Spline's WebGL shader compile is the next-largest task).
+const SECTIONS_MOUNT_FALLBACK_MS = 600
+const LENIS_INIT_FALLBACK_MS     = 1000
 
 // AIDrawer carries its own chat UI + Framer transitions and is only ever
 // needed once the user opens it (Cmd+K or the orb) — deferred out of the
@@ -83,10 +93,10 @@ export default function App() {
   // timeout ceiling keeps them from being starved indefinitely on a busy tab.
   const handleRevealComplete = useCallback(() => {
     setHeroStarted(true)
-    const schedule = typeof requestIdleCallback === 'function'
-      ? requestIdleCallback
-      : (cb) => setTimeout(cb, 0)
-    schedule(() => startSectionsTransition(() => setSectionsMounted(true)), { timeout: 500 })
+    scheduleIdle(
+      () => startSectionsTransition(() => setSectionsMounted(true)),
+      { timeout: 500, fallbackDelay: SECTIONS_MOUNT_FALLBACK_MS },
+    )
   }, [startSectionsTransition])
 
   const [aiOpen, setAiOpen] = useState(false)
@@ -165,20 +175,14 @@ export default function App() {
       gsap.ticker.lagSmoothing(0)
     }
 
-    const schedule = typeof requestIdleCallback === 'function'
-      ? requestIdleCallback
-      : (cb) => setTimeout(cb, 0)
-    const cancelSchedule = typeof cancelIdleCallback === 'function'
-      ? cancelIdleCallback
-      : clearTimeout
-    const idleId = schedule(setUpLenis, { timeout: 500 })
+    const idleId = scheduleIdle(setUpLenis, { timeout: 500, fallbackDelay: LENIS_INIT_FALLBACK_MS })
 
     // ── cleanup is ADDITIVE — ticker/off lines join the existing teardown ──
     // lenis.destroy() and delete window.__lenis MUST stay to prevent
     // leaking the Lenis instance and leaving a dangling global. Also cancels
     // the idle schedule itself, in case the component unmounts before it fires.
     return () => {
-      cancelSchedule(idleId)
+      cancelScheduledIdle(idleId)
       if (!lenis) return
       gsap.ticker.remove(tickerFn)
       lenis.off('scroll', ScrollTrigger.update)
@@ -208,27 +212,42 @@ export default function App() {
   // the below-fold observers (#what-i-do, #journey) depend on sectionsMounted
   // since those sections now mount a beat later (see handleRevealComplete).
   useEffect(() => {
-    if (!mountContent) return undefined
-    // Watches #hero-sentinel (top of .hero-about-stack), not #top (the Hero
-    // itself) — while the hero is sticky-pinned under AboutMe it stays
-    // geometrically in the viewport, so an observer on #top would never
-    // report false and the WebGL-pause optimization (StarField/Spline
-    // app.stop()) would never fire. The sentinel leaves the viewport at the
-    // same scroll position the pin visually resolves (AboutMe fully covers
-    // the hero), so timing is unchanged from the pre-stack behavior.
-    const hero = document.getElementById('hero-sentinel')
-
-    if (!hero || !('IntersectionObserver' in window)) {
-      return undefined
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setHeroVisible(entry.isIntersecting),
-      { threshold: 0 },
+    if (!mountContent || !('IntersectionObserver' in window)) return undefined
+    // heroVisible drives the WebGL pause (StarField/Spline app.stop()) AND gates
+    // the MatrixText scramble loop. Which element reports it depends on whether
+    // the hero is sticky-pinned:
+    //   • Pinned (desktop ≥981 + motion): the pinned hero stays geometrically in
+    //     the viewport under AboutMe, so #top would never report false. The
+    //     #hero-sentinel at the Hero/AboutMe boundary leaves the viewport exactly
+    //     when AboutMe has covered the hero — the correct flip point.
+    //   • Not pinned (mobile/tablet/reduced-motion): the hero is a tall normal-
+    //     flow block far taller than the viewport, so its bottom sentinel sits
+    //     below the fold at scroll 0 and would wrongly report the hero hidden
+    //     while its top (meta-row / MatrixText) is on screen. #top is correct here.
+    const heroRoot = document.getElementById('top')
+    const sentinel = document.getElementById('hero-sentinel')
+    const pinQuery = window.matchMedia(
+      '(min-width: 981px) and (prefers-reduced-motion: no-preference)',
     )
 
-    observer.observe(hero)
-    return () => observer.disconnect()
+    const state = { root: true, sentinel: true }
+    const apply = () => setHeroVisible(pinQuery.matches ? state.sentinel : state.root)
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === sentinel) state.sentinel = entry.isIntersecting
+        else state.root = entry.isIntersecting
+      }
+      apply()
+    }, { threshold: 0 })
+
+    if (heroRoot) observer.observe(heroRoot)
+    if (sentinel) observer.observe(sentinel)
+    pinQuery.addEventListener('change', apply)
+    return () => {
+      observer.disconnect()
+      pinQuery.removeEventListener('change', apply)
+    }
   }, [mountContent])
 
   useEffect(() => {

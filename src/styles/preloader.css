@@ -110,11 +110,59 @@
   will-change: transform;
 }
 
-/* ── CSS 3D box loader ─────────────────────────────────────────────────── */
-/* Wrapper: centers the loader in the full-screen overlay */
-.preloader-boxes-wrap {
+/* ── Centered stack: mobile/tablet notice + box loader ─────────────────── */
+/* Owns viewport centering for the cluster (notice + box + its reflection).
+   Desktop: notice is display:none, so the single remaining child (the box
+   wrap) centers identically to the old place-items:center grid — gap
+   collapses with one child.
+   gap:85px is measured, not arbitrary — it matches the box loader's own
+   cube-to-reflection distance (the isometric --sz:44px shadow offset), so
+   the notice sits as far above the box as the reflection sits below it.
+   Scales with --sz: see the 66px override at the 600px shrink below. */
+.preloader-center-stack {
   position: absolute;
   inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 85px;
+  pointer-events: none;
+}
+
+/* Mobile/tablet-only advisory — hidden on desktop tier (see responsive block) */
+.preloader-notice {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  white-space: nowrap;
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    var(--accent-2) 0%,
+    var(--accent-2) 35%,
+    rgba(255, 255, 255, 0.9) 50%,
+    var(--accent-2) 65%,
+    var(--accent-2) 100%
+  );
+  background-repeat: no-repeat;
+  animation: preloader-shimmer 2.4s linear infinite;
+}
+
+@keyframes preloader-shimmer {
+  from { background-position: 100% center; }
+  to   { background-position: 0% center; }
+}
+
+/* ── CSS 3D box loader ─────────────────────────────────────────────────── */
+/* Wrapper: plain passthrough — centering now owned by .preloader-center-stack */
+.preloader-boxes-wrap {
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -250,6 +298,17 @@
   100% { transform: translate(100%, 100%); }
 }
 
+/* Reduced-motion: static gold, no shimmer sweep */
+@media (prefers-reduced-motion: reduce) {
+  .preloader-notice {
+    animation: none;
+    color: var(--accent-2);
+    background-image: none;
+    background-clip: unset;
+    -webkit-background-clip: unset;
+  }
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .preloader-meta--tl {
@@ -265,5 +324,18 @@
 
   .boxes {
     --sz: 34px;
+  }
+
+  /* Keeps notice-to-box == box-to-reflection at the smaller --sz (see
+     .preloader-center-stack comment) */
+  .preloader-center-stack {
+    gap: 66px;
+  }
+}
+
+/* Desktop tier: hide the mobile/tablet advisory entirely (docs/mobile.md tier lock) */
+@media (min-width: 981px) {
+  .preloader-notice {
+    display: none;
   }
 }

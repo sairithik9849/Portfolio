@@ -17,7 +17,7 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import BoxLoader from './preloader/BoxLoader.jsx'
-import { PRELOADER_NAME, getStatusLabel } from '../data/preloader.js'
+import { PRELOADER_NAME, PRELOADER_NOTICE, getStatusLabel } from '../data/preloader.js'
 
 // Single continuous fill: 0 → 1 over FILL_DURATION_MS.
 // Near-linear ease-in-out-sine: starts moving immediately, never parks near 100.
@@ -149,8 +149,11 @@ export default function Preloader({ beginExit, onRevealComplete }) {
           key="preloader"
           {...motionProps}
         >
-          {/* Centered CSS 3D box loader */}
-          <BoxLoader reduced={reduced} />
+          {/* Centered stack: mobile/tablet advisory + CSS 3D box loader */}
+          <div className="preloader-center-stack">
+            <p className="preloader-notice">{PRELOADER_NOTICE}</p>
+            <BoxLoader reduced={reduced} />
+          </div>
 
           {/* Corner meta — top-left: name in lime */}
           <span className="preloader-meta preloader-meta--tl" aria-hidden="true">

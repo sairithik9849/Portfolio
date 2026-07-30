@@ -94,9 +94,13 @@ Both are now staged across separate `requestAnimationFrame`s in `Hero.jsx`, driv
 
 Each gets a browser paint between it and the others, turning one long main-thread task into several short ones. This is invisible to the user: StarField's wrapper `motion.div` already fades in on a `T.grid` delay, and SplineScene fades in independently once `loaded` — a mount arriving 1-2 frames later than `started` is masked by those fades.
 
-The Lenis + GSAP `ScrollTrigger` init (`App.jsx`, keyed on `heroStarted`) is idle-deferred the same way — wrapped in `requestIdleCallback` (with a `setTimeout` fallback, 500ms ceiling) instead of running synchronously in the `heroStarted` effect. Its initial measurement pass is a forced-layout cost, and native scroll is locked until reveal anyway, so there's no UX cost to it going live a beat later.
+The Lenis + GSAP `ScrollTrigger` init (`App.jsx`, keyed on `heroStarted`) and the below-fold `sectionsMounted` mount are idle-deferred the same way, both through `src/utils/scheduleIdle.js` — `requestIdleCallback` where it exists, a real non-zero `setTimeout` where it doesn't. Its initial measurement pass is a forced-layout cost, and native scroll is locked until reveal anyway, so there's no UX cost to it going live a beat later.
+
+**`requestIdleCallback` does not exist in iOS Safari** — WebKit ships it behind an off-by-default experimental flag. A `setTimeout(cb, 0)` fallback (what both of these sites used before) defers nothing there: it's the very next macrotask, landing on top of the `heroStarted` Framer reconciliation and the `mountStars`/`mountSpline` rAFs above. That collapsed `HERO_SEQUENCE`'s phases (`grid` 0.10s → `metrics` 1.50s) into a single blocked stretch on real iPhones — curtain lifts, blank beat, then the whole cascade pops in at once — confirmed via Playwright with `requestIdleCallback` deleted pre-navigation (2026-07-29). `scheduleIdle`'s fallback branch uses a real `fallbackDelay` (600ms sections / 1000ms Lenis) instead, so the fallback path actually defers on browsers that take it.
 
 **Do not re-collapse `mountStars`/`mountSpline` back onto `started` directly**, and **do not make the Lenis/ScrollTrigger init synchronous on `heroStarted` again** — both reintroduce the single-commit pile-up this staging exists to avoid.
+
+**Do not call `requestIdleCallback` directly** — route through `src/utils/scheduleIdle.js`. A bare `setTimeout(cb, 0)` fallback defers nothing on iOS Safari; see above.
 
 ## Spline Visibility Gating
 
@@ -111,8 +115,11 @@ preloader window), so it never interacts with the reveal gate above. Independent
 what lets the preloader curtain lift before Spline has actually finished loading; the robot simply
 fades in whenever it's ready.
 
-`heroVisible` is driven by an `IntersectionObserver` on **`#hero-sentinel`**, not on `#top` (the
-Hero root) — see "Hero → AboutMe Sticky-Stack Transition" below for why.
+`heroVisible` is driven by a single `IntersectionObserver` watching **both** `#hero-sentinel` and
+`#top` (the Hero root); which one it reports from is **conditional on the sticky-pin**
+(`matchMedia('(min-width: 981px) and (prefers-reduced-motion: no-preference)')`). When the pin is
+active it reports the **sentinel**; when inactive it reports **`#top`**. See "Hero → AboutMe
+Sticky-Stack Transition" below for why.
 
 ## Hero → AboutMe Sticky-Stack Transition
 
@@ -138,6 +145,15 @@ fully covered the pinned hero (`scrollY ≈` hero height), which is the moment `
 flip to `false` to pause the two WebGL contexts (StarField, Spline). A sentinel on `#top` (the Hero
 root) would never report `false` while sticky, since the pinned hero stays geometrically in the
 viewport indefinitely.
+
+**When the pin is inactive (mobile/tablet ≤980, or reduced-motion), the sentinel is the *wrong*
+signal.** There the hero is a tall normal-flow block far taller than the viewport, so its bottom
+sentinel sits below the fold at scroll 0 — reporting the hero "hidden" while its top (meta-row /
+MatrixText) is fully on screen, which froze the MatrixText scramble and paused StarField/Spline at
+the top of the page. So the observer watches `#top` **and** the sentinel and switches between them on
+the pin `matchMedia` (re-evaluated on its `change` event): `#top` when unpinned, sentinel when
+pinned. `#top` is correct when unpinned because the hero then scrolls normally and its root leaves
+the viewport exactly when it's gone.
 
 ## Scroll Progress Frame
 
@@ -341,6 +357,7 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not move the page background gradients back onto `body` with `background-attachment: fixed` — keep them on the composited `.bg-gradient` fixed layer.
 - Do not re-gate the preloader's `revealed` flag on Spline readiness — see "Three-Flag Preloader Handoff."
 - Do not remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen.
-- Do not re-point the `heroVisible` observer from `#hero-sentinel` back to `#top` — while the hero is sticky-pinned it never leaves the viewport, so an observer on `#top` would never report `false` and the WebGL pause would never fire.
+- Do not call `requestIdleCallback`/`cancelIdleCallback` directly anywhere in the app — route through `src/utils/scheduleIdle.js`. iOS Safari has no `requestIdleCallback`; a bare `setTimeout(cb, 0)` fallback runs on the very next macrotask instead of deferring, which is what caused the first-load mobile freeze `scheduleIdle` fixes (see "Staged Hero Mount" above).
+- Do not make the `heroVisible` observer report from `#top` **while the hero is sticky-pinned** (desktop ≥981 + motion) — the pinned hero never leaves the viewport, so `#top` would never report `false` and the WebGL pause would never fire. It reports from `#top` only when the pin is inactive (mobile/tablet/reduced-motion), where the sentinel would instead wrongly report the tall hero hidden at scroll 0; keep the pin-conditional switch.
 - Do not remove the `.hero-about-stack .hero { z-index: 1; }` override in `hero-about-stack.css` — `.hero` inherits `z-index: 3` from the shared `.shell` class, which would otherwise paint the pinned hero above the incoming AboutMe card.
 - Do not unmount `AIDrawer` on close (e.g. reverting to `{aiOpen && <AIDrawer/>}`) — it would drop chat history on every reopen; keep the `hasOpenedAI`-gated mount-once pattern.

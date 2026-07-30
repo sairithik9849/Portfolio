@@ -4,7 +4,10 @@ Guidance for Claude Code or any CLI across this repository.
 
 ## Project
 
-Personal portfolio for **Sairithik Komuravelly (Sai)**. Goal: best-in-class developer portfolio — highly animated, deeply interactive, polished. Showcases low-level systems engineering + high-end frontend execution.
+Personal portfolio for **Sairithik Komuravelly (Sai)**. Goal:
+best-in-class developer portfolio — highly animated, deeply
+interactive, polished. Showcases low-level systems engineering +
+high-end frontend execution.
 
 ## Commands
 
@@ -22,54 +25,98 @@ vercel --prod       # production deploy
 
 ## Dev Server Hygiene
 
-Run `npm run dev:clean` before starting work — it kills any stale `node` process holding ports 5173/5174, then starts a single dev server. Don't hand-roll the port check or spawn redundant background dev servers.
+Run `npm run dev:clean` before starting work — it kills any stale
+`node` process holding ports 5173/5174, then starts a single dev
+server. Don't hand-roll the port check or spawn redundant background
+servers.
 
 ## Global Rules
 
 These apply everywhere, regardless of the area being touched.
 
-- **Language:** JavaScript only. No TypeScript, no type annotations. ES6+ (arrow fns, destructuring, async/await, optional chaining). `const` default, `let` for reassignment, never `var`. ES modules throughout.
-- **Stack:** React + Vite (SPA) frontend; Vercel Serverless Functions in `/api` (no Express).
-- **Animation default:** Framer Motion for all component-level animation — no react-spring, no component-level CSS keyframes. GSAP is used in exactly two places only — see `docs/animation.md`.
-- **3D bundles:** `@splinetool/react-spline` is `React.lazy` (see `SplineScene.jsx`). Never eager-load (~600 KB).
-- **Content:** All copy lives in `src/data/`. Never hardcode content inside components.
-- **CSS:** Animate `transform`/`opacity` only — no layout-thrashing properties. 60fps floor.
-- **No silent regressions:** If existing styles, classes, or behavior must change, say so explicitly.
-- **Visual proof before "done":** After any hero/viz/CSS/animation change, invoke the `visual-verify` skill before claiming the change works. Type checks and lint are not a substitute.
-- **Respect existing architecture:** Prefer extending existing patterns over introducing new libraries, frameworks, or architectural rewrites. When an existing system can solve the problem, use it.
-- **Architecture First:** Before modifying code, understand the repository's existing architecture. Never import external architecture wholesale. Adapt external ideas to existing repository conventions whenever practical. Only recommend architectural changes when they provide clear long-term value and are intentionally approved. (Full operating-system context: `docs/skills.md`.)
-- **Lint hygiene:** A pre-existing lint error surfaced during verification gets fixed in the same session, not stepped around. The lint gate stays green — generated output (e.g. `dist/`, `brag-output/`) is excluded from linting, never left to error.
+- **Language:** JavaScript only. No TypeScript, no type annotations.
+  ES6+ (arrow fns, destructuring, async/await, optional chaining).
+  `const` default, `let` for reassignment, never `var`. ES modules
+  throughout.
+- **Stack:** React + Vite (SPA) frontend; Vercel Serverless Functions
+  in `/api` (no Express).
+- **Animation default:** Framer Motion for all component-level
+  animation — no react-spring, no component-level CSS keyframes. GSAP
+  is used in exactly two places only — see `docs/animation.md`.
+- **3D bundles:** `@splinetool/react-spline` is `React.lazy` (see
+  `SplineScene.jsx`). Never eager-load (~600 KB).
+- **Content:** All copy lives in `src/data/`. Never hardcode content
+  inside components.
+- **CSS:** Animate `transform`/`opacity` only — no layout-thrashing
+  properties. 60fps floor.
+- **No silent regressions:** If existing styles, classes, or behavior
+  must change, say so explicitly.
+- **Visual proof before "done":** After any hero/viz/CSS/animation
+  change, invoke the `visual-verify` skill before claiming the change
+  works. Type checks and lint are not a substitute.
+- **Respect existing architecture:** Prefer extending existing patterns
+  over introducing new libraries, frameworks, or architectural rewrites.
+  When an existing system can solve the problem, use it.
+- **Architecture First:** Before modifying code, understand the
+  repository's existing architecture. Never import external architecture
+  wholesale. Adapt external ideas to existing repository conventions
+  whenever practical. Only recommend architectural changes when they
+  provide clear long-term value and are intentionally approved. (Full
+  operating-system context: `docs/skills.md`.)
+- **Lint hygiene:** A pre-existing lint error surfaced during
+  verification gets fixed in the same session, not stepped around. The
+  lint gate stays green — generated output (e.g. `dist/`,
+  `brag-output/`) is excluded from linting, never left to error.
 
 ## Routing Table
 
-Read the listed doc before working in each area. Read only what the task requires.
+Read the listed doc before working in each area. Read only what the task
+requires.
 
-| When touching…                                                                                                                                                                    | Read                    |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `App.jsx`, section order, preloader, Lenis, IntersectionObservers, AIOrb, ReturnToTop, hotkeys, cursor, footer wiring, project-card visuals, Hero↔AboutMe sticky-stack transition | `docs/architecture.md`  |
-| Framer Motion, GSAP, `src/animations/variants.js`, scroll-reveal, reduced-motion                                                                                                  | `docs/animation.md`     |
-| `src/styles/`, colors, typography, spacing, radii, layout shell, interaction patterns                                                                                             | `docs/design-system.md` |
-| Breakpoints, `@media` queries, mobile/tablet layout, `(pointer: coarse)` / touch behavior, the desktop→mobile translation effort                                                   | `docs/mobile.md`        |
-| `Hero.jsx`, `SplineScene`, `StarField`, robot, `src/styles/hero-about-stack.css`                                                                                                  | `docs/hero.md`          |
-| `WhatIDo.jsx`, `src/components/widviz/`, `src/data/widViz.js`                                                                                                                     | `docs/what-i-do.md`     |
-| `src/components/journey/`, `src/lib/journey/`, `src/hooks/useJourneyEngine.js`, `src/data/journey.js`                                                                             | `docs/journey.md`       |
-| `src/components/ReturnToTop.jsx`, `src/styles/return-to-top.css`                                                                                                                  | `docs/architecture.md`  |
-| `src/components/ScrollProgressFrame.jsx`, `src/styles/scroll-progress-frame.css`                                                                                                  | `docs/architecture.md`  |
-| `api/`, AI chat, env vars, `GEMINI_API_KEY`                                                                                                                                       | `docs/backend.md`       |
-| Skills, skill composition, development workflow, Architecture First, design/component intake                                                                                      | `docs/skills.md`        |
+- When touching the app shell, section order, preloader, Lenis,
+  IntersectionObservers, AIOrb, ReturnToTop, hotkeys, cursor, footer
+  wiring, project-card visuals, or the hero/about sticky-stack
+  transition, read `docs/architecture.md`.
+- When touching Framer Motion, GSAP, `src/animations/variants.js`,
+  scroll-reveal, or reduced-motion behavior, read
+  `docs/animation.md`.
+- When touching `src/styles/`, colors, typography, spacing, radii,
+  layout shell, or interaction patterns, read `docs/design-system.md`.
+- When touching breakpoints, `@media` queries, mobile/tablet layout,
+  `(pointer: coarse)` / touch behavior, or the desktop-to-mobile
+  translation effort, read `docs/mobile.md`.
+- When touching `Hero.jsx`, `SplineScene`, `StarField`, the robot, or
+  `src/styles/hero-about-stack.css`, read `docs/hero.md`.
+- When touching `WhatIDo.jsx`, `src/components/widviz/`, or
+  `src/data/widViz.js`, read `docs/what-i-do.md`.
+- When touching `src/components/journey/`, `src/lib/journey/`,
+  `src/hooks/useJourneyEngine.js`, or `src/data/journey.js`, read
+  `docs/journey.md`.
+- When touching `src/components/ReturnToTop.jsx` or
+  `src/styles/return-to-top.css`, read `docs/architecture.md`.
+- When touching `src/components/ScrollProgressFrame.jsx` or
+  `src/styles/scroll-progress-frame.css`, read `docs/architecture.md`.
+- When touching `api/`, the AI chat flow, env vars, or
+  `GEMINI_API_KEY`, read `docs/backend.md`.
+- When touching skills, skill composition, the development workflow,
+  or architecture-first practices, read `docs/skills.md`.
 
 ## Extending the Docs
 
-Any new major component, third-party integration, or architectural rule must:
+Any new major component, third-party integration, or architectural rule
+must:
 
-1. Add or update the relevant `docs/*.md` with full implementation detail.
+1. Add or update the relevant `docs/*.md` with full implementation
+   detail.
 2. Add a routing-table row in this file.
 
 Do not place subsystem-specific implementation details in CLAUDE.md.
 
-The root file stays a router — all implementation detail lives in `docs/`.
+The root file stays a router — all implementation detail lives in
+`docs/`.
 
-If this file and a subsystem doc ever conflict on implementation detail, the subsystem doc wins for that area.
+If this file and a subsystem doc ever conflict on implementation detail,
+the subsystem doc wins for that area.
 
 ## Exploration Budget
 
@@ -81,4 +128,8 @@ Before making a change:
 4. Do not create architecture reviews for localized edits.
 5. Escalate only if implementation cannot proceed.
 
-Do not read to understand the app: `dist/`, `node_modules/`, `.vercel/`, lockfiles, or `src/components/visuals/Viz*.jsx` / `src/components/widviz/Viz*.jsx` visual components unless that specific visual is the task.
+Do not read to understand the app: `dist/`, `node_modules/`,
+`.vercel/`, lockfiles, or
+`src/components/visuals/Viz*.jsx` /
+`src/components/widviz/Viz*.jsx` visual components unless that specific
+visual is the task.

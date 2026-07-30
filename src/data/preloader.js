@@ -2,6 +2,9 @@
 // Status phrases map to progress bands (0–1 inclusive).
 export const PRELOADER_NAME = 'SAIRITHIK KOMURAVELLY'
 
+// Mobile/tablet-only advisory — desktop tier hides it (see preloader.css).
+export const PRELOADER_NOTICE = 'BEST EXPERIENCED ON DESKTOP'
+
 // Each entry fires when progress crosses the `at` threshold.
 const STATUS_PHASES = [
   { at: 0.00, label: 'INITIALIZING' },

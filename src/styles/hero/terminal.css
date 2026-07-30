@@ -480,12 +480,24 @@
   }
 }
 
-@media (max-width: 980px) {
-  .terminal { max-width: 100%; }
+/* Tablet (768–980) — terminal fills the narrow .sub (min(320px,36vw)) that
+   floats over the robot; smaller type to suit the reduced width. */
+@media (min-width: 768px) and (max-width: 980px) {
+  .terminal { max-width: 100%; font-size: var(--text-sm); }
 }
 
+/* Phone (≤767) — full-width in the stacked column */
 @media (max-width: 767px) {
-  .terminal { font-size: var(--text-sm); }
+  /* Semi-transparent glass so the robot's legs (z:3, behind — see hero/shell.css
+     .sub z:4) read through the terminal. Lower alpha + lighter blur keeps the
+     legs visible while the darkened plate + blur keep the console text legible. */
+  .terminal {
+    max-width: 100%;
+    font-size: var(--text-sm);
+    background: linear-gradient(180deg, rgba(10, 11, 11, 0.52), rgba(7, 7, 7, 0.6));
+    backdrop-filter: blur(7px) saturate(120%);
+    -webkit-backdrop-filter: blur(7px) saturate(120%);
+  }
   .terminal .bar { padding: 4px 10px; }
   .terminal .body { padding: 6px 10px 0; }
   .term-output { min-height: 96px; }
@@ -495,4 +507,15 @@
   .sys-arrow { transform: rotate(90deg); margin-left: 8px; }
   /* Suggestions tighten to match narrow layout */
   .suggest-item { padding: 2px 4px; font-size: 9px; }
+}
+
+/* Touch (any width) — hover-only affordances made resting (§4.5). Links read as
+   tappable at rest; suggestions and system nodes get press feedback. The
+   terminal's own border glow and the play button already have resting/`:active`
+   states, so they're left as-is. */
+@media (pointer: coarse), (hover: none) {
+  .term-link .term-link-label,
+  .term-command-link { color: var(--accent); }
+  .suggest-item:active { background: rgba(201, 245, 88, 0.10); }
+  .sys-node:active { border-color: var(--accent); }
 }

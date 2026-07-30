@@ -36,11 +36,7 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: linear-gradient(
-    to bottom,
-    rgba(201, 245, 88, 0.65) 0%,
-    rgba(201, 245, 88, 0.06) 100%
-  );
+  background: rgba(201, 245, 88, 0.65);
   box-shadow:
     0 0 6px rgba(201, 245, 88, 0.55),
     0 0 16px rgba(201, 245, 88, 0.2);
@@ -378,16 +374,73 @@
   }
 }
 
-@media (max-width: 980px) {
-  .hero-manifesto { max-width: none; }
-  .manifesto-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+/* Tablet (768–980) — 4-col metrics kept (base grid). Manifesto column is capped
+   narrower so the metric row stays clear of the right-anchored terminal
+   (see hero/shell.css tablet block). */
+@media (min-width: 768px) and (max-width: 980px) {
+  /* capped so the 4-metric row clears the right-anchored terminal (which floats
+     over the robot at right:0, width min(320px,36vw) — hero/shell.css) */
+  .hero-manifesto { max-width: min(50vw, 460px); }
+  .manifesto-metrics { gap: 8px; }
+  .mf-metric { padding: 12px 12px 14px; }
+  .mf-num { font-size: clamp(20px, 2.4vw, 26px); }
 }
 
+/* Phone (≤767) — metrics 2×2; CTA centered (mockup). No 1-col fallback:
+   the phone mockup keeps the 2×2 grid at every phone width. */
 @media (max-width: 767px) {
-  .manifesto-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .manifesto-cta { flex-direction: column; align-items: flex-start; }
+  /* grid-auto-rows: 1fr forces both rows to the tallest row's height, so all
+     four cards are identical even when one label wraps to a second line
+     (cards within a row already stretch equal; this equalizes across rows). */
+  .manifesto-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 8px;
+  }
+
+  /* Metric cards: number sits top-left (where the icon used to be), icon moves
+     to the top-right, label spans below. Collapsing the old 3-row stack
+     (icon / num / label) to 2 rows + tighter padding makes the cards smaller. */
+  .mf-metric {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "num  icon"
+      "label label";
+    align-items: start;
+    gap: 5px 8px;
+    padding: 11px 12px 12px;
+  }
+  .mf-num   { grid-area: num; }
+  .mf-icon  { grid-area: icon; justify-self: end; margin-bottom: 0; }
+  .mf-label { grid-area: label; }
+
+  /* Phone paragraph: kill the justify (spreads words on a narrow column),
+     shrink from the 17px floor, and tighten the loose 1.68 line-height. */
+  .manifesto-quote,
+  .manifesto-focus {
+    font-size: clamp(13px, 3.4vw, 15px);
+    line-height: 1.5;
+    text-align: left;
+  }
+  .manifesto-cta {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .manifesto-quote-sm {
+    padding-left: 0;
+    border-left: 0;
+    text-align: center;
+  }
+  .manifesto-cta-btn { align-self: center; }
 }
 
-@media (max-width: 460px) {
-  .manifesto-metrics { grid-template-columns: 1fr; }
+/* Touch (any width) — hover-only affordances made resting so touch users see
+   them (§4.5): the metric accent bars sweep full-width, tap gives border
+   feedback, CTA carries its glow. */
+@media (pointer: coarse), (hover: none) {
+  .mf-metric::before { transform: scaleX(1); opacity: 1; }
+  .mf-metric:active { border-color: var(--accent); }
+  .manifesto-cta-btn { box-shadow: 0 0 26px rgba(201, 245, 88, 0.22); }
 }

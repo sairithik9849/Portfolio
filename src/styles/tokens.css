@@ -75,13 +75,19 @@ html, body {
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+  /* overflow-x: clip instead of hidden — `hidden` makes a scroll container which
+     breaks ScrollTrigger's position:fixed pin. `clip` contains horizontal overflow
+     without creating one. It must be on `html` (the root), not only `body`: a
+     `body`-only clip gets propagated to the viewport and body's own box stops
+     clipping, so any below-fold horizontal overflow (a wide contact link, WhatIDo
+     cells — the tracked mobile-translation backlog) escapes to the <html>/viewport
+     level and makes the document wider than the screen. On phones that surfaces as
+     a black band on the right when you pinch-zoom out (no background is painted past
+     the viewport). Clipping at the root contains it. */
+  overflow-x: clip;
 }
 
 body {
-  /* overflow-x: clip instead of hidden — `hidden` makes body a scroll container
-     which breaks ScrollTrigger's position:fixed pin. `clip` contains horizontal
-     overflow without creating a scroll container. */
-  overflow-x: clip;
   /* The two radial gradients previously lived here under
      `background-attachment: fixed`, which repaints on every scrolled frame.
      They now live on the composited `.bg-gradient` fixed layer — see

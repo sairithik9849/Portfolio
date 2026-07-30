@@ -141,6 +141,43 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
     if (pointerRafRef.current) cancelAnimationFrame(pointerRafRef.current)
   }, [])
 
+  // On touch devices the robot has no cursor to follow, so it never turns toward
+  // the viewer. Dispatch a synthetic pointer at the canvas centre (once it exists,
+  // then on a slow interval while the hero is visible) so the robot faces forward
+  // — looking at the user. No-op on fine-pointer devices (real cursor drives it)
+  // and under reduced motion.
+  useEffect(() => {
+    if (prefersReducedMotion || !visible) return undefined
+    if (!window.matchMedia('(pointer: coarse), (hover: none)').matches) return undefined
+
+    let rafId = 0
+    let tries = 0
+    const aimForward = () => {
+      const canvas = splineRef.current?.querySelector('canvas')
+      if (!canvas) {
+        if (tries++ < 60) rafId = requestAnimationFrame(aimForward)
+        return
+      }
+      const rect = canvas.getBoundingClientRect()
+      if (!rect.width) return
+      const opts = {
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height * 0.4,
+        bubbles: false,
+        cancelable: false,
+      }
+      canvas.dispatchEvent(new PointerEvent('pointermove', { ...opts, pointerType: 'mouse' }))
+      canvas.dispatchEvent(new MouseEvent('mousemove', opts))
+    }
+
+    aimForward()
+    const intervalId = setInterval(aimForward, 2500)
+    return () => {
+      clearInterval(intervalId)
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [visible, prefersReducedMotion])
+
   const handlePointerMove = useCallback(
     (e) => {
       if (e.pointerType !== 'mouse') return

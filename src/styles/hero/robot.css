@@ -124,22 +124,79 @@
 
 /* ---- responsive ---- */
 
-@media (max-width: 980px) {
-  .hero-spline { opacity: 1; }
-  .robot-agent-hotspot {
-    top: 12%;
+/* Tablet (768–980) uses the desktop robot mechanics: .hero-spline stays
+   right-anchored via --robot-left (set to 58% in hero/shell.css), opacity 1
+   from --robot-opacity, and the hotspot follows at left:calc(--robot-left+21%).
+   No override needed here. */
+
+/* Phone (≤767) — robot as a centered band above the metric cards.
+   Bounded band (not the desktop full-height inset:0) anchored to the lower hero
+   so it overlaps the metrics/terminal zone per the reference. z:3 lifts it above
+   the cards (z:2); the terminal (later in DOM, also z:3) still paints over it and
+   stays readable. Band offsets are tuned so the silhouette clears the card
+   numbers/labels — verify on a real device (pose / address-bar drift). */
+@media (max-width: 767px) {
+  /* Anchor from the hero BOTTOM, not the top. The distance from the terminal's
+     top edge to the hero bottom (terminal + CTA + paddings) is a content-stable
+     ~364px regardless of viewport height OR of changes above (a top anchor broke
+     when the metric cards were resized — the robot ended up behind the terminal).
+     bottom: 378px lands the robot's lower edge ~14px above the terminal, filling
+     the empty space right above it; the height keeps its top clear of the metrics. */
+  .hero-spline {
+    top: auto;
+    /* Sit in the white space above the terminal, dropping just behind its top
+       edge (terminal top ≈364px from hero bottom) so the feet tuck behind the
+       semi-transparent glass. The height fills the gap up to the metric cards. */
+    bottom: 360px;
+    height: clamp(270px, 36svh, 340px);
+    left: 0;
     right: 0;
-    bottom: 48%;
-    left: 42%;
+    transform: none;
+    opacity: 1;
+    z-index: 3;
+  }
+  /* Mild zoom to fill without chopping. Origin biased toward the TOP so the scale
+     grows the body downward and never pushes the head above the clip (a low
+     origin at a big scale chopped the head). Tune on a real device. */
+  .hero-spline canvas,
+  .hero-spline .spline-canvas {
+    transform: scale(1.15);
+    transform-origin: 50% 22%;
+  }
+
+  /* Tap target = ONLY the robot's exposed upper body, in the gap above the
+     terminal, tight around the torso so taps elsewhere fall through. The terminal
+     is z:4 (above this z:3 hotspot), so it stays fully tappable regardless. */
+  .robot-agent-hotspot {
+    top: auto;
+    bottom: 422px;
+    height: 140px;
+    left: 30%;
+    right: 30%;
     --agent-cta-x: calc(100vw - 184px);
     --agent-cta-y: 38vh;
   }
-  .robot-agent-cta { min-height: 32px; max-width: 166px; padding: 8px 10px; font-size: var(--text-xs); letter-spacing: var(--tracking-wider); }
 }
 
+/* Touch (any width) — the robot's hover tooltip is position:fixed; a tap can fire
+   :hover and leave it pinned mid-screen (live bug). Fully suppress it on touch —
+   overriding the :hover/:focus reveal too — so only an actual tap on the robot
+   (the hotspot's onClick) opens the AI agent. */
 @media (pointer: coarse), (hover: none) {
-  .robot-agent-cta {
-    opacity: 1;
-    transform: translateY(0) skewX(-6deg) scale(1);
+  .robot-agent-cta,
+  .robot-agent-hotspot:hover .robot-agent-cta,
+  .robot-agent-hotspot:focus-visible .robot-agent-cta {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* No cursor to follow on touch — a finger dragged over the canvas otherwise
+     reaches Spline's internal pointer handling and the robot tracks the drag.
+     Blocking hit-testing on the wrapper stops that at the source. The
+     tap-to-open hotspot is a SIBLING (not a child) so it is unaffected, and
+     aimForward's synthetic dispatch (Hero.jsx) targets the canvas node
+     directly, which bypasses pointer-events entirely. */
+  .hero-spline {
+    pointer-events: none;
   }
 }

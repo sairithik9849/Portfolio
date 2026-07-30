@@ -70,6 +70,8 @@ The dispatch itself is throttled to at most once per `requestAnimationFrame`: ra
 
 `handlePointerMove` no longer reads `getBoundingClientRect()` on the raw event — that read (plus a pair of `useMotionValue`s it fed) was dead: nothing in the render tree ever consumed those motion values. Removed rather than fixed.
 
+**Touch:** the `pointerType !== 'mouse'` guard above only stops *our* forwarding — it does not stop Spline's own listener on the canvas from seeing native touch `pointermove` directly, since `.hero-spline` was `pointer-events: auto` unconditionally. A finger dragged over the canvas reached Spline's internal pointer handling and the robot tracked the drag. Fixed in `hero/robot.css`'s existing `@media (pointer: coarse), (hover: none)` block: `.hero-spline { pointer-events: none }`. This does not affect `aimForward` (dispatches directly to the canvas node, bypassing hit-testing) or the tap-to-open hotspot (a sibling of `.hero-spline`, not a descendant).
+
 ## MatrixText (Role Text)
 
 The bracketed role string in the meta-row (`AUTOMATION WITH PURPOSE`, `SHIPPING PRODUCTION SYSTEMS`, …) is `MatrixText.jsx` — a per-character scramble-in/scramble-out cycle driven by a `setTimeout` chain, not Framer or CSS. It accepts a `visible` prop (forwarded the same way as `StarField`'s and `SplineScene`'s) that gates the entire effect: the timer chain only runs while `visible && !reduceMotion`, and its cleanup clears all pending timers on every dependency change. Before this, the cycle ran forever regardless of hero visibility, scheduling per-character React state updates on an element nobody could see once the user scrolled away. Reduced-motion is read via `useReducedMotion()` (reactive), not a one-time `matchMedia().matches` snapshot — do not revert to the one-time read.
@@ -108,6 +110,7 @@ CSS partial: `src/styles/hero/starfield.css` (registered in `global.css` at the 
 - Never reintroduce `staggerChildren` on `HERO_PARENT` — it breaks per-phase ordering.
 - Never remove either load-fade path from `SplineScene` (the `onLoad` handler and the 4s `setTimeout` fallback) — both are needed.
 - Never remove the Spline pointer-forwarding in `Hero.jsx` without also removing letter `whileHover` in `HeroLetter.jsx` — they share a pointer-events split.
+- Never restore `pointer-events` on `.hero-spline` under `(pointer: coarse), (hover: none)` without re-testing drag-tracking on a real touch device — it reopens Spline's native touch tracking (see "Touch" above).
 - Never revert the Spline pointer-forwarding to dispatching on every raw `pointermove` sample — keep it rAF-coalesced (see above); uncapped forwarding re-raycasts the WebGL scene far faster than the display refreshes.
 - Never remove the `visible` early-return in `StarField`'s drift rAF or parallax listener — it is what stops the loop repainting once the hero scrolls off screen.
 - Never add `mix-blend-mode` to `.noise` — forces a full-viewport blend pass per scrolled frame.

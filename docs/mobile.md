@@ -9,8 +9,9 @@ in-progress **desktop → mobile translation effort**.
 
 If the two conflict on a breakpoint value, this doc wins.
 
-**Status:** **Phase 0 complete** (2026-07-23). Next up: Phase 1 — Preloader + Hero.
-Decisions in §3 are locked (interview, 2026-07-23).
+**Status:** **Phase 1 complete** (2026-07-24) — Preloader + Hero translated to phone
+(≤767) and tablet (768–980). Next up: Phase 2 — AboutMe + extend the sticky-stack to
+≥768. Decisions in §3 are locked (interview, 2026-07-23; Hero interview 2026-07-24).
 
 Phase 0 was signed off with four engine-level checks deliberately deferred rather than
 run: iOS Safari's renderer, `100svh` address-bar collapse, real touch momentum against
@@ -218,7 +219,7 @@ that guard coherent with the CSS fallback — that mismatch is exactly bug §4.3
 ### 4.5 Hover inventory (needs the `(pointer: coarse)` treatment)
 
 28 `:hover` rules total. Only **one** coarse-pointer block exists today
-(`hero/robot.css:140`) — it is the pattern to follow, co-located with its component.
+(`hero/robot.css:185`) — it is the pattern to follow, co-located with its component.
 Do **not** create a global `responsive.css`; keep pointer rules next to the styles
 they override.
 
@@ -341,7 +342,7 @@ carrying it through six tier migrations.
 
 | Phase | Scope | Notes |
 |---|---|---|
-| 1 | Preloader + Hero | Hardest. 6 CSS files, ~1039 lines. Spline, StarField, terminal, robot hotspot, manifesto metrics |
+| ✅ 1 | Preloader + Hero | **Done 2026-07-24.** See §5.1 |
 | 2 | AboutMe + `hero-about-stack.css` | Coupled to Hero on tablet — extend the sticky-stack to `≥768px` |
 | 3 | WhatIDo | The vertical-scrub translation, §4.4. Highest design risk |
 | 4 | Journey | Expect **verify-only** — already correct per §4.1 |
@@ -349,6 +350,89 @@ carrying it through six tier migrations.
 | 6 | Footer / AIOrb / ReturnToTop / ScrollProgressFrame | Smallest surface |
 
 Each phase is done only when §7's checklist passes.
+
+### 5.1 Phase 1 result (2026-07-24) — Preloader + Hero
+
+Hero interview (grill-me, 2026-07-24) drove the design against two reference mockups
+(phone = robot-alignment reference; tablet = retuned desktop). Locked sub-decisions:
+robot on phone is a **centered band at z:3 above the cards**, silhouette tuned to clear
+card text; **tablet = retuned desktop** (robot right, terminal absolute over it, 4-col
+metrics, `height:100svh`); sticky-pin **deferred to Phase 2**; phone H1 fits each word on
+one line; phone meta-row restacks (role+email / socials icon-only); metrics stay 2×2 on
+phone (the ≤460 1-col rule was removed); the stuck touch AI-chip is hidden; hero hovers
+gained `(pointer: coarse)` fallbacks.
+
+**Update (2026-07-29):** phone meta-row revised from a single row to two —
+matrix/role text on its own line (`white-space: nowrap` + `--tracking-open`
+guarantees one line at any phone width down to 320px), GitHub/LinkedIn/Resume
+with labels restored on the line below (all three fit on one line; icon-only
+and the hidden Resume button were dropped). Email stays hidden. Change is
+CSS-only in `hero/shell.css`'s phone block — no markup or breakpoint added.
+
+Files changed: `hero/shell.css` (tier split, `display:contents` flow-reorder
+metrics→terminal→CTA, ~18px gutter, meta-row restack), `hero/identity.css` (phone/tablet
+H1), `hero/manifesto.css` (metrics tiers, centered phone CTA, coarse fallbacks),
+`hero/robot.css` (phone band z:3, coarse chip fix), `hero/terminal.css` (tier split,
+coarse fallbacks). `preloader.css` verify-only (unchanged). `Hero.jsx` unchanged.
+
+**Update (2026-07-29):** `preloader.css` is no longer verify-only. Added a
+mobile/tablet-only advisory line (`BEST EXPERIENCED ON DESKTOP`, gold shimmer,
+`src/data/preloader.js`'s `PRELOADER_NOTICE`), stacked above the box loader and
+hidden at `min-width: 981px` (the desktop-tier boundary). Centering ownership moved
+from `.preloader-boxes-wrap` up to a new `.preloader-center-stack` flex column so the
+notice + box + reflection form one centered cluster; on desktop the notice is
+`display:none`, leaving the box wrap centered exactly as before. Files:
+`Preloader.jsx`, `preloader.css`, `data/preloader.js`.
+
+**Update (2026-07-29):** the Spline robot tracked touch drags on phone/tablet —
+Spline's own canvas listener saw native touch `pointermove` directly, a path
+`Hero.jsx`'s mouse-only forwarding filter never covered. Fixed with one rule in
+`hero/robot.css`'s existing coarse-pointer block: `.hero-spline { pointer-events:
+none }`. Tap-to-open and the periodic forward-gaze (`aimForward`) are unaffected
+— see "Touch" in `docs/hero.md`. CSS-only, `Hero.jsx` unchanged.
+
+Verification (`npm run lint` → 0, `npm run build` → passes) via §7.1a computed-style /
+`getBoundingClientRect` assertions:
+
+| Row | Result | Proof |
+|---|---|---|
+| phone 390 (×844/667/932) | H1 50.7px no mid-word break; meta 2-col + socials row; metrics 2×2; order metrics→terminal→CTA; gutter 19.5px; **hero overflow 0** (the 8px is StarField's documented `100vw` full-bleed) | computed-style |
+| robot band | in reserved gap; clears terminal (+37/+11/+50px at 844/667/932); 0–26px metrics overlap | rect |
+| tablet 768 / 980 | `relative` `100svh`; 3-zone meta; 4-col metrics; terminal `absolute` right, clears metrics +13/+105px; CTA within viewport | computed-style |
+| desktop 1280 / 1440 | `sticky` intact; H1 = base `9.6vw`; grids unchanged (**no regression**) | computed-style |
+| coarse pointer (CDP) | `.robot-agent-cta` opacity 0 / pointer-events none (stuck-chip bug fixed); term-link accent | computed-style |
+| reduced-motion | h1 opacity 1 (instant); order + reserved gap intact | rect |
+
+**Deferred to the real-device gate (§7.2), not yet passed:** the robot silhouette vs.
+the metric numbers/labels (WebGL doesn't render in headless Playwright, and the band's
+head position is pose/`svh`-drift sensitive); `100svh` address-bar collapse; touch
+momentum. Verify on a real iPhone + Android before treating Phase 1 as fully signed off.
+
+### 5.1.1 Real-device defect found — first-load freeze on iOS Safari (2026-07-29)
+
+The real-device gate (§7.2) is exactly what surfaced this: on a real iPhone, first cold
+load, the curtain lifted cleanly but the hero cascade then froze for a beat and popped in
+all at once instead of animating phase by phase.
+
+**Cause:** `requestIdleCallback` does not exist in iOS Safari (WebKit ships it behind an
+off-by-default flag). The two idle-deferral sites in `App.jsx` (`sectionsMounted`, the
+Lenis/`ScrollTrigger` init) both fell back to `setTimeout(cb, 0)` — the next macrotask, not
+idle time — so the below-fold mount and Lenis init landed on top of the Hero cascade's
+opening beats right after `heroStarted`. `docs/architecture.md`'s "Staged Hero Mount" claim
+that this work is idle-deferred was true on desktop Chrome and false on iOS Safari — the
+phone never got the benefit the staging was meant to provide.
+
+**Fix:** `src/utils/scheduleIdle.js` — same idle-first behavior, but a real non-zero
+`setTimeout` fallback (600ms / 1000ms) instead of `0`. Confirmed via Playwright with
+`requestIdleCallback` deleted pre-navigation: before the fix, two cascade phases that
+should land ~350ms apart landed on the same millisecond, 7+ seconds after load; after the
+fix, phases were spread across their intended beats. Desktop regression-checked at 1440
+(`requestIdleCallback` present, unaffected). See `docs/architecture.md` "Staged Hero Mount"
+and its new "Do Not" entry for detail.
+
+**Still needs the real iPhone/Android re-check (§7.2)** — this fix has only been verified via
+Playwright with the API deleted, which exercises the same fallback code path but not real
+device timing.
 
 ---
 
