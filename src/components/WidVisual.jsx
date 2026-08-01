@@ -78,17 +78,32 @@ export default function WidVisual({ progress, agentsProgress, active = 0, reduce
               frozen={false}
             />
           )
+          // Layers more than one step from the active word can never be visible:
+          // widSlice's dissolve trapezoid spans 1.5 × the inter-word gap, so at
+          // most two layers are ever above zero opacity. Marking the rest lets
+          // CSS stop rendering them entirely (content-visibility, see
+          // widviz/shell.css) — which is what actually stops their CSS keyframe
+          // animations, 24 of which are otherwise ungated and tick at opacity 0.
+          // The components stay MOUNTED: no remount churn, no rAF restart, no
+          // lost internal state, cross-dissolve untouched.
+          const far = Math.abs(i - active) > 1
+
           // Agents wrapper gets exitFade so the viz clears alongside the caption.
           // CSS opacity multiplies: wrapper(exitFade) × VizAgents(dissolve) = compound fade.
           if (entry.id === 'agents' && !reduced) {
             return (
-              <motion.div key={entry.id} className="widviz-layer" style={{ opacity: exitFade }}>
+              <motion.div
+                key={entry.id}
+                className="widviz-layer"
+                data-far={far ? '' : undefined}
+                style={{ opacity: exitFade }}
+              >
                 {viz}
               </motion.div>
             )
           }
           return (
-            <div key={entry.id} className="widviz-layer">
+            <div key={entry.id} className="widviz-layer" data-far={far ? '' : undefined}>
               {viz}
             </div>
           )

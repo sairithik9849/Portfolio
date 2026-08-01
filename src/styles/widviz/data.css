@@ -61,6 +61,18 @@
   pointer-events: none;
 }
 
+/* Touch/small-screen: drop the will-change hint. There are 110 .wdat-dot
+   elements, so the declaration above promotes 110 compositor layers — real
+   GPU memory on a phone. The hint buys nothing here: the rAF writes transform
+   and opacity every frame, so the browser promotes these elements on its own
+   the moment it sees them animating. Desktop keeps the hint (see docs/mobile.md
+   §5.3 decision 9). Dot count is unchanged — no detail is lost. */
+@media (max-width: 980px), (pointer: coarse) {
+  .wdat-dot {
+    will-change: auto;
+  }
+}
+
 /* Signal phase for static final frames (reduced/frozen) where no rAF runs. */
 .wdat-field[data-phase='signal'] .wdat-dot {
   opacity: 0.95;

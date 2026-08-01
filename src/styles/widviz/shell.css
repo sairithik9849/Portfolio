@@ -23,6 +23,25 @@
   pointer-events: none;
 }
 
+/* â”€â”€ Frozen panel â€” one static viz, sized to its slot in normal flow â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* A frozen panel renders a single seeded viz inside the reduced-motion /
+   fallback list, where it is a normal-flow child and must size to its slot.
+   Without these overrides it inherits the absolute full-height geometry above,
+   so every frozen panel in the list stacks at the SAME left:var(--viz-left)
+   offset with height:100vh. On a 390px phone that is a ~147px-wide column
+   starting at 243px, with all five vizzes piled inside it â€” the cause of the
+   .wsys-cell (+138px) and .wbk-graph (+84px) entries in the docs/mobile.md Â§5
+   overflow baseline, and of the section looking broken on touch generally.
+   .widviz-body below stays absolute; it now resolves against this panel. */
+.widviz-panel--frozen {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  width: 100%;
+  height: clamp(300px, 52vh, 420px);
+}
+
 /* â”€â”€ Body â€” five absolutely-stacked layers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .widviz-body {
   position: absolute;
@@ -36,4 +55,33 @@
   position: absolute;
   inset: 0;
   /* Each viz manages its own inner layout */
+}
+
+/* â”€â”€ Far-layer render gate (touch / small screens) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* All five vizzes stay mounted (see WidVisual.jsx) â€” unmounting them would cost
+   a React mount mid-scroll and restart their rAF, which is worse than leaving
+   them alive. Their rAF loops already early-return when inactive, so those are
+   nearly free. What is NOT free is CSS keyframe animations: 24 of the 28 across
+   the viz stylesheets are ungated and keep ticking on layers sitting at
+   opacity 0. content-visibility takes those subtrees out of rendering entirely,
+   which stops the animations along with their paint and compositor work.
+
+   data-far is set for |i âˆ’ active| > 1, which is always safe: widSlice's
+   dissolve trapezoid guarantees at most two layers are above zero opacity.
+
+   Desktop is deliberately excluded â€” it is a regression-check tier for the
+   mobile effort (docs/mobile.md Â§7.4) and does not need this. Widen only after
+   verifying there. */
+@media (max-width: 980px), (pointer: coarse) {
+  .widviz-layer[data-far] {
+    content-visibility: hidden;
+  }
+
+  /* content-visibility only landed in Safari 18. Without this, iOS 17 users get
+     no benefit at all from the rule above. */
+  @supports not (content-visibility: hidden) {
+    .widviz-layer[data-far] {
+      display: none;
+    }
+  }
 }

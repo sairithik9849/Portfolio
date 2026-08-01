@@ -670,3 +670,16 @@
     transform: scale(1.15);
   }
 }
+
+/* -- Tablet-viewport adjustment (docs/mobile.md §5.3 Stage C) -------------------- */
+/* At scale(1.35) the card's real footprint is 459x351px. The tablet viz panel
+   (.widviz-panel, WhatIDo.css --viz-left/--band-w split) is only 321-442px wide
+   across the whole 768-980 range, so the unscaled card bleeds left into the word
+   column and clips against the viewport edge on the right. 0.8 gives a 272x208px
+   card that fits the narrowest (768px) panel with margin, and stays flat (no
+   further responsiveness needed) up through 980px where there is only more room. */
+@media (min-width: 768px) and (max-width: 980px) {
+  .wifc-stage {
+    transform: scale(0.8);
+  }
+}

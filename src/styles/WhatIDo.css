@@ -48,12 +48,24 @@
   box-sizing: border-box;
   /* position:relative so the absolute caption block anchors to this element. */
   position: relative;
-  /* clip-path clips past words at the stage top and sides while letting
-     upcoming words overflow below (the -100vh bottom offset keeps them visible
-     as they scroll up into the band). overflow:visible is required for the
-     clip to apply without also clipping the bottom. */
   overflow: visible;
-  clip-path: inset(0 0 -100vh 0);
+}
+
+/* clip-path clips past words at the stage top and sides while letting upcoming
+   words overflow below (the -100vh bottom offset keeps them visible as they
+   scroll up into the band). overflow:visible is required for the clip to apply
+   without also clipping the bottom.
+
+   Scoped to >=768px on purpose. A non-none clip-path makes an element a
+   containing block for position:fixed descendants, and GSAP pins with
+   pinType:"fixed" on a viewport scroller (ScrollTrigger.js:971, no touch
+   special-case). The phone rig in Phase 3 Stage B puts its cluster inside this
+   stage, so leaving the clip unscoped would silently re-anchor the pin to
+   .wid-stage instead of the viewport. See docs/mobile.md Â§5.3.1 #3. */
+@media (min-width: 768px) {
+  .wid-stage {
+    clip-path: inset(0 0 -100vh 0);
+  }
 }
 
 /* ── word column (left) ─────────────────────────────────────────────────────
@@ -293,21 +305,203 @@
   display: none;
 }
 
-/* ── mobile / coarse-pointer / reduced-motion static fallback ───────────────
+/* Phone-only "expand" affordance for the clamped caption (decision 4). Base
+   rule hides it everywhere; the phone block below is the only place it's
+   shown, so a measurement bug on a wider tier can never surface the button
+   there — WhatIDo.jsx already gates its render on `captionClamped`, this is
+   belt-and-suspenders at the CSS layer. */
+.wid-caption-more {
+  display: none;
+}
+
+/* ── phone rig (docs/mobile.md §5.3.3) ───────────────────────────────────────
+   Same pin/scrub/settle mechanic as desktop (§5.3.2 — decided by a real-
+   device spike), re-choreographed vertically: word window (3 rows) on top,
+   viz field in the middle, caption at the bottom. No DOM change needed for
+   the stacking order — .what-i-do is already a column flexbox and the live
+   .widviz-panel / .wid-caption are already direct children of it in exactly
+   this order; un-absoluting them here drops them straight into the column.
+
+   Placed BEFORE the reduced-motion block below on purpose: both can match at
+   once (a phone with prefers-reduced-motion: reduce), and for every selector
+   they share, source order decides the tie at equal specificity — the
+   reduced-motion block must win there, so it has to come second. */
+@media (max-width: 767px) {
+  /* Pinned box = one *visible* viewport. This CSS value is a pre-JS fallback
+     only — real-device testing (§7.2, iPhone 14 Pro) found `100svh` under
+     `position:fixed` (once GSAP pins this element) comes up short of the true
+     viewport in real Safari, starving the flex column below and leaving dead
+     space under the caption. WhatIDo.jsx's setup() overrides this with a
+     JS-measured `clientHeight` pixel value once mounted (same fix pattern as
+     §5.2.1); this rule only matters before that JS runs. svh over vh — a
+     phone's address bar collapses/expands and vh always reports the "large"
+     viewport regardless (§5.2.1 — the exact bug that detached the
+     progress-frame birth line). */
+  /* gap: even spacing between SectionHead / word window / viz field /
+     caption — flex `gap` rather than per-child margins so it can't drift out
+     of sync if a sibling is reordered. */
+  .what-i-do {
+    min-height: 100svh;
+    gap: 16px;
+  }
+
+  /* SectionHead stays inside the pinned box on phone (unlike the original
+     §5.3.9 assumption) — the pin targets the <section>, and the live panel/
+     caption are absolute children of the section, not .wid-stage, so pinning
+     the stage instead would unpin them. Compressed padding buys back field
+     height instead. */
+  .what-i-do .section-head {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .wid-stage {
+    padding: 0 20px;
+    flex: 0 0 auto;
+  }
+
+  .wid-word {
+    font-size: clamp(40px, 12vw, 64px);
+  }
+
+  /* decision 3: 3-row word window — hard clip above (overflow:hidden), soft
+     mask-image fade below. Height/marginTop are set by WhatIDo.jsx's setup()
+     (bandH + 2·wordH / 0px on phone) so the lime band still lands on row 1;
+     this block only adds the clip + fade, it does not touch geometry. */
+  .wid-left {
+    overflow: hidden;
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0 42%,
+      rgba(0, 0, 0, 0.4) 74%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0 42%,
+      rgba(0, 0, 0, 0.4) 74%,
+      transparent 100%
+    );
+  }
+
+  /* --band-w is a 50vw-derived formula sized for the desktop split-column
+     layout; on a single-column phone the band should span the word window. */
+  .wid-band {
+    width: 100%;
+  }
+
+  /* Live viz field joins the section's flex column instead of floating
+     absolute over the word stage. Selector is deliberately over-specific:
+     global.css imports WhatIDo.css BEFORE widviz/shell.css, so shell.css's
+     unconditional `.widviz-panel { position: absolute; ... }` (equal
+     specificity, later in the cascade) would otherwise win regardless of
+     this media query. `:not(.widviz-panel--frozen)` keeps the extra
+     specificity from also out-competing shell.css's own `.widviz-panel--
+     frozen` override, which must keep sizing the reduced-motion fallback's
+     frozen panels. */
+  .what-i-do .widviz-panel:not(.widviz-panel--frozen) {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 20px;
+    /* Defensive clip: Stage D (docs/mobile.md §5.3.7) still owns making each
+       viz genuinely fit this box — Interface's known desktop scale(1.35) and
+       the Systems/Data/Agents field-fit findings from the real-device pass
+       are unfixed as of Stage B. Until then, anything taller than the box
+       bleeds into the word window above or the caption below instead of
+       clipping quietly. */
+    overflow: hidden;
+  }
+
+  /* Caption sits at the bottom of the column. .wid-caption--agents shares
+     this rule (same specificity, later in source) so its desktop-only left/
+     right/padding overrides for the Agents word are reset too. */
+  .wid-caption,
+  .wid-caption--agents {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    height: auto;
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding: 12px 20px 20px;
+  }
+
+  /* decision 4: clamp to 5 lines. -webkit-line-clamp is the only cross-
+     engine way to clamp arbitrary text with an ellipsis; iOS Safari and
+     Chrome both support the -webkit- prefixed form. */
+  .wid-caption-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+    overflow: hidden;
+    font-size: 12.5px;
+    max-width: none;
+  }
+
+  .wid-caption-more {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 0;
+    border: none;
+    background: none;
+    pointer-events: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* decision 4a: expanded state overlays the viz field (which keeps playing
+     underneath, per decision 4a — no pause, just dimmed by the scrim) rather
+     than growing the caption's flex box and pushing the viz around. Anchored
+     against .what-i-do (position:relative — the pinned box itself), so it
+     covers the field regardless of the field's own now-relative geometry. */
+  .wid-caption[data-expanded] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    max-height: 68%;
+    overflow: hidden;
+    padding: 40px 20px 20px;
+    background: linear-gradient(
+      to top,
+      var(--bg) 0 62%,
+      rgba(7, 7, 7, 0.86) 82%,
+      transparent 100%
+    );
+  }
+
+  .wid-caption[data-expanded] .wid-caption-text {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+}
+
+/* ── reduced-motion static fallback ──────────────────────────────────────────
    No pin, no ScrollTrigger, no animated scrub. Words stack naturally. Band
    is hidden. All five blurbs listed inline below the word stack.
-   Every arm of the comma-OR must mirror an arm of WhatIDo.jsx's DESKTOP_QUERY
-   ('(min-width: 981px) and (pointer: fine) and (prefers-reduced-motion:
-   no-preference)'). Where the two disagree, the pin does not run AND this
-   fallback does not apply, so .wid-stack--base / .wid-stack--ko stay
-   position:absolute at top-left inside a .wid-left whose height is never set
-   by JS — the word stacks collapse and overlap.
 
-   That is exactly what happened at >=981px with a coarse pointer (iPad
-   landscape, touch laptops): DESKTOP_QUERY excluded them via `pointer: fine`
-   but this list only covered width and reduced-motion. Hence the
-   `(pointer: coarse)` arm — it is load-bearing, not defensive. */
-@media (max-width: 980px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+   Phase 3 Stage B (docs/mobile.md §5.3) runs the real pinned rig at every
+   width/pointer tier — WhatIDo.jsx's MOTION_QUERY is now
+   '(prefers-reduced-motion: no-preference)' alone, so this gate narrowed to
+   match: reduced-motion is the only condition under which the rig doesn't
+   run. This also closes bug §4.3 (WhatIDo collapsing on iPad landscape /
+   coarse-pointer desktop) structurally — those devices now get the real pin
+   instead of relying on a fallback arm that could disagree with the JS gate. */
+@media (prefers-reduced-motion: reduce) {
   .what-i-do {
     min-height: auto;
     display: block;

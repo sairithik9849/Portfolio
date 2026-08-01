@@ -25,6 +25,7 @@ GSAP `snap` was removed — it fights Lenis's own interpolation and feels rubber
 Instead a settle snap fires after `SETTLE_MS` (140 ms) of inactivity, re-checks `window.__lenis.velocity` and defers until momentum decays below `SETTLE_VELOCITY_MAX`, then `lenis.scrollTo`s the nearest `i/(N-1)` snap target (skipped within `SNAP_EPSILON_PX`). An `isSnapping` flag suppresses re-arming while a programmatic scroll (settle or click) is in flight.
 
 **The settle snap must never fire outside the pin range** — it is triple-guarded:
+
 1. Armed only at `0 < progress < 1`
 2. `attemptSettle` bails when `!st.isActive`
 3. `onLeave`/`onLeaveBack` clear pending timers
@@ -48,6 +49,7 @@ Pin end and word travel are computed from the measured `.wid-word` line-box heig
 ## Knockout Band Technique
 
 Two identical word stacks share the same JS-set `y` so glyphs register pixel-perfectly:
+
 - `.wid-stack--base` (cream) — carries real text and is the accessible stack
 - `.wid-stack--ko` (in `--bg`, `aria-hidden`) — clipped by `.wid-band` (`overflow:hidden`, accent fill) to produce the lime "active word" reveal
 
@@ -80,6 +82,7 @@ This gate is independent of the pin/scrub `ScrollTrigger` above it — pin geome
 ## Per-Viz Scroll Slices — `widSlice.js`
 
 `widSlice(index, n)` returns the input/output ranges each viz maps `progress` through with `useTransform`:
+
 - `dissolveIn` + `dissolveOut` trapezoid `[s-d/2, s, s+d/2, s+d] → [0, 1, 1, 0]` (hold for first half of the scroll gap, crossfade over the second half — lands fully at the next snap)
 - `enterIn` one-way `[s-d, s] → [0, 1]` (enter only)
 
@@ -96,6 +99,7 @@ On mobile and `prefers-reduced-motion`, `.wid-mobile-blurbs` lists all five blur
 ## Common Edits
 
 **Adding a new capability/viz:**
+
 1. Add a `WHAT_I_DO` entry in `src/data/whatIDo.js` (with `id`, `blurb`, and optional `blurbMarks`).
 2. Add a `WID_VIZ` entry in `src/data/widViz.js` (keyed by the same `id`).
 3. Create `src/components/widviz/Viz<Name>.jsx`. Accept `{ progress, index, isActive, reduced, frozen }`. Use `widSlice(index, n)` for scroll-slice ranges. Implement a `frozen` fast-path seeded at `frozenProgress = index/(N-1)`.

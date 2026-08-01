@@ -31,11 +31,14 @@ const highlightText = (text, words = []) => {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Desktop media query — pin/scrub/settle is created ONLY inside this condition.
-// gsap.matchMedia handles teardown when the viewport exits this range.
+// Motion media query — pin/scrub/settle is created ONLY inside this condition.
+// gsap.matchMedia handles teardown when the viewport exits this range. Phase 3
+// Stage B runs the same rig at every width/pointer tier (docs/mobile.md §5.3.2
+// — decided by a real-hardware spike, not theory); `setup()` below branches on
+// `isPhone` to re-choreograph the geometry vertically on phone. The 150ms
+// debounced resize rebuild re-derives that branch for free on a tier crossing.
 // ─────────────────────────────────────────────────────────────────────────────
-const DESKTOP_QUERY =
-  '(min-width: 981px) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
+const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
 
 export default function WhatIDo() {
   const sectionRef       = useRef(null)
@@ -64,6 +67,13 @@ export default function WhatIDo() {
   const progress       = useMotionValue(0)  // 0→1 across the 5 words (clamped)
   const agentsProgress = useMotionValue(0)  // 0→1 across the trailing Agents dwell
   const reduced        = useReducedMotion()
+
+  // Phone caption clamp + expand (docs/mobile.md §5.3.3 decisions 4/4a). Only
+  // ever true on phone — -webkit-line-clamp is scoped to <768px in WhatIDo.css,
+  // so scrollHeight === clientHeight at every other tier and the button never
+  // renders there.
+  const [captionClamped, setCaptionClamped]   = useState(false)
+  const [captionExpanded, setCaptionExpanded] = useState(false)
 
   // Fade the caption out over the last 10% of the Agents dwell so it disappears
   // cleanly as the section ends. Only applied when Agents is active
@@ -102,7 +112,7 @@ export default function WhatIDo() {
     // cannot reliably capture). This is the correct StrictMode + resize pattern.
     const mm = gsap.matchMedia(section)
 
-    mm.add(DESKTOP_QUERY, () => {
+    mm.add(MOTION_QUERY, () => {
       let stKiller = null // () => st.kill()
       let alive    = true
 
@@ -126,11 +136,33 @@ export default function WhatIDo() {
         const bleed = Math.round(wordH * 0.05)
         const bandH = wordH + bleed * 2
 
+        // docs/mobile.md §5.3.3 decision 1/6 — phone re-choreographs the rig
+        // vertically instead of retuning desktop's numbers. Measured via
+        // clientHeight, never `vh` (§5.2.1 — `vh` ignores the collapsed/expanded
+        // address bar state and quietly disagrees with every other measurement
+        // in this rig).
+        const isPhone   = !window.matchMedia('(min-width: 768px)').matches
+        const viewportH = document.documentElement.clientHeight
+
+        // Real-device gate (§7.2) found `min-height: 100svh` on this element
+        // (`.what-i-do` — the CSS in WhatIDo.css) unreliable once GSAP pins it
+        // to `position: fixed`: on a real iPhone the flex column came up short
+        // of the true viewport, starving the viz field and stranding the
+        // caption with dead space beneath it — Chromium/CDP emulation never
+        // catches this because it isn't the WebKit engine (exactly the class
+        // of bug §7.1 already flags as real-device-only). Overriding with the
+        // same JS-measured pixel value used for the runway above sidesteps
+        // the ambiguity entirely, same fix pattern as §5.2.1.
+        section.style.minHeight = isPhone ? `${viewportH}px` : ''
+
         // .wid-left height = bandH; marginTop parks the word column ~1 word-row
         // below the top of the flex stage so there is one empty row of space
-        // above the green band before the runway below.
-        left.style.height    = `${bandH}px`
-        left.style.marginTop = `${wordH}px`
+        // above the green band before the runway below. Phone (decision 3):
+        // a 3-row word window — lime band on row 1, two preview rows below,
+        // clipped/mask-faded by .wid-left in WhatIDo.css. marginTop drops to 0
+        // so the band sits flush at the top of the window.
+        left.style.height    = isPhone ? `${bandH + wordH * 2}px` : `${bandH}px`
+        left.style.marginTop = isPhone ? '0px' : `${wordH}px`
 
         stackBase.style.top = `${bleed}px`  // word 0 centered in band
 
@@ -159,9 +191,24 @@ export default function WhatIDo() {
         // Two-phase track:
         //   [0, wordPortion) → word travel (5 words, same snap budget as before)
         //   [wordPortion, 1] → Agents dwell runway (~800 px, scrubs VizAgents)
-        const wordEnd     = Math.max(SCROLL_PER_WORD * (N - 1), travel + 800)
-        const totalEnd    = wordEnd + AGENTS_DWELL_PX
+        // Phone (decision 6): runway = 1.0 × measured viewport height per word
+        // instead of the fixed desktop budget — carrying 1100/800 over would
+        // stretch the pin to ~6.9 screens; a viewport-derived runway gives ~5.
+        const perWord  = isPhone ? viewportH : SCROLL_PER_WORD
+        const dwellPx  = isPhone ? viewportH : AGENTS_DWELL_PX
+        const wordEnd     = Math.max(perWord * (N - 1), travel + 800)
+        const totalEnd    = wordEnd + dwellPx
         const wordPortion = wordEnd / totalEnd  // raw-progress where words finish
+
+        // docs/mobile.md §5.3.1 #4 / decision 5 — on native touch (syncTouch:
+        // false), Lenis's `velocity` is a raw per-event pixel delta zeroed by a
+        // hardcoded 400ms timeout, not the smoothed lerp the wheel path
+        // produces. SETTLE_VELOCITY_MAX was tuned against the latter, so it's
+        // meaningless on touch. Retrigger from the native `scrollend` event
+        // instead, which already means "scrolling has genuinely stopped" —
+        // gated to coarse pointer so the desktop wheel path is untouched.
+        const useScrollEnd =
+          window.matchMedia('(pointer: coarse)').matches && 'onscrollend' in window
 
         const st = ScrollTrigger.create({
           trigger: section,
@@ -203,56 +250,81 @@ export default function WhatIDo() {
               setActive(i)
             }
 
-            // Lenis-driven settle snap — fires only once scroll has genuinely stopped.
-            // Snapping mid-momentum would reverse the in-flight scroll and produce the
-            // edge wiggle, so we re-check Lenis velocity and reschedule until momentum
-            // has decayed to near-zero.
-            // Skipped while a programmatic scroll (click or prior settle) is
-            // in flight to prevent oscillation.
+            // Timer-based settle arm — skipped when useScrollEnd, where the
+            // native `scrollend` listener below (registered once, outside
+            // onUpdate) triggers attemptSettle directly on genuine stop.
             // Only armed strictly inside the pin range: progress 0/1 means the
             // scroll position sits exactly on an edge snap target, and arming
             // there (boundary crossings, ScrollTrigger.refresh from outside)
             // is what left stale chains alive to ghost-scroll the user back.
-            if (!isSnapping && self.progress > 0 && self.progress < 1) {
+            if (!useScrollEnd && !isSnapping && self.progress > 0 && self.progress < 1) {
               clearTimeout(settleTimer)
-              const attemptSettle = () => {
-                if (isSnapping) return  // another snap already in flight
-                // User has momentum-scrolled out of the pinned range while
-                // this chain was deferring — never yank them back in.
-                if (!st.isActive) return
-
-                const lenis = window.__lenis
-                // Still moving? Defer until Lenis momentum decays.
-                if (lenis && Math.abs(lenis.velocity) > SETTLE_VELOCITY_MAX) {
-                  settleTimer = setTimeout(attemptSettle, SETTLE_MS)
-                  return
-                }
-
-                // Inside the Agents dwell — allow free scroll, no snap target.
-                if (st.progress >= wordPortion) return
-
-                // Map raw progress back to a word index snap.
-                const nearest    = Math.round((st.progress / wordPortion) * (N - 1))
-                const targetRaw  = (nearest / (N - 1)) * wordPortion
-                const targetY    = st.start + targetRaw * (st.end - st.start)
-                const currentY   = window.scrollY ?? window.pageYOffset
-                if (Math.abs(currentY - targetY) > SNAP_EPSILON_PX) {
-                  isSnapping = true
-                  isSnappingTimer = setTimeout(
-                    () => { isSnapping = false },
-                    SETTLE_SCROLL_DURATION * 1000 + 100,
-                  )
-                  if (lenis) {
-                    lenis.scrollTo(targetY, { duration: SETTLE_SCROLL_DURATION })
-                  } else {
-                    window.scrollTo({ top: targetY, behavior: 'smooth' })
-                  }
-                }
-              }
               settleTimer = setTimeout(attemptSettle, SETTLE_MS)
             }
           },
         })
+
+        // Lenis-driven settle snap — fires only once scroll has genuinely stopped.
+        // Snapping mid-momentum would reverse the in-flight scroll and produce the
+        // edge wiggle, so on the wheel path we re-check Lenis velocity and
+        // reschedule until momentum has decayed to near-zero; on touch (useScrollEnd)
+        // the native event already means "stopped", so that re-check is skipped.
+        // Skipped while a programmatic scroll (click or prior settle) is
+        // in flight to prevent oscillation.
+        // Function declaration (not const) — hoisted, so it's a valid reference
+        // the instant ScrollTrigger.create() below runs. A `const` here would sit
+        // in the temporal dead zone during ScrollTrigger's synchronous internal
+        // refresh (fires on every setup() call, including the resize-driven
+        // rebuild), which throws the moment onUpdate reads it mid-pin (self.progress
+        // strictly between 0 and 1) — e.g. a tablet/phone rotation while scrolled
+        // into the section. attemptSettle isn't actually invoked until a real
+        // timer/event fires later, by which point `st` below is assigned.
+        function attemptSettle() {
+          if (isSnapping) return  // another snap already in flight
+          // User has momentum-scrolled out of the pinned range while
+          // this chain was deferring — never yank them back in.
+          if (!st.isActive) return
+
+          const lenis = window.__lenis
+          // Still moving? Defer until Lenis momentum decays (wheel path only —
+          // the touch velocity number is meaningless, see §5.3.1 #4 above).
+          if (!useScrollEnd && lenis && Math.abs(lenis.velocity) > SETTLE_VELOCITY_MAX) {
+            settleTimer = setTimeout(attemptSettle, SETTLE_MS)
+            return
+          }
+
+          // Inside the Agents dwell — allow free scroll, no snap target.
+          if (st.progress >= wordPortion) return
+
+          // Map raw progress back to a word index snap.
+          const nearest    = Math.round((st.progress / wordPortion) * (N - 1))
+          const targetRaw  = (nearest / (N - 1)) * wordPortion
+          const targetY    = st.start + targetRaw * (st.end - st.start)
+          const currentY   = window.scrollY ?? window.pageYOffset
+          if (Math.abs(currentY - targetY) > SNAP_EPSILON_PX) {
+            isSnapping = true
+            isSnappingTimer = setTimeout(
+              () => { isSnapping = false },
+              SETTLE_SCROLL_DURATION * 1000 + 100,
+            )
+            if (lenis) {
+              lenis.scrollTo(targetY, { duration: SETTLE_SCROLL_DURATION })
+            } else {
+              window.scrollTo({ top: targetY, behavior: 'smooth' })
+            }
+          }
+        }
+
+        // Guards 1 (progress range) and 2 (!st.isActive) mirror the timer path
+        // above; guard 3 (onLeave/onLeaveBack → clearSnapState) is shared.
+        const onScrollEnd = () => {
+          if (isSnapping || !st.isActive) return
+          if (st.progress <= 0 || st.progress >= 1) return
+          attemptSettle()
+        }
+        if (useScrollEnd) {
+          window.addEventListener('scrollend', onScrollEnd, { passive: true })
+        }
 
         // ── Click / keyboard navigation ────────────────────────────────────
         // Smooth-scrolls to the scroll position that centers word `targetIdx`
@@ -280,11 +352,13 @@ export default function WhatIDo() {
 
         stKiller = () => {
           clearSnapState()
+          if (useScrollEnd) window.removeEventListener('scrollend', onScrollEnd)
           scrollToIndexRef.current = null
           st.kill()
-          // Clear transforms and JS-set geometry so the mobile static layout
-          // takes over cleanly if the viewport shrinks below 981 px.
+          // Clear transforms and JS-set geometry so the reduced-motion static
+          // fallback takes over cleanly if prefers-reduced-motion flips on.
           gsap.set([stackBase, stackKo], { clearProps: 'transform' })
+          section.style.minHeight = ''
           left.style.height    = ''
           left.style.marginTop = ''
           stackBase.style.top  = ''
@@ -332,8 +406,8 @@ export default function WhatIDo() {
 
       // ── matchMedia cleanup ─────────────────────────────────────────────
       // Called by mm.revert() on unmount OR when the viewport exits the
-      // DESKTOP_QUERY range (e.g. resize to mobile). Both cases need a full
-      // teardown — ScrollTrigger, transforms, and the resize listener.
+      // MOTION_QUERY range (e.g. reduced-motion turns on). Both cases need a
+      // full teardown — ScrollTrigger, transforms, and the resize listener.
       return () => {
         alive = false
         clearTimeout(resizeDebounceTimer)
@@ -354,6 +428,25 @@ export default function WhatIDo() {
     // ScrollTrigger. Omitting it from deps is intentional.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Caption clamp measurement (decision 4) — a ref callback fires on each keyed
+  // remount of the caption text (AnimatePresence mode="wait" gives every active
+  // word a fresh node), so it measures whatever is actually on screen rather
+  // than needing a separate effect keyed on `active`.
+  const measureCaption = (el) => {
+    if (el) setCaptionClamped(el.scrollHeight > el.clientHeight + 1)
+  }
+
+  // Auto-collapse the expanded overlay on any scroll (decision 4a) — no scroll
+  // lock needed, the longest blurb fits the field with no internal scrolling.
+  // `active` only ever changes via scroll, so this single listener covers both
+  // "user scrolled away" and "the word advanced while expanded".
+  useEffect(() => {
+    if (!captionExpanded) return undefined
+    const collapse = () => setCaptionExpanded(false)
+    window.addEventListener('scroll', collapse, { passive: true, once: true })
+    return () => window.removeEventListener('scroll', collapse)
+  }, [captionExpanded])
 
   // Smooth-scroll to word `i`. On desktop, uses the ScrollTrigger-aware Lenis
   // target so the pinned progress lands exactly on that word's snap point.
@@ -471,6 +564,7 @@ export default function WhatIDo() {
       <motion.div
         className={captionClassName}
         aria-live="polite"
+        data-expanded={captionExpanded ? '' : undefined}
         style={{ opacity: active === N - 1 ? captionFade : 1 }}
       >
         <AnimatePresence mode="wait">
@@ -497,6 +591,7 @@ export default function WhatIDo() {
             />
             {/* Text — slides out rightward from the bar */}
             <motion.p
+              ref={measureCaption}
               className="wid-caption-text"
               variants={{
                 hidden:  { x: -10, opacity: 0 },
@@ -508,6 +603,20 @@ export default function WhatIDo() {
             </motion.p>
           </motion.div>
         </AnimatePresence>
+        {/* Phone-only (decision 4): a real button, not a styled div — expands
+            the clamped caption to overlay the viz field. Rendered whenever
+            measureCaption found overflow; CSS hides it outside <768px so it
+            can never affect the desktop regression tier. */}
+        {captionClamped && (
+          <button
+            type="button"
+            className="wid-caption-more"
+            aria-expanded={captionExpanded}
+            onClick={() => setCaptionExpanded((v) => !v)}
+          >
+            {captionExpanded ? '— less' : '+ more'}
+          </button>
+        )}
       </motion.div>
 
     </section>

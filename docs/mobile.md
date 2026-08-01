@@ -9,10 +9,14 @@ in-progress **desktop → mobile translation effort**.
 
 If the two conflict on a breakpoint value, this doc wins.
 
-**Status:** **Phase 2 complete** (2026-07-31) — AboutMe section-head scale fixed and
-the Hero → AboutMe sticky-stack extended to every tier (phone included). See §5.2.
-Next up: Phase 3 — WhatIDo. Decisions in §3 are locked (interview, 2026-07-23; Hero
-interview 2026-07-24; AboutMe interview 2026-07-31).
+**Status:** **Phase 3 in progress** (2026-08-01) — WhatIDo design locked via interview;
+Stages A, B, and C landed (the phone rig pins/scrubs/snaps at every tier; tablet's viz
+panel no longer clips Interface). Stages D–F remain: remaining per-viz fit, reduced-motion
+restyle, docs correction. See §5.3 for the full decision record and stage plan. Phase 2
+complete (2026-07-31): AboutMe
+section-head scale fixed and the Hero → AboutMe sticky-stack extended to every tier
+(phone included), §5.2. Decisions in §3 are locked (interview, 2026-07-23; Hero interview
+2026-07-24; AboutMe interview 2026-07-31; WhatIDo interview 2026-07-31).
 
 Phase 0 was signed off with four engine-level checks deliberately deferred rather than
 run: iOS Safari's renderer, `100svh` address-bar collapse, real touch momentum against
@@ -345,7 +349,7 @@ carrying it through six tier migrations.
 |---|---|---|
 | ✅ 1 | Preloader + Hero | **Done 2026-07-24.** See §5.1 |
 | ✅ 2 | AboutMe + `hero-about-stack.css` | **Done 2026-07-31.** See §5.2 |
-| 3 | WhatIDo | The vertical-scrub translation, §4.4. Highest design risk |
+| 🔨 3 | WhatIDo | **Designed 2026-07-31 — see §5.3.** Stages A-C done, Stage D in progress |
 | 4 | Journey | Expect **verify-only** — already correct per §4.1 |
 | 5 | Projects | Horizontal accordion → vertical expand |
 | 6 | Footer / AIOrb / ReturnToTop / ScrollProgressFrame | Smallest surface. **AIOrb phone treatment already shipped early, out of order — see below.** |
@@ -529,6 +533,478 @@ not a CSS file.
 **Still needs re-verification on the real iPhone** — this fix has only been reasoned through and
 lint/build-checked, not yet re-tested against a real collapsing address bar (§7.2 is authoritative
 for this exact failure mode).
+
+### 5.3 Phase 3 design record (2026-07-31) — WhatIDo
+
+Interview via `grill-me`, 2026-07-31. This section is the **design record**, written before
+implementation. Update it with a "result" subsection as stages land.
+
+#### 5.3.1 Ground truth corrections found during the interview
+
+Four things §4.4 and `docs/what-i-do.md` got wrong or omitted. Re-verify before trusting
+either doc on this section:
+
+1. **`docs/what-i-do.md` is stale on the scroll clock.** It documents `SCROLL_PER_WORD = 780`
+   and a single progress track. Actual: `SCROLL_PER_WORD = 1100`, plus a second track —
+   `AGENTS_DWELL_PX = 800`, an `agentsProgress` MotionValue, and `captionFade`/`exitFade`
+   derived from it. Any mobile rig must reproduce **two** progress signals, not one.
+   Scheduled for correction in Stage F.
+
+2. **The mobile "mess" has one dominant cause, and it is not the layout.**
+   `WhatIDo.css:352` hides only `.widviz-panel:not(--frozen)`. The *frozen* panels keep
+   `.widviz-panel`'s base rule — `position:absolute; left:var(--viz-left);
+   right:max(0px,50vw−720px); top:0; height:100vh`. `.wid-mobile-blurb-item` is not
+   positioned, so all five frozen vizzes stack on top of each other inside `.wid-stage`
+   (the nearest `position:relative`), crushed into a ~147px-wide column starting at 243px
+   on a 390px phone. `.wid-mobile-viz` has **zero** CSS. This accounts for most of the
+   §5 baseline overflow — `.wsys-cell ×3` (+138px) and `.wbk-graph` (+84px) are those
+   elements being squeezed into 147px, not intrinsic overflow.
+
+3. **Two ancestor rules will break any pinned or sticky phone rig.** `.wid-stage`'s
+   `clip-path: inset(0 0 -100vh 0)` (`WhatIDo.css:56`) makes it a containing block for
+   `position: fixed` descendants; `.wid-left`'s `overflow: hidden` (mobile block) kills
+   `position: sticky`. Both must be scoped to `≥768px`.
+
+4. **`lenis.velocity` means something different on touch.** `lenis.mjs:649-672` — with
+   `syncTouch: false` (our config, `App.jsx:172-176`) native touch scroll takes the
+   `onNativeScroll` path, where `velocity = animatedScroll − lastScroll`, a **raw
+   per-event pixel delta** (30–80px on a flick), zeroed only by a hardcoded 400ms
+   timeout. The wheel path produces a *smoothed lerp* velocity. `SETTLE_VELOCITY_MAX =
+   0.05` was tuned against the latter, so the settle snap's threshold is meaningless on
+   touch. This is why decision 5 below replaces the trigger.
+
+#### 5.3.2 The mechanic decision — GSAP everywhere, decided by measurement
+
+Four options were compared in detail: split the width/pointer axes, sticky + Framer
+`useScroll` everywhere, GSAP everywhere, and split by width only. Evidence gathered:
+
+- `ScrollTrigger.js:971` — `pinType` resolves to `"fixed"` for a viewport scroller, with
+  **no touch special-case** in 3.x. The pin uses `position: fixed` on iOS.
+- `ScrollTrigger.js:2038,397` — `_ignoreMobileResize` auto-enables when
+  `Observer.isTouch === 1`, and the refresh threshold is `|Δ innerHeight| > 25%`. An iOS
+  address bar is ~8–10%, so **GSAP already mitigates the address-bar refresh**. Note it
+  does *not* auto-enable on iPad-with-trackpad or touch laptops (`isTouch === 2`).
+- `framer-motion/…/scroll/track.mjs:46,53` — `useScroll` is event-driven, not rAF-polled,
+  and shares one listener per container. Its cost is comparable to ScrollTrigger's.
+- `App.jsx:187` — `gsap.ticker` already runs a continuous rAF for Lenis's whole page
+  lifetime. Removing WhatIDo's ScrollTrigger would not reclaim it.
+
+**Resolved by running the pin on real hardware** (worktree spike, both gates stripped from
+`DESKTOP_QUERY` with the CSS fallback mirrored): the pin held on a real device. Decision is
+**GSAP at every tier** — one mechanic, one code path, smallest diff, and animation fidelity
+identical to desktop by construction.
+
+> Do not re-propose sticky + `useScroll` for this section without new device evidence. It
+> was not rejected on theory; the pin was tested and passed.
+
+#### 5.3.3 Locked decisions
+
+| # | Decision | Rationale / consequence |
+|---|---|---|
+| 1 | **Two layouts only** — vertical stack `<768`, side-by-side `≥768` | Tablet keeps §3 decision #6. Verified dimensionally at 768: band is `min(50vw,720px)−24` = 360px, longest word INTERFACE at `8.25vw` renders ~342px |
+| 2 | **Phone layout: word window on top, viz below, caption at bottom** | Supersedes §4.4's sketch, which had the viz above the words |
+| 3 | **Word window: 3 rows**, lime band on row 1, hard clip above, `mask-image` fade below | ~129px at `clamp(40px, 12vw, 64px)`. 3 rows over 2 buys back the desktop "see what's coming" read for 43px |
+| 4 | **Caption clamps to 5 lines** + a real `<button aria-expanded>` to expand | Blurbs run 170–410 chars — a content-sized caption swings 134px between DATA and SYSTEMS and would resize the viz box *during* the cross-dissolve |
+| 4a | Expanded caption **overlays the viz** (viz dims, keeps playing), **auto-collapses on any scroll** | The longest blurb is ~224px in a 461px field, so it fits with no internal scrolling — therefore **no scroll lock is needed at all**. See 5.3.4 |
+| 5 | **Snap on touch: keep the JS settle snap, retrigger it from the native `scrollend` event** | CSS `scroll-snap` was chosen first but is incompatible with the pin — snap anchors must sit in the scrolling flow, and `pin:true` takes the section out of flow. `scrollend` (Safari 17.4+, Chrome 114+) is a strictly better trigger than the broken velocity threshold (5.3.1 #4) and reuses all existing machinery including the three guards |
+| 6 | **Runway on phone = 1.0 × measured viewport height per word** | ~750px/word, ~3750px total, 5 screens — vs 6.9 screens if desktop's fixed 1100px were carried over. `≥768` keeps 1100/800 unchanged. Measure via `clientHeight`, **never `vh`** (§5.2.1) |
+| 7 | **Viz aspect: per-viz call, nothing scaled down** | See the table in 5.3.5 |
+| 8 | **All five vizzes stay mounted; layers outside `active ± 1` get `content-visibility: hidden`** | See 5.3.6 — this is the real mobile perf win |
+| 9 | **Drop `will-change` from `.wdat-dot` on touch** | 110 elements × `will-change: transform, opacity` = 110 promoted compositor layers. The hint is redundant on an element already transforming every frame. No dots removed |
+| 10 | **Reduced motion: normal document flow, five stacked blocks, frozen vizzes, full uncla­mped copy** | A pinned section is itself disorienting for the users this setting exists for. `.wid-mobile-blurbs` survives, restyled to the new design language |
+
+#### 5.3.4 The caption budget
+
+Measured against `src/data/whatIDo.js` at 390px width:
+
+| word | blurb chars | ≈ lines | ≈ height |
+|---|---|---|---|
+| SYSTEMS | 410 | ~10 | ~224px |
+| AGENTS | 331 | ~8 | ~180px |
+| BACKEND | 283 | ~7 | ~157px |
+| INTERFACE | 213 | ~5 | ~112px |
+| DATA | 170 | ~4 | ~90px |
+
+Clamping at **5 lines** is deliberate: it is exactly INTERFACE's natural height, so
+INTERFACE and DATA never show the expand affordance and only the three long blurbs clamp.
+
+Resulting budget on a 750px `svh` phone:
+
+```
+word window (3 rows)  ~129px
+caption (5 lines)     ~112px
+padding / gaps        ~ 48px
+─────────────────────────────
+viz field              461px   ← every viz fits: Interface's stage is 340×260,
+                                 Agents' mobile field 300px, Data's 375px
+```
+
+#### 5.3.5 Per-viz portrait behavior
+
+Every viz uses `preserveAspectRatio="none"`, so they fill the box but **distort** when the
+aspect changes. That is invisible on some compositions and obvious on others:
+
+| viz | native geometry | in a 342×461 portrait box | action |
+|---|---|---|---|
+| **Agents** | viewBox **100×150, already portrait** (`VizAgents.jsx:14`) | aspect 0.67 vs 0.74 — near match; already has a `≤980px` block | **none** |
+| **Interface** | fixed `340×260px` stage (`interface.css:43`) | 340 fits inside 342 natively | **none** |
+| **Data** | 0–100 square viewBox | stretches ~1.4× vertically; a noise field and a smoothstep curve are aspect-tolerant by nature | **none** (but see decision 9) |
+| **Backend** | nodes at `{x:30…70}` | CACHE/DB land 137px apart while carrying `REDIS`/`POSTGRES` tags — the **labels** collide, not the nodes | shrink + stack `.wbk-node-label`/`.wbk-node-tag` in `backend.css` |
+| **Systems** | `.wsys-grid` `repeat(2,1fr)` × 3, plus EKG and the node sphere | 6 cells at ~167px each; the sphere goes oval under `none` | **the one real design pass** — aspect-lock the sphere, verify the grid |
+
+> **Backend is a CSS-only fix, not a data change.** An earlier draft of this plan proposed
+> widening the node `x` coordinates in `widViz.js`. That is wrong: those coords are applied
+> as **inline styles** (`VizBackend.jsx:457`) and the connecting edges are SVG `d` strings
+> in the same file, both shared with desktop. Editing them is a desktop regression, and CSS
+> can move the nodes but not the edge paths, so the two would desync.
+
+#### 5.3.6 The mobile viz-perf finding
+
+The three rAF vizzes are already cheap when idle — all early-return before any DOM work
+(`VizData.jsx:107`, `VizAgents.jsx:496`, `VizSystems.jsx:180`). Two idle loops is ~120
+no-op callbacks/sec, negligible. **Mounting fewer components therefore saves almost
+nothing** while adding mid-scroll React mounts.
+
+The real cost is CSS keyframe animations, which have no early-return:
+
+| file | `animation:` declarations | explicitly `paused` |
+|---|---|---|
+| `agents.css` | 16 | **0** |
+| `interface.css` | 7 | 3 |
+| `backend.css` | 2 | 1 |
+| `systems.css` | 2 | **0** |
+| `data.css` | 1 | **0** |
+| **total** | **28** | 4 |
+
+**24 ungated animations tick on every mounted viz, including layers sitting at
+`opacity: 0`.** The fix keeps all five mounted and stops the far ones rendering:
+
+```css
+.widviz-layer[data-far] { content-visibility: hidden; }
+```
+
+`active ± 1` is always sufficient — `widSlice`'s dissolve trapezoid spans `1.5 × d` where
+`d = 1/(N−1)`, so at most **two** layers are ever above zero opacity. No mount churn, no
+rAF restart, no lost internal state, cross-dissolve unaffected.
+
+`content-visibility` only landed in Safari 18, so it is paired with a `display: none`
+fallback behind `@supports` for iOS 17. **Scoped to `≤980px` / coarse pointer** so desktop
+rendering is untouched per §7.4; it can be widened to desktop later once verified there.
+
+#### 5.3.7 Stage plan
+
+| stage | scope |
+|---|---|
+| **A** | ✅ done, §5.3.8 — Standalone fixes: frozen-panel positioning (5.3.1 #2), scope `clip-path`/`overflow` to `≥768` (#3), `data-far` + `content-visibility` gating, `.wdat-dot` `will-change` |
+| **B** | ✅ done, §5.3.10 — The phone rig: `MOTION_QUERY`, viewport-derived runway, 3-row window, caption clamp + expand overlay, `scrollend` snap. CSS fallback gate narrowed here (moved up from E, see §5.3.10 correction 2) |
+| **C** | ✅ done, §5.3.12 — Tablet retune `768–980`: audited, container geometry needed no changes; found and fixed a real Interface overflow at tablet width |
+| **D** | Per-viz: Backend labels, Systems portrait pass, Interface **phone** `scale()` fix (§5.3.8 correction 1 — tablet done early in Stage C, see §5.3.12), Agents field-fit re-check (§5.3.10 finding) |
+| **E** | Reduced-motion **restyle only** — the gate narrowing this bullet originally described happened in Stage B instead |
+| **F** | Docs: correct `docs/what-i-do.md` (5.3.1 #1), add the phone rig, write the §5.3 result subsection |
+
+Stage A is deliberately self-consistent: the existing mobile fallback stays live
+throughout, so the phone renders the static list with **correctly positioned** frozen
+panels rather than a half-migrated layout.
+
+#### 5.3.8 Stage A result (2026-07-31) — foundation fixes
+
+`npm run lint` → 0. `npm run build` → passes. Verified via §7.1 resize matrix, §7.1a CDP
+coarse-pointer emulation, and the reduced-motion branch.
+
+| row | result | proof |
+|---|---|---|
+| sm 390 | ✓ 5 frozen panels at `x:24 w:327 h:420`, `position:relative`, stacked in flow (was: all five piled at `x:243 w:~147`). `clipPath:none`, `willChange:auto`, `docOverflow:0` | computed-style + **screenshot** |
+| md 768 | ✓ frozen `x:24 w:705`; `clipPath` applies; live panel `display:none`; `willChange:auto`; `docOverflow:0` | computed-style |
+| lg 1280 | ✓ **regression** — live panel `x:688 w:577 h:900`, band `block`, `willChange:transform, opacity`, `clipPath` applies | computed-style |
+| xl 1440 | ✓ **regression** — live panel `x:768 w:657 h:900`, all desktop values unchanged | computed-style |
+| 2xl 1920 | ✓ **regression** — live panel `x:1008 w:657` | computed-style |
+| 4k 2560 | ✓ **regression** — live panel `x:1328 w:657` | computed-style |
+| coarse pointer (1024×768) | ✓ §4.3 holds: `stackPos:static`, `leftHeight:276`. `farContentVis:"hidden"` — the content-visibility gate is live. `willChange:auto` | computed-style (CDP) |
+| reduced motion (1440) | ✓ Lenis absent, stacks `static`, 5 frozen panels `x:24 w:1377` in flow, no blank render | computed-style |
+| real iPhone / Android | **not run** — §7.2, required before Phase 3 is called done | — |
+
+Desktop rows are byte-identical because every rule added is scoped away from desktop:
+`content-visibility` and the `will-change` reset are behind `≤980px`/coarse, the frozen-panel
+override only affects elements desktop already hides via `.wid-mobile-blurbs { display:none }`,
+and `clip-path` was scoped to `≥768px` — which includes every desktop width.
+
+**Two corrections to the sections above, found by this verification:**
+
+1. **§5.3.5 was wrong about Interface.** It claimed the viz needs no action because its
+   `340×260` stage fits a phone panel. It does not: `interface.css:50` applies a base
+   `transform: scale(1.35)`, so the real footprint is **459×351**. Measured at 390px it
+   renders `x:-33 w:441`, spilling off both edges of a 327px panel, with
+   `.wifc-raw-track` reaching 613px wide. The `@media (max-height:900px) and
+   (min-width:981px)` block at `interface.css:670` *reduces* it to 1.15 for laptops, so
+   nothing constrains it below 981px. **Interface moves from "no action" to a phone
+   `scale()` rule in Stage D.** Pre-existing, not caused by Stage A — Stage A merely gave
+   the panel correct geometry for the first time, which made it measurable.
+
+2. **§5.3.5 was pessimistic about Systems.** The 2×3 `.wsys-grid` renders legibly at
+   ~167px per cell at 390px (screenshot-confirmed). Stage D's Systems pass is therefore
+   likely **sphere-aspect only**, not a grid re-layout. Confirm before scoping that work.
+
+**Deferred from Stage A on purpose:** scoping `.wid-left`'s `overflow: hidden`. It lives
+inside the fallback block that Stage E narrows to `(prefers-reduced-motion: reduce)` alone,
+so scoping it now would add a rule only to delete it later.
+
+#### 5.3.9 Carried assumptions
+
+Not separately decided; correct these if wrong:
+
+- ~~SectionHead scrolls away above the pinned cluster on phone.~~ **Reversed in
+  Stage B** — see §5.3.10 correction 1.
+- Tapping a word scrolls to that word's snap position (replacing the current
+  `scrollIntoView` fallback on `.wid-mobile-blurb-item`, which becomes reduced-motion-only).
+  **Confirmed in Stage B** — `scrollToIndexRef` is populated at every tier now, so this
+  fell out for free.
+- The caption's expand control is a real `<button aria-expanded>`, not a styled `div`.
+  **Confirmed in Stage B.**
+
+#### 5.3.10 Stage B result (2026-08-01) — the phone rig
+
+`npm run lint` → 0, `npm run build` → passes. Verified via §7.1 resize matrix (390 / 768 /
+1280 / 1440 / 1920 / 2560), §7.1a CDP coarse-pointer emulation, and the reduced-motion
+branch — all via computed-style + `getBoundingClientRect` assertions (§7.1b: screenshots
+still stall under GSAP's ticker; one screenshot at 390 succeeded and is recorded below as
+a secondary check).
+
+**Two corrections made to this design record, both decided before implementation:**
+
+1. **§5.3.9's first assumption is reversed, by Sai's explicit call (grill-me follow-up,
+   2026-08-01).** SectionHead stays inside the pinned box on phone — it does **not**
+   scroll away. Reason: the pin targets the `<section>`, and the live `.widviz-panel` /
+   `.wid-caption` are absolute children of the *section*, not `.wid-stage` — pinning the
+   stage instead would unpin them, which would have been a bigger structural change than
+   the head's ~77px cost. Revised phone field budget at a 750px `clientHeight`: head ~77
+   / word window ~133 / caption ~140–160 / margins ~16 → viz field ≈ 364–384px, not
+   §5.3.4's 461px. Confirmed by measurement in a real 844px-tall viewport: field rendered
+   at 495px (stage 77.6–210.7, panel 210.7–706.2, caption 706.2–844.4) — taller than the
+   750px-based estimate because the field is `flex: 1 1 auto` and simply takes whatever
+   remains, per decision 7 ("nothing scaled down"). Per-viz fit against this field is
+   still Stage D's job — this stage only had to prove the field lives in the flex column
+   with the right neighbors, not that every viz fits it well (see the Agents finding
+   below).
+
+2. **The CSS fallback gate had to narrow in Stage B, not Stage E as §5.3.7 originally
+   scheduled.** The old `@media (max-width: 980px), (pointer: coarse), (prefers-reduced-
+   motion: reduce)` fallback set `.wid-stack { position: static; transform: none
+   !important }` — which would have killed the pin's visuals on every tier the new
+   `MOTION_QUERY` now covers. `WhatIDo.css`'s fallback gate is now `@media (prefers-
+   reduced-motion: reduce)` alone; Stage E's remaining job is only the *restyle* of that
+   block (decision 10), not the gate width. Side effect, expected and confirmed: tablet
+   768–980 and coarse-pointer ≥981 (iPad landscape) now get the desktop side-by-side
+   layout **and** a live pin — bug §4.3 is closed structurally, not by a matching-arms
+   patch. Verified directly: at 1024×768 with CDP touch emulation, `.wid-stack--base`'s
+   transform advanced from `matrix(1,0,0,1,0,0)`-equivalent to `matrix(1,0,0,1,0,
+   -155.438)` as the caption text changed word, with a live `pin-spacer` present — the
+   word stacks no longer collapse there. Retuning tablet/coarse-desktop scale is Stage
+   C's job.
+
+**A third bug found and fixed during verification, not anticipated in the design
+record:** `global.css` imports `WhatIDo.css` *before* `widviz/shell.css`. Shell.css's
+unconditional `.widviz-panel { position: absolute; ... }` has the same specificity
+(one class) as this stage's phone-scoped `@media (max-width: 767px) { .widviz-panel {
+position: relative; ... } }` — at equal specificity, source order decides, and the
+later file (shell.css) was winning regardless of the media query, leaving the live
+panel at `width:0 height:0` on phone. Fixed by raising the phone override's selector to
+`.what-i-do .widviz-panel:not(.widviz-panel--frozen)` — two classes plus a `:not()`
+beats shell.css's one-class rule outright, and the `:not()` keeps the extra specificity
+from also out-competing shell.css's own `.widviz-panel--frozen` override (which must
+keep sizing the reduced-motion fallback's frozen panels). Same *class* of bug as the
+`about-me.css`/`layout.css` shadowing found in §5.2 — cross-file equal-specificity
+overrides are a recurring hazard in this codebase; **check import order in
+`global.css` before assuming a same-file-looking override will win.**
+
+**Implementation, matching the plan exactly** (`src/components/WhatIDo.jsx`,
+`src/styles/WhatIDo.css`, no other files):
+
+- `DESKTOP_QUERY` → `MOTION_QUERY = '(prefers-reduced-motion: no-preference)'`, one
+  `mm.add` arm. The existing 150ms debounced resize rebuild re-derives phone vs.
+  ≥768px geometry for free on a tier crossing — no second arm added.
+- `setup()` now measures `isPhone` (`!matchMedia('(min-width:768px)').matches`) and
+  `viewportH` (`document.documentElement.clientHeight` — never `vh`, per §5.2.1) and
+  branches: `.wid-left` height/marginTop for the 3-row window (decision 3), and
+  `perWord`/`dwellPx` swap to `viewportH` for the runway (decision 6). ≥768px math is
+  byte-identical to before (`SCROLL_PER_WORD`/`AGENTS_DWELL_PX` unchanged).
+- `attemptSettle` hoisted out of `onUpdate` (pure move) so `onScrollEnd` can call it.
+  `useScrollEnd = matchMedia('(pointer: coarse)').matches && 'onscrollend' in window`
+  gates a native `scrollend` listener that retriggers `attemptSettle` directly,
+  bypassing the velocity re-check that's meaningless on touch (§5.3.1 #4). All three
+  settle guards survive: progress-range check (now in `onScrollEnd`), `!st.isActive`
+  bail, `onLeave`/`onLeaveBack` → `clearSnapState`. No GSAP `snap`, no scrub lerp, no
+  second `ScrollTrigger`.
+- Caption clamp/expand: `captionClamped`/`captionExpanded` state, a `measureCaption`
+  ref callback (fires per `AnimatePresence` remount, comparing `scrollHeight` vs.
+  `clientHeight`), and a scroll-triggered auto-collapse effect (`{ once: true }`). No
+  scroll lock — confirmed unnecessary by measurement (see below).
+- `WhatIDo.css`: fallback gate narrowed (correction 2); new `@media (max-width: 767px)`
+  block un-absolutes `.widviz-panel`/`.wid-caption` into the section's existing flex
+  column (no DOM reorder needed — the child order was already stage → panel → caption),
+  adds the 3-row mask-fade to `.wid-left`, `-webkit-line-clamp: 5` + the overlay-scrim
+  expanded state to the caption, and a base `.wid-caption-more { display: none }` so the
+  button can never surface outside the phone block even on a measurement fluke.
+
+**Verification table:**
+
+| row | result | proof |
+|---|---|---|
+| sm 390 | ✓ section `minHeight:844px` (=`100svh`); `.wid-left` height `133.14px` = `bandH+2·wordH`, `overflow:hidden`, mask-image present; live panel `position:relative`, in flow between stage (77.6–210.7) and caption (706.2–844.4), no overlap; `.wid-mobile-blurbs display:none`; `scrollWidth===clientWidth` (375); scroll-simulated 3000px into the pin — stack transform advanced 0→−172px, caption text changed word; tapped `+ more` — `aria-expanded` true, `data-expanded` set, caption `position:absolute`; dispatched `scroll` — auto-collapsed | computed-style + `getBoundingClientRect`, **1 screenshot** (AGENTS mid-pin — head/band/viz/caption all present and ordered correctly; Agents viz content doesn't fill the full field height and its right-edge label clips — flagged for Stage D, not a Stage B regression, see below) |
+| md 768 | ✓ band `360px` (`min(50vw,720px)−24` at 768 = exactly 360, matches decision 1's dimensional check); live panel `position:absolute` (unretuned desktop layout, expected — Stage C's input); `clip-path` applies; no horizontal overflow | computed-style |
+| lg 1280 | ✓ **regression, byte-identical to §5.3.8**: panel `x:688 w:577`; band `display:block`; `.wid-stack--base` `willChange:transform`; `clipPath` applies; no `.wid-caption-more` in DOM | computed-style |
+| xl 1440 | ✓ **regression** — panel `x:768 w:657` | computed-style |
+| 2xl 1920 | ✓ **regression** — panel `x:1008 w:657` | computed-style |
+| 4k 2560 | ✓ **regression** — panel `x:1328 w:657` | computed-style |
+| coarse pointer (1024×768, CDP) | ✓ §4.3 closed structurally: `pin-spacer` present, section `position:fixed` once pinned, `.wid-stack--base` transform live-advances (`matrix(1,0,0,1,0,-155.438)` after a scroll) with caption text changing word — not the static/collapsed state bug §4.3 described; `farContentVis:"hidden"` still holds | computed-style (CDP touch emulation) |
+| reduced motion (1440) | ✓ no `pin-spacer`; `.wid-stack--base` `position:static`; 5 `.widviz-panel--frozen` present; `.wid-mobile-blurbs display:flex`; no `.wid-caption-more`; page not blank | computed-style |
+| real iPhone / real Android | **partially run, 2026-08-01** — see §5.3.11 below; found and fixed one real bug, one row still open |
+
+**Known finding, deferred to Stage D on purpose (not a Stage B defect):** at 390px, the
+Agents viz (Orchestrator Core) doesn't fill the ~495px field height and its rightmost
+node label (`DISCOVERY`) clips at the field's right edge. §5.3.5's per-viz table didn't
+cover Agents explicitly (it already has a `≤980px` block, so was assumed done) — Stage D
+should re-check it against the field width now that phone geometry is real and
+measurable, the same way Stage A's verification corrected the table's Interface and
+Systems entries (§5.3.8 corrections 1–2).
+
+**Not touched, confirmed still correct:** `widviz/shell.css`'s `data-far` gate and
+`data.css`'s `will-change` reset keep their `(max-width: 980px), (pointer: coarse)`
+scope. `WidVisual.jsx`, `widSlice.js`, `whatIDo.js`, `widViz.js` unchanged.
+
+#### 5.3.11 Real-device defect found and fixed — `100svh` collapsing under `position:fixed` (2026-08-01)
+
+The real-device gate (§7.2) — run by Sai on a real iPhone 14 Pro — surfaced exactly the
+failure mode §7.1 predicted was unprovable locally: `.what-i-do`'s `min-height: 100svh`
+came up short of the true viewport once GSAP pinned the element to `position: fixed`.
+Two screenshots showed the symptom: the live viz field rendered short enough that its
+own content (VizSystems' status grid, VizData's dot field) visually bled upward into the
+word-window rows above it, and the caption — flush after a too-short panel — sat well
+above the screen's true bottom edge with a large dead gap beneath it. Chromium/CDP
+touch emulation (used throughout this stage's verification) could not have caught this:
+it's the WebKit engine specifically, not a pointer/touch/width difference, so §7.1's
+own "cannot prove locally" list already named it (`100svh` collapse against the address
+bar).
+
+**Fix:** same pattern as §5.2.1 (the progress-frame birth-line bug) — stop trusting a
+CSS viewport-unit value under `position:fixed` and override it with the JS-measured
+`clientHeight` pixel value already computed for the runway. `setup()`'s phone branch
+now sets `section.style.minHeight = ${viewportH}px` (cleared to `''` in `stKiller()` on
+teardown/tier-cross); the CSS `min-height: 100svh` rule stays as the pre-JS/no-JS
+fallback only. Verified in Chromium: `section.style.minHeight` reads exactly
+`"844px"` at an 844px viewport, and `.wid-caption`'s bottom edge now lands at exactly
+844 (viewport height) with zero gap beneath it — Chromium already computed this
+correctly before the fix, so this doesn't change anything measurable there; it targets
+Safari's specific handling, which only the next real-device pass can confirm.
+
+Two more changes landed from the same reports, both requested directly (uneven
+spacing, not just the overlap):
+
+- **`.what-i-do .widviz-panel:not(.widviz-panel--frozen)` gained `overflow: hidden`.**
+  Defensive, independent of the height fix: Stage D's per-viz mobile-fit work (Interface's
+  `scale(1.35)`, and now confirmed Systems/Data too, not just the previously-flagged
+  Agents) isn't done yet, so anything still too tall for the box is clipped instead of
+  bleeding into neighboring rows.
+- **`.what-i-do` gained `gap: 16px`** (phone-scoped) between SectionHead / word window /
+  viz field / caption, for even breathing room between the four stacked pieces.
+
+**Still open:** the fix is unverified on the actual failing device — it addresses the
+documented risk category and is checkable in Chromium only up to the point where
+Chromium already agreed with the CSS value. Re-run §7.2 on the same iPhone before
+calling this closed. `scrollend` against real touch momentum and the pin's
+`pinType:"fixed"` under real iOS Safari are also still unconfirmed — no report of a
+defect there yet, but that is "not tested," not "passed."
+
+#### 5.3.12 Stage C result (2026-08-01) — tablet retune
+
+`npm run lint` → 0, `npm run build` → passes. Verified via live measurement
+(`getBoundingClientRect` + computed-style) at 768 / 900 / 980, §7.1a coarse-pointer
+(900×700, CDP touch emulation), and reduced-motion (900×700) — plus a regression check
+at 1280 / 1440 / 390 to confirm the fix below is scoped correctly.
+
+**Container geometry needed no changes.** §5.3.3 decision 1 already verified the
+word/band fit dimensionally at 768 (band 360px, INTERFACE renders ~342px); both
+`--band-w` and the word's `8.25vw` font-size scale linearly with viewport width in the
+768–980 range (neither hits its clamp ceiling until 1440px+), so that ~5% margin holds
+at every width in the tier, not just 768. Live-measured at 768: Backend's node labels,
+Data's field, and Systems' grid all render fully inside `.widviz-panel`'s bounds with no
+overflow — their geometry is percentage/inline-style driven, so it scales with the panel
+naturally. Caption, section-head, and stage gaps were already tablet-correct from Phase
+0/2. Net: no edits to `WhatIDo.css` or `WhatIDo.jsx` layout code this stage.
+
+**Confirmed bug, fixed: Interface overflows the tablet viz panel.** `.wifc-stage` is a
+fixed `340×260px` box with a base `transform: scale(1.35)` (`interface.css:50`) — real
+footprint `459×351px`. The tablet panel (`--viz-left`/`--band-w` split) is only
+321–442px wide across the whole range. Live-measured at 768px: the scaled card rendered
+from x:376 to x:809 in a 768px-wide viewport — bleeding ~56px left into the word/caption
+column and clipping ~40px off the right edge (`html`'s `overflow-x: clip`, tokens.css:87,
+hides this without adding scrollWidth, which is why the §5 baseline's
+`scrollWidth − clientWidth` probe didn't previously catch it — it has to be checked per
+element, not just at the document level). This reproduces whenever Interface is active
+or within ±1 of active (visible during the DATA→INTERFACE and INTERFACE→AGENTS
+cross-dissolves), i.e. for a real fraction of every tablet scroll-through, not an edge
+case. Same root cause as §5.3.8 correction 1's phone finding — just never checked at
+tablet width until this stage's audit.
+
+**Fix:** `interface.css` gained one tablet-scoped rule after the existing laptop-height
+block:
+
+```css
+@media (min-width: 768px) and (max-width: 980px) {
+  .wifc-stage { transform: scale(0.8); }
+}
+```
+
+`0.8` gives a `272×208px` card — fits the narrowest (768px) panel with margin, and stays
+flat (no responsive complexity) up through 980px where there's only more room. Verified
+contained inside `.widviz-panel` at 768 / 900 / 980. Regression-checked: 1280/1440 still
+resolve the pre-existing laptop-height `scale(1.15)` rule (`391×299px`, unaffected — my
+rule's `max-width: 980px` excludes them); 390 still shows the original unscaled
+`452×351px` footprint bleeding off-screen, confirming Stage D's phone fix (§5.3.8
+correction 1) is untouched and still needed — this stage only closed the tablet half of
+that finding.
+
+**A second bug found and fixed during this stage's verification, unrelated to the
+Interface fix:** resizing the viewport while scrolled mid-pin threw `ReferenceError:
+Cannot access 'attemptSettle' before initialization` in `WhatIDo.jsx`. Root cause:
+`attemptSettle` was declared `const attemptSettle = () => {...}` *after* the
+`ScrollTrigger.create()` call, but `ScrollTrigger.create()` runs a synchronous internal
+refresh that fires `onUpdate` immediately — normally harmless, since `self.progress`
+is `0` on first mount (the `self.progress > 0` guard skips the `attemptSettle` reference
+entirely) — except on the resize-driven rebuild path (`WhatIDo.jsx`'s debounced
+`resize` listener calls `stKiller(); setup()` unconditionally), where the user can
+already be scrolled mid-pin (`self.progress` strictly between 0 and 1), and `onUpdate`
+reads the `attemptSettle` identifier before its `const` initializer has run — a
+temporal-dead-zone throw, not a logic bug. This fires on any real resize while scrolled
+into the section, including a **device rotation** — directly relevant to this mobile
+effort, not a desktop-only edge case. Reproduced by resizing 768→900→980 while scrolled
+into the pin; fixed by changing the declaration to a hoisted `function attemptSettle() {
+... }` (function declarations are hoisted with their value, not just the binding, so
+the identifier is safely callable from the moment `setup()`'s block starts — it still
+isn't actually *invoked* until a real timer/event fires later, by which point `st` is
+assigned). Re-ran the same 768→900→980 mid-pin resize sequence after the fix: 0 console
+errors, Interface stays correctly contained at every step. No other functions in
+`setup()` had this ordering problem — `clearSnapState` is already declared before
+`ScrollTrigger.create()`, and `onScrollEnd`/`scrollToIndex` are only ever referenced
+asynchronously (event listener registration, click handlers), never during the
+synchronous refresh.
+
+**Verification table:**
+
+| row | result | proof |
+|---|---|---|
+| md 768 | ✓ Interface `.wifc-stage` contained (`x:464 w:257`, panel `x:432 w:321`); Backend/Data/Systems already fit; `docOverflow:0` | computed-style |
+| 900 | ✓ Interface contained (`x:556 w:272`, panel `x:498 w:387`) | computed-style |
+| 980 | ✓ Interface contained (`x:616 w:272`, panel `x:538 w:427`) | computed-style |
+| coarse pointer (900×700, CDP) | ✓ pin-spacer present (bug §4.3 still closed at tablet+coarse), panel `w:387`, `docOverflow:0`, 0 console errors | computed-style (CDP touch emulation) |
+| reduced motion (900×700) | ✓ `.wid-mobile-blurbs` `display:flex`, 5 frozen panels, `docOverflow:0` | computed-style |
+| lg 1280 / xl 1440 (regression) | ✓ **unaffected** — still resolve the pre-existing laptop-height `scale(1.15)` (`391×299`), confirming the new rule's `max-width:980px` excludes desktop | computed-style |
+| sm 390 (regression) | ✓ **unaffected** — still the original unscaled `452×351` footprint, confirming phone is untouched (Stage D still owns that fix) | computed-style |
+| mid-pin resize (768→900→980) | ✓ 0 console errors after the `attemptSettle` hoisting fix (was: `ReferenceError` on every resize while scrolled into the pin, incl. device rotation) | console + computed-style |
+| real iPhone / Android | **not run** — §7.2, required before Phase 3 is called done | — |
+
+Files changed: `src/styles/widviz/interface.css` (tablet scale rule),
+`src/components/WhatIDo.jsx` (`attemptSettle` hoisting fix only — no behavior change to
+the settle-snap logic itself).
 
 ---
 
