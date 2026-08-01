@@ -3,6 +3,11 @@ import { motion, AnimatePresence, useReducedMotion, animate } from 'framer-motio
 import { TERM_OUTPUT_PARENT, TERM_OUTPUT_LINE, TERM_SUGGEST } from '../animations/variants'
 import { PROMPT, WHOAMI, COMMANDS, COMMAND_IDS } from '../data/terminal'
 
+// Bolt Optimization: Convert command list to a Set for O(1) existence checks.
+// Using Array.includes requires linear O(N) search. A Set reduces lookup time
+// during rapid typing and autocomplete rendering, minimizing re-render overhead.
+const COMMAND_IDS_SET = new Set(COMMAND_IDS)
+
 // ─── Component-private animation constants ────────────────────────────────────
 // Systems viz nodes and arrows use absolute delay offsets so they stagger
 // within a single output block without needing a nested stagger parent.
@@ -276,7 +281,7 @@ export default function Terminal() {
   // Empty input and exact commands intentionally show the full list. Partial
   // input narrows the list so autocomplete tracks what the user is typing.
   const suggestions = useMemo(() => {
-    if (!normalizedQuery || COMMAND_IDS.includes(normalizedQuery)) {
+    if (!normalizedQuery || COMMAND_IDS_SET.has(normalizedQuery)) {
       return [...COMMAND_IDS]
     }
     return COMMAND_IDS.filter((id) => id.startsWith(normalizedQuery))
@@ -316,7 +321,7 @@ export default function Terminal() {
   // ─── Command execution ────────────────────────────────────────────────────
   // All interaction paths (typing, pill clicks, suggestion clicks) funnel here.
   const runCommand = useCallback((id) => {
-    if (!COMMAND_IDS.includes(id)) return
+    if (!COMMAND_IDS_SET.has(id)) return
     clearTimeout(execTimerRef.current)
     setQuery(id)
     setSuggestOpen(false)
@@ -372,10 +377,10 @@ export default function Terminal() {
       e.nativeEvent.stopPropagation()
       const normalizedTarget = normalizeCommandInput(query)
       let target = normalizedTarget
-      if (!COMMAND_IDS.includes(normalizedTarget) && suggestOpen && suggestions.length > 0) {
+      if (!COMMAND_IDS_SET.has(normalizedTarget) && suggestOpen && suggestions.length > 0) {
         target = suggestions[highlightIndex]
       }
-      if (!COMMAND_IDS.includes(target)) {
+      if (!COMMAND_IDS_SET.has(target)) {
         if (query.trim()) setInvalidCmd(query.trim())
         setSuggestOpen(true)
         return
