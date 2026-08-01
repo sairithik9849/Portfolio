@@ -27,10 +27,10 @@
   will-change: transform;
 }
 
-/* ---- Fallback: mobile / reduced-motion ----
-   The Hero never pins below 981px or under reduced-motion (see
-   hero-about-stack.css's identical media query), so there is no card edge
-   for a birth phase to ride — just a plain left-to-right top bar. */
+/* ---- Fallback: reduced-motion ----
+   The Hero never pins under reduced-motion (see hero-about-stack.css's
+   identical gate), so there is no card edge for a birth phase to ride —
+   just a plain left-to-right top bar. */
 .scroll-progress-bar {
   position: fixed;
   top: 0;

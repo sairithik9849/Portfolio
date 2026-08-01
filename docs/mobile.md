@@ -9,9 +9,10 @@ in-progress **desktop → mobile translation effort**.
 
 If the two conflict on a breakpoint value, this doc wins.
 
-**Status:** **Phase 1 complete** (2026-07-24) — Preloader + Hero translated to phone
-(≤767) and tablet (768–980). Next up: Phase 2 — AboutMe + extend the sticky-stack to
-≥768. Decisions in §3 are locked (interview, 2026-07-23; Hero interview 2026-07-24).
+**Status:** **Phase 2 complete** (2026-07-31) — AboutMe section-head scale fixed and
+the Hero → AboutMe sticky-stack extended to every tier (phone included). See §5.2.
+Next up: Phase 3 — WhatIDo. Decisions in §3 are locked (interview, 2026-07-23; Hero
+interview 2026-07-24; AboutMe interview 2026-07-31).
 
 Phase 0 was signed off with four engine-level checks deliberately deferred rather than
 run: iOS Safari's renderer, `100svh` address-bar collapse, real touch momentum against
@@ -149,13 +150,13 @@ to `≤767px` and each gains a `768–980` retune block.
 |---|---|---|
 | Layout shell | `layout.css:99` | Shared — belongs to Phase 0 |
 | Hero | `hero/shell.css:283` | Also `hero/robot.css:127`, `hero/terminal.css:483`, `hero/manifesto.css:381` |
-| AboutMe | `about-me.css:185` | Coupled to Hero via the sticky-stack |
+| AboutMe | ✅ done, §5.2 | Coupled to Hero via the sticky-stack |
 | WhatIDo | `WhatIDo.css:303` | Hardest translation — see §4.4 |
 | Projects | `projects.css:248` | Horizontal accordion → vertical expand |
 
-`hero-about-stack.css` gates the sticky-pin at `(min-width: 981px) and
-(prefers-reduced-motion: no-preference)`. Under decision #6 this must extend down to
-`768px`, which makes **Hero and AboutMe one coupled unit on tablet**.
+`hero-about-stack.css` now gates the sticky-pin at `(prefers-reduced-motion:
+no-preference)` only — width-independent, per §5.2. **Hero and AboutMe are one
+coupled unit at every tier**, not just tablet/desktop.
 
 ### 4.3 CONFIRMED BUG — WhatIDo collapses on iPad landscape
 
@@ -343,11 +344,11 @@ carrying it through six tier migrations.
 | Phase | Scope | Notes |
 |---|---|---|
 | ✅ 1 | Preloader + Hero | **Done 2026-07-24.** See §5.1 |
-| 2 | AboutMe + `hero-about-stack.css` | Coupled to Hero on tablet — extend the sticky-stack to `≥768px` |
+| ✅ 2 | AboutMe + `hero-about-stack.css` | **Done 2026-07-31.** See §5.2 |
 | 3 | WhatIDo | The vertical-scrub translation, §4.4. Highest design risk |
 | 4 | Journey | Expect **verify-only** — already correct per §4.1 |
 | 5 | Projects | Horizontal accordion → vertical expand |
-| 6 | Footer / AIOrb / ReturnToTop / ScrollProgressFrame | Smallest surface |
+| 6 | Footer / AIOrb / ReturnToTop / ScrollProgressFrame | Smallest surface. **AIOrb phone treatment already shipped early, out of order — see below.** |
 
 Each phase is done only when §7's checklist passes.
 
@@ -434,11 +435,112 @@ and its new "Do Not" entry for detail.
 Playwright with the API deleted, which exercises the same fallback code path but not real
 device timing.
 
+### 5.2 Phase 2 result (2026-07-31) — AboutMe section head + universal sticky-stack
+
+AboutMe interview (grill-me, 2026-07-31) drove two changes: the section-head scale/spacing
+defect (screenshot-driven) and extending the Hero → AboutMe sticky-stack to every tier,
+including phone — a bigger scope than §3's original "tablet only" framing (decision #6),
+superseded by this interview.
+
+**Section head.** `layout.css`'s tier blocks narrowed the index *column* per tier (96px →
+80px tablet → 72px phone) but never scaled the index/title *font* — both stayed at the
+desktop `--text-display-5xl`/`--text-display-2xl` (96px/56px) at every width, so the index
+glyphs overflowed their column and collided with the title. Fixed by adding font-size and
+padding overrides to the existing tier blocks (desktop unchanged; tablet: idx 72px/title
+42px/gap 20px; phone: idx 52px/title 30px/gap 14px — same ~1.7× idx:title ratio as desktop,
+column width = idx font size). `about-me.css` had also re-declared the grid at `.about-me
+.section-head` (higher specificity than `layout.css`'s tier rules, silently shadowing them)
+and a redundant `@media (max-width: 980px)` override with a `.right { display: none }` patch
+from Phase 0.6 — all deleted; `layout.css` now owns section-head sizing at every tier, with
+no per-section duplication.
+
+**Found after initial ship (user report, 2026-07-31): the phone/tablet padding-top above was
+silently a no-op.** `about-me.css`'s own `.about-me .section-head { padding-top: 0 }` (two
+classes) outranks `layout.css`'s tier-scoped `.section-head { padding-top: … }` (one class)
+regardless of media query, so the heading had **zero** top clearance at every tier — read as
+the progress-frame's birth line "sticking to" the heading. Desktop needs that `0` (`.about-me`'s
+own `clamp(40px,7vh,80px)` top padding already provides the clearance there); phone/tablet
+zero `.about-me`'s own top padding instead (see the `≤980px` block below) specifically so
+`section-head` should own that spacing — it just wasn't reaching it. Fixed by scoping the `0`
+to `@media (min-width: 981px)`, letting the tier padding-top values (72px phone / 96px tablet)
+apply as originally intended.
+
+**Sticky-stack, extended to every tier.** User-stated constraint: the phone hero must **not**
+be compressed to fit one screen — it stays taller than the viewport exactly as Phase 1 shipped
+it (`height: auto; min-height: 100svh`, `hero/shell.css:324`). Desktop/tablet's `top: 0` sticky
+works because `.hero` is exactly `100svh` there; applying `top: 0` to a taller phone hero would
+lock it at the first scroll pixel and make everything below the fold unreachable (a sticky
+element's own overflow can't be scrolled into view once it's stuck).
+
+Fix: `top: var(--hero-pin-top, 0px)`, where `--hero-pin-top` is written by a new `App.jsx`
+effect — `min(0, document.documentElement.clientHeight − hero.offsetHeight)`, via a
+`ResizeObserver` on `#top` plus a `resize` listener (same measurement pattern as
+`ScrollProgressFrame.jsx`'s `useViewportSize`, not a new one). This computes to `~0px` on
+desktop/tablet (byte-identical old behavior) and a negative offset on phone sized to the
+hero's overflow, so the hero scrolls normally through all its content and only locks once its
+bottom edge — the Discover Me CTA — reaches the viewport bottom, matching desktop's
+choreography with no retuning of Phase 1's verified hero content.
+
+The pin's gate dropped its width condition entirely: `hero-about-stack.css`,
+`ScrollProgressFrame.jsx`'s `FRAME_MEDIA_QUERY`, and `App.jsx`'s `pinQuery` all moved from
+`(min-width: 981px) and (prefers-reduced-motion: no-preference)` to
+`(prefers-reduced-motion: no-preference)` — one shared rule now: motion allowed = pin + card
++ SVG progress frame at every tier; reduced motion = normal flow + flat progress bar
+everywhere. `ScrollProgressFrame`'s `frameMode` state/effect was deleted outright (net ~12
+lines) since its geometry was already viewport-relative, not desktop-specific. `App.jsx`'s
+`heroVisible` observer (`#top` vs `#hero-sentinel`) now switches on the same reduced-motion-only
+query, so StarField/Spline still pause correctly once the phone hero is pinned and scrolled
+past.
+
+Files: `src/styles/layout.css`, `src/styles/about-me.css`, `src/styles/hero-about-stack.css`,
+`src/App.jsx`, `src/components/ScrollProgressFrame.jsx`, `src/styles/scroll-progress-frame.css`.
+
+**Verification status:** lint/build clean. Playwright resize matrix (390/768/1280/1440),
+coarse-pointer (§7.1a), and reduced-motion all pass — including a scroll simulation at 390
+confirming the lock triggers exactly when the CTA reaches the viewport bottom
+(`--hero-pin-top: -483px` on a 1327px-tall hero in an 844px viewport, math exact) and desktop
+rows are byte-identical to pre-Phase-2. Real Android still needed; real iPhone found the defect
+below.
+
+### 5.2.1 Real-device defect found — progress-frame birth line detached from the card on iOS Safari (2026-07-31)
+
+The real-device gate (§7.2) is exactly what surfaced this, same as §5.1.1: on a real iPhone, the
+gold progress-frame line that's supposed to stay glued to the About Me card's rising top edge
+during the birth phase visibly detached and lagged behind the card mid-scroll, snapping back into
+alignment only once the card finished rising and the pin resolved.
+
+**Cause:** `ScrollProgressFrame.jsx`'s birth-phase transform used a CSS `vh` unit
+(`translateY: (1 − birthProgress) · 100vh`) while every other measurement in the same component —
+the SVG's own dimensions, `buildFrameGeometry`'s insets and corner radius — uses the *measured*
+`document.documentElement.clientHeight` via `useViewportSize`'s `ResizeObserver`. On mobile Safari
+these two are not the same number: `vh` always reflects the "large" viewport (address bar fully
+collapsed), independent of whether the address bar is actually showing at that instant, while
+`clientHeight` reflects the real, currently-visible height. Desktop has no dynamic browser chrome,
+so `vh` and `clientHeight` never diverge there — the bug is phone-only and was invisible to every
+Playwright check in §5.2, none of which can emulate a collapsing address bar.
+
+**Fix:** swapped the `vh`-based `birthOffsetVh` for a pixel-based `birthOffsetPx` using the same
+`height` value (from `useViewportSize`) that the rest of the component already uses — one shared
+measurement source instead of two that quietly disagree. Same pattern as the `min-height: 100vh →
+100svh` fix already made to `.about-me` in `hero-about-stack.css` during this phase; this is the
+same class of bug, just missed on the first pass because it lives in a `useMotionTemplate` string,
+not a CSS file.
+
+**Still needs re-verification on the real iPhone** — this fix has only been reasoned through and
+lint/build-checked, not yet re-tested against a real collapsing address bar (§7.2 is authoritative
+for this exact failure mode).
+
 ---
 
 ## 6. Standing rules for any agent resuming this
 
 1. **Never propose cutting content, sections, or animations for mobile.** Rejected. §1.
+   **One standing, user-approved exception: AIOrb is not rendered on phone
+   (`<768px`)**, decided outside phase order via a grill-me interview
+   (2026-07-31) — performance + visual real-estate call. Do not "fix" this
+   back. See `docs/architecture.md`'s "AIOrb Visibility" for the mechanism.
+   Hero/Footer AI-chat CTAs are unaffected and still work on phone. Tablet
+   and desktop are unaffected.
 2. **Translate, don't delete.** If a desktop interaction can't work as-is on a phone,
    re-choreograph it on the vertical axis. `display: none` is not a mobile strategy.
 3. **Every `@media` width is `768px` or `981px`.** Intra-tier refinements excepted.

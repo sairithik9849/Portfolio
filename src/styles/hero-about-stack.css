@@ -2,17 +2,31 @@
    The Hero pins to the top of the viewport while AboutMe scrolls up and
    covers it, reading as a card sliding over the previous section. Pure CSS
    `position: sticky` — no JS scroll rig, no GSAP (see docs/animation.md
-   two-site cap), no Framer scrub. Desktop + motion-allowed only; mobile and
-   reduced-motion keep normal document flow (the hero already becomes
-   height:auto below 980px — see hero/shell.css). */
+   two-site cap), no Framer scrub. Gated on motion preference only, not
+   width — ships identically at every tier. Only reduced-motion keeps normal
+   document flow.
+
+   On desktop/tablet `.hero` is exactly one viewport tall (100svh), so a
+   plain `top: 0` sticks it immediately and nothing is ever hidden below the
+   fold. On phone `.hero` is deliberately taller than one viewport
+   (height:auto — see hero/shell.css) so none of its content is compressed;
+   a plain `top: 0` there would lock the hero at the very first scroll pixel
+   and make everything below the fold unreachable. `--hero-pin-top` (written
+   by App.jsx from a ResizeObserver measurement, mirroring the pattern in
+   ScrollProgressFrame.jsx's useViewportSize) carries the fix: it's the
+   negative of the hero's overflow past one viewport (~0 on desktop/tablet).
+   The hero then scrolls normally through all its content and only locks
+   once its bottom edge — the Discover Me CTA — reaches the viewport
+   bottom, at which point AboutMe begins sliding over it exactly as on
+   desktop. */
 .hero-about-stack {
   position: relative;
 }
 
-@media (min-width: 981px) and (prefers-reduced-motion: no-preference) {
+@media (prefers-reduced-motion: no-preference) {
   .hero-about-stack .hero {
     position: sticky;
-    top: 0;
+    top: var(--hero-pin-top, 0px);
     /* .hero also carries the shared `.shell` class, which sets z-index:3
        (layout.css) — that would otherwise paint the pinned hero ABOVE the
        incoming AboutMe card (z-index:2). Scoped to this stack only; the
@@ -25,7 +39,7 @@
   .hero-about-stack .about-me {
     position: relative;
     z-index: 2; /* paints above the pinned hero (z-index: auto) */
-    min-height: 100vh; /* always fully covers the pinned hero beneath it */
+    min-height: 100svh; /* always fully covers the pinned hero beneath it */
     background: var(--bg-2);
     /* var(--radius-lg) (8px, the largest non-pill radius token) reads as
        barely-rounded on a viewport-wide card — literal value, no token

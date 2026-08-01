@@ -107,17 +107,26 @@
 @media (min-width: 768px) and (max-width: 980px) {
   .row { gap: 20px; }
   .section-head {
-    grid-template-columns: 80px 1fr auto;
-    gap: 24px;
+    grid-template-columns: 72px 1fr auto;
+    gap: 20px;
     padding-top: 96px;
     padding-bottom: 40px;
   }
+  .section-head .idx { font-size: 72px; }
+  .section-head .title { font-size: 42px; }
   .section-head .right { max-width: 200px; }
 }
 
 /* Phone (< 768) */
 @media (max-width: 767px) {
   .row { grid-template-columns: repeat(6, 1fr); }
-  .section-head { grid-template-columns: 72px 1fr; gap: 20px; }
+  .section-head {
+    grid-template-columns: 52px 1fr;
+    gap: 14px;
+    padding-top: 72px;
+    padding-bottom: 32px;
+  }
+  .section-head .idx { font-size: 52px; }
+  .section-head .title { font-size: 30px; }
   .section-head .right { display: none; }
 }

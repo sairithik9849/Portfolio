@@ -13,12 +13,6 @@ import {
 // scroll-linked motion.
 const PROGRESS_SPRING = { stiffness: 250, damping: 40, bounce: 0 }
 
-// Mirrors the exact desktop + motion-allowed gate that pins the Hero under
-// AboutMe (see hero-about-stack.css). The frame is only meaningful while
-// that pin exists — anywhere else (mobile, reduced-motion) it collapses to
-// a plain top bar, so this query must stay identical to that file's.
-const FRAME_MEDIA_QUERY = '(min-width: 981px) and (prefers-reduced-motion: no-preference)'
-
 // Matches `.about-me`'s own `border-top-left/right-radius` in
 // hero-about-stack.css. Keeping this identical is what makes the birth
 // phase's arc land flush on the card's real corner with no visible seam.
@@ -143,11 +137,10 @@ function usePinScrollFraction(aboutRef) {
 // the viewport as the page scrolls. See docs/architecture.md, "Scroll
 // Progress Frame" for the full design.
 //
-// Desktop + motion-allowed: SVG frame, born on the card, closes at page end.
-// Mobile / reduced-motion: plain top bar (the card never pins there).
+// SVG frame, born on the card, closes at page end — ships at every tier.
+// Reduced-motion only: plain top bar (the card never pins there).
 export default function ScrollProgressFrame() {
   const prefersReducedMotion = useReducedMotion()
-  const [frameMode, setFrameMode] = useState(false)
   const aboutRef = useRef(null)
   const journeyRef = useRef(null)
 
@@ -160,14 +153,6 @@ export default function ScrollProgressFrame() {
   useLayoutEffect(() => {
     aboutRef.current = document.getElementById('about')
     journeyRef.current = document.getElementById('journey')
-  }, [])
-
-  useEffect(() => {
-    const mql = window.matchMedia(FRAME_MEDIA_QUERY)
-    const update = () => setFrameMode(mql.matches)
-    update()
-    mql.addEventListener('change', update)
-    return () => mql.removeEventListener('change', update)
   }, [])
 
   const { width, height } = useViewportSize()
@@ -213,31 +198,49 @@ export default function ScrollProgressFrame() {
 
   const birthDraw = useTransform(birthProgress, [0, 1], [0, fTop])
   const railDraw = useTransform(pageProgress, [sPin, 0.98, 1], [fTop, fBottomStart, 1])
+  // Spring only the rail phase — smoothing is what you want over a long,
+  // whole-page scroll. Springing it during birth too (as a single spring over
+  // the combined value, the previous approach) put the draw length a beat
+  // behind a fast scroll while groupTransform's position (below, unsprung)
+  // stayed exactly synced with the card — the two visibly decoupled, the line
+  // looking "detached" on a fast fling even though it tracked correctly on a
+  // slow scroll. `railDraw` clamps to `fTop` for the whole birth phase (its
+  // input, pageProgress, hasn't reached sPin yet), so this spring has already
+  // settled at fTop by the time birthProgress reaches 1 — no snap at handoff.
+  const railDrawSpring = useSpring(railDraw, PROGRESS_SPRING)
 
   // Continuous handoff — while the card is still rising (birthProgress < 1)
-  // draw from the card-scoped source; once pinned, switch to the page-scoped
-  // source, which starts at the same fTop value birthDraw ends on, so there
-  // is no snap in either direction (scroll up re-enters birth smoothly too).
-  // Explicit array form (not the zero-arg auto-tracking form) so both
-  // sources stay subscribed regardless of which branch is currently active.
+  // draw from the card-scoped source (raw, unsprung — see above); once
+  // pinned, switch to the page-scoped spring. Explicit array form (not the
+  // zero-arg auto-tracking form) so both sources stay subscribed regardless
+  // of which branch is currently active.
   const drawn = useTransform(
-    [birthProgress, birthDraw, railDraw],
-    ([bp, bd, rd]) => (bp < 1 ? bd : rd),
+    [birthProgress, birthDraw, railDrawSpring],
+    ([bp, bd, rds]) => (bp < 1 ? bd : rds),
   )
-  const drawnSpring = useSpring(drawn, PROGRESS_SPRING)
-  const dashOffset = useTransform(drawnSpring, (d) => 1 - d)
+  const dashOffset = useTransform(drawn, (d) => 1 - d)
 
   // Rides the card's top border up to the viewport top as it rises, then
   // stays put — a transform, so this stays on the compositor.
-  const birthOffsetVh = useTransform(birthProgress, [0, 1], [100, 0])
-  const groupTransform = useMotionTemplate`translateY(${birthOffsetVh}vh)`
+  //
+  // Pixels measured via useViewportSize (document.documentElement.clientHeight),
+  // NOT a `vh` CSS unit. `vh` on mobile browsers is pinned to the "large"
+  // viewport (address bar collapsed) regardless of whether the address bar is
+  // actually showing right now, while every other measurement in this
+  // component (buildFrameGeometry's INSET/corners, the SVG's own height) uses
+  // the real current clientHeight. Using `vh` here made the birth line ride
+  // faster or slower than the card's actual on-screen top edge whenever the
+  // address bar was mid-collapse — invisible on desktop (no dynamic chrome)
+  // but visibly detached from the card on a real phone.
+  const birthOffsetPx = useTransform(birthProgress, [0, 1], [height || 1, 0])
+  const groupTransform = useMotionTemplate`translateY(${birthOffsetPx}px)`
 
-  // Fallback (mobile / reduced-motion) — plain left→right top bar. The Hero
-  // never pins under 981px / reduced-motion, so there is no card edge for a
-  // birth phase to ride.
+  // Fallback (reduced-motion) — plain left→right top bar. The Hero never
+  // pins under reduced-motion, so there is no card edge for a birth phase
+  // to ride.
   const barScale = useSpring(pageProgress, PROGRESS_SPRING)
 
-  if (prefersReducedMotion || !frameMode) {
+  if (prefersReducedMotion) {
     return (
       <motion.div
         className="scroll-progress-bar"

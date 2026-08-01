@@ -117,20 +117,32 @@ fades in whenever it's ready.
 
 `heroVisible` is driven by a single `IntersectionObserver` watching **both** `#hero-sentinel` and
 `#top` (the Hero root); which one it reports from is **conditional on the sticky-pin**
-(`matchMedia('(min-width: 981px) and (prefers-reduced-motion: no-preference)')`). When the pin is
-active it reports the **sentinel**; when inactive it reports **`#top`**. See "Hero → AboutMe
-Sticky-Stack Transition" below for why.
+(`matchMedia('(prefers-reduced-motion: no-preference)')`). When the pin is active it reports the
+**sentinel**; when inactive it reports **`#top`**. See "Hero → AboutMe Sticky-Stack Transition"
+below for why.
 
 ## Hero → AboutMe Sticky-Stack Transition
 
-`Hero` and `AboutMe` are wrapped in a `.hero-about-stack` div (`App.jsx`). On desktop
-(`min-width: 981px`) with motion allowed, `src/styles/hero-about-stack.css` makes `.hero`
-`position: sticky; top: 0` — it pins to the viewport top — while `.about-me` becomes an opaque
-`--bg-2` card with rounded top corners and a hairline `--line` top border, so it visually slides up
-and covers the pinned hero as the user scrolls. This is **pure CSS `position: sticky`** — no GSAP
-(would be a third `ScrollTrigger` site, violating the two-site cap in `docs/animation.md`), no
-Framer scroll-scrub. Below 981px and under `prefers-reduced-motion: reduce`, both sections stay in
-normal document flow (no pin, no card background).
+`Hero` and `AboutMe` are wrapped in a `.hero-about-stack` div (`id="hero-about-stack"`, `App.jsx`).
+With motion allowed, at **every tier**, `src/styles/hero-about-stack.css` makes `.hero`
+`position: sticky; top: var(--hero-pin-top, 0px)` — it pins to the viewport top — while `.about-me`
+becomes an opaque `--bg-2` card with rounded top corners and a hairline `--line` top border, so it
+visually slides up and covers the pinned hero as the user scrolls. This is **pure CSS
+`position: sticky`** — no GSAP (would be a third `ScrollTrigger` site, violating the two-site cap
+in `docs/animation.md`), no Framer scroll-scrub. Only under `prefers-reduced-motion: reduce` do
+both sections stay in normal document flow (no pin, no card background).
+
+**`--hero-pin-top`** is written by an `App.jsx` effect (`ResizeObserver` on `#top` + a `resize`
+listener, mirroring `ScrollProgressFrame.jsx`'s `useViewportSize` pattern — measured on layout
+change, never per-frame): `min(0, document.documentElement.clientHeight − hero.offsetHeight)`. On
+desktop/tablet `.hero` is exactly `100svh`, so this computes to `~0px` and `top: 0` behaves exactly
+as before. On phone `.hero` is deliberately taller than one viewport (`height: auto` — see
+`hero/shell.css`, and "Hero Root Position" in `docs/hero.md`) so its content isn't compressed to
+fit; a plain `top: 0` there would lock the hero at the very first scroll pixel and make everything
+below the fold unreachable, since a sticky element's own overflow can't be scrolled into view while
+it's stuck. The negative offset instead lets the hero scroll normally through all of its content and
+only locks once its bottom edge — the Discover Me CTA — reaches the viewport bottom, at which point
+AboutMe begins sliding over it exactly as on desktop.
 
 **Z-index override, load-bearing:** `.hero` also carries the shared `.shell` class, which sets
 `z-index: 3` (`layout.css`) — that would otherwise paint the pinned hero *above* the incoming
@@ -146,14 +158,14 @@ flip to `false` to pause the two WebGL contexts (StarField, Spline). A sentinel 
 root) would never report `false` while sticky, since the pinned hero stays geometrically in the
 viewport indefinitely.
 
-**When the pin is inactive (mobile/tablet ≤980, or reduced-motion), the sentinel is the *wrong*
-signal.** There the hero is a tall normal-flow block far taller than the viewport, so its bottom
-sentinel sits below the fold at scroll 0 — reporting the hero "hidden" while its top (meta-row /
-MatrixText) is fully on screen, which froze the MatrixText scramble and paused StarField/Spline at
-the top of the page. So the observer watches `#top` **and** the sentinel and switches between them on
-the pin `matchMedia` (re-evaluated on its `change` event): `#top` when unpinned, sentinel when
-pinned. `#top` is correct when unpinned because the hero then scrolls normally and its root leaves
-the viewport exactly when it's gone.
+**When the pin is inactive (reduced-motion only), the sentinel is the *wrong* signal.** There the
+hero is a tall normal-flow block far taller than the viewport, so its bottom sentinel sits below the
+fold at scroll 0 — reporting the hero "hidden" while its top (meta-row / MatrixText) is fully on
+screen, which froze the MatrixText scramble and paused StarField/Spline at the top of the page. So
+the observer watches `#top` **and** the sentinel and switches between them on the pin `matchMedia`
+(`(prefers-reduced-motion: no-preference)`, re-evaluated on its `change` event): `#top` when
+unpinned, sentinel when pinned. `#top` is correct when unpinned because the hero then scrolls
+normally and its root leaves the viewport exactly when it's gone.
 
 ## Scroll Progress Frame
 
@@ -186,11 +198,16 @@ separate DOM edges (`scaleX`/`scaleY`) would introduce at the corners, and lets 
 express the 32px corner radius that a multi-element approach can't.
 
 **Birth → frame handoff.** There is only one SVG frame element, not two overlapping renders. During
-birth, the whole `<g>` is translated down (`translateY = (1 − birthProgress) · 100vh`) so its top
-edge sits on the card's top border; at `birthProgress = 1` (pin resolved) the translate reaches 0,
-and because `.about-me` spans the same full viewport width as the frame, the frame's 32px corners
-are geometrically identical to where the birth edge already was — pixel-aligned, no jump. The
-corner radius is a constant 32px throughout (matches the card's own radius token — no morph needed).
+birth, the whole `<g>` is translated down in **pixels** (`translateY = (1 − birthProgress) ·
+height`, where `height` is `useViewportSize`'s measured `document.documentElement.clientHeight` —
+not a CSS `vh` unit) so its top edge sits on the card's top border; at `birthProgress = 1` (pin
+resolved) the translate reaches 0, and because `.about-me` spans the same full viewport width as
+the frame, the frame's 32px corners are geometrically identical to where the birth edge already
+was — pixel-aligned, no jump. The corner radius is a constant 32px throughout (matches the card's
+own radius token — no morph needed). Pixels, not `vh`, is load-bearing on mobile: `vh` there is
+pinned to the "large" viewport (address bar collapsed) regardless of whether the address bar is
+actually showing, so it drifts out of sync with the card's real on-screen position — invisible on
+desktop's static chrome, visibly detached on a real phone mid-scroll.
 
 **Phase mapping.** Segment lengths (`topHalf`, `cornerArc`, `rail`, `bottomHalf`) are computed from
 the live viewport size on mount/resize, giving two boundary fractions: `fTop` (birth/top phase ends)
@@ -204,13 +221,12 @@ because both sources agree on `fTop` there — deliberately not `Math.max`, whic
 segment to full during birth. The combined value is spring-smoothed (`stiffness: 250, damping: 40`,
 matching the AboutMe/reference component convention) before being converted to `strokeDashoffset`.
 
-**Fallback (mobile / reduced-motion).** `ScrollProgressFrame` self-locates `#about` via
-`document.getElementById` (no prop, no edit to `AboutMe.jsx`) and also tracks a `matchMedia`
-listener for `(min-width: 981px) and (prefers-reduced-motion: no-preference)` — the exact query
-`hero-about-stack.css` uses to gate the pin. When that query doesn't match (or Framer's
-`useReducedMotion()` is true), it renders a plain fixed top bar (`scaleX` tracking document
-`scrollYProgress`, same gradient, horizontal) instead of the SVG frame — there is no card edge to
-be born from when the Hero never pins.
+**Fallback (reduced-motion).** `ScrollProgressFrame` self-locates `#about` via
+`document.getElementById` (no prop, no edit to `AboutMe.jsx`). It renders the SVG frame at every
+tier now — the birth/rails/close geometry is already viewport-size-based, not desktop-specific —
+gated purely on Framer's `useReducedMotion()`. When that's true it renders a plain fixed top bar
+(`scaleX` tracking document `scrollYProgress`, same gradient, horizontal) instead of the SVG frame
+— there is no card edge to be born from when the Hero never pins.
 
 **My Evolution relay.** The left rail hands off to the `#journey` timeline's spine (see
 `docs/journey.md`, "Frame relay"). `ScrollProgressFrame` self-locates `#journey` the same way it
@@ -291,6 +307,8 @@ sidesteps the sticky rect entirely. Entrance/exit uses the `RETURN_MARKER` varia
 
 Hidden while the Hero (`#top`), the What I Do section (`#what-i-do`), **or** the My Journey section (`#journey`) is intersecting the viewport — `AIOrb` receives `hidden={heroVisible || whatIdoVisible || journeyVisible}`. All three flags come from `IntersectionObserver`s in `App.jsx`. The Hero gate avoids overlapping the robot hotspot; the WhatIDo and Journey gates keep the orb off their full-bleed pinned panels.
 
+**Phone tier (`<768px`): not rendered at all**, not just visually hidden — `App.jsx` gates the `<AIOrb>` JSX itself behind `!isPhoneTier` (a `matchMedia('(max-width: 767px)')` state, same listener pattern as `pinQuery`), so no DOM node mounts and its infinite y-bounce Framer Motion loop never starts. This is a deliberate, user-approved exception to `docs/mobile.md`'s "no content dropped on mobile" rule — performance + visual real-estate call (grill-me interview, 2026-07-31). Tablet (768–980px) and desktop are unaffected. AI chat is still reachable on phone via the Hero CTA and Footer link, both wired to the same `openAI` callback.
+
 ## Global Hotkey
 
 `useHotkey('cmd+k', toggleAI)` in `App.jsx` (from `src/hooks/useHotkey.js`) opens the AI drawer. The hook also supports `'escape'`. Any new global shortcut belongs in `App.jsx` using this hook.
@@ -358,6 +376,7 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not re-gate the preloader's `revealed` flag on Spline readiness — see "Three-Flag Preloader Handoff."
 - Do not remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen.
 - Do not call `requestIdleCallback`/`cancelIdleCallback` directly anywhere in the app — route through `src/utils/scheduleIdle.js`. iOS Safari has no `requestIdleCallback`; a bare `setTimeout(cb, 0)` fallback runs on the very next macrotask instead of deferring, which is what caused the first-load mobile freeze `scheduleIdle` fixes (see "Staged Hero Mount" above).
-- Do not make the `heroVisible` observer report from `#top` **while the hero is sticky-pinned** (desktop ≥981 + motion) — the pinned hero never leaves the viewport, so `#top` would never report `false` and the WebGL pause would never fire. It reports from `#top` only when the pin is inactive (mobile/tablet/reduced-motion), where the sentinel would instead wrongly report the tall hero hidden at scroll 0; keep the pin-conditional switch.
+- Do not make the `heroVisible` observer report from `#top` **while the hero is sticky-pinned** (any tier, motion allowed) — the pinned hero never leaves the viewport, so `#top` would never report `false` and the WebGL pause would never fire. It reports from `#top` only when the pin is inactive (reduced-motion only), where the sentinel would instead wrongly report the tall hero hidden at scroll 0; keep the pin-conditional switch.
+- Do not give phone's `.hero` a plain `top: 0` sticky offset — it is deliberately taller than one viewport, and `top: 0` would lock it at the first scroll pixel, making everything below the fold unreachable. Keep `top: var(--hero-pin-top, 0px)` and the `App.jsx` measurement effect that writes it.
 - Do not remove the `.hero-about-stack .hero { z-index: 1; }` override in `hero-about-stack.css` — `.hero` inherits `z-index: 3` from the shared `.shell` class, which would otherwise paint the pinned hero above the incoming AboutMe card.
 - Do not unmount `AIDrawer` on close (e.g. reverting to `{aiOpen && <AIDrawer/>}`) — it would drop chat history on every reopen; keep the `hasOpenedAI`-gated mount-once pattern.

@@ -107,6 +107,11 @@ export default function App() {
   const [heroVisible,    setHeroVisible]    = useState(true)
   const [whatIdoVisible, setWhatIdoVisible] = useState(false)
   const [journeyVisible, setJourneyVisible] = useState(false)
+  // AIOrb is phone-only disabled — performance + visual real-estate call, an
+  // explicit exception to docs/mobile.md's "no content dropped" rule (Hero
+  // and Footer CTAs still open AI chat there). Phone tier is <768px, same
+  // boundary as every other tier check in the codebase.
+  const [isPhoneTier, setIsPhoneTier] = useState(false)
   // True once the What I Do section has been reached and for the remainder of
   // the page — drives the Return-to-Hero floating marker visibility.
   const [returnVisible,  setReturnVisible]  = useState(false)
@@ -121,6 +126,14 @@ export default function App() {
   const closeAI  = useCallback(() => setAiOpen(false), [])
 
   useHotkey('cmd+k', toggleAI)
+
+  useEffect(() => {
+    const phoneQuery = window.matchMedia('(max-width: 767px)')
+    const apply = () => setIsPhoneTier(phoneQuery.matches)
+    apply()
+    phoneQuery.addEventListener('change', apply)
+    return () => phoneQuery.removeEventListener('change', apply)
+  }, [])
 
   // ---- Site-wide momentum scroll (minhpham.design-style feel) ----
   // Lenis lerps window.scrollTop toward wheel target; Framer Motion's useScroll
@@ -216,19 +229,18 @@ export default function App() {
     // heroVisible drives the WebGL pause (StarField/Spline app.stop()) AND gates
     // the MatrixText scramble loop. Which element reports it depends on whether
     // the hero is sticky-pinned:
-    //   • Pinned (desktop ≥981 + motion): the pinned hero stays geometrically in
+    //   • Pinned (motion allowed, any tier): the pinned hero stays geometrically in
     //     the viewport under AboutMe, so #top would never report false. The
     //     #hero-sentinel at the Hero/AboutMe boundary leaves the viewport exactly
     //     when AboutMe has covered the hero — the correct flip point.
-    //   • Not pinned (mobile/tablet/reduced-motion): the hero is a tall normal-
-    //     flow block far taller than the viewport, so its bottom sentinel sits
-    //     below the fold at scroll 0 and would wrongly report the hero hidden
-    //     while its top (meta-row / MatrixText) is on screen. #top is correct here.
+    //   • Not pinned (reduced-motion only — see hero-about-stack.css): the hero is
+    //     a tall normal-flow block far taller than the viewport, so its bottom
+    //     sentinel sits below the fold at scroll 0 and would wrongly report the
+    //     hero hidden while its top (meta-row / MatrixText) is on screen. #top is
+    //     correct here.
     const heroRoot = document.getElementById('top')
     const sentinel = document.getElementById('hero-sentinel')
-    const pinQuery = window.matchMedia(
-      '(min-width: 981px) and (prefers-reduced-motion: no-preference)',
-    )
+    const pinQuery = window.matchMedia('(prefers-reduced-motion: no-preference)')
 
     const state = { root: true, sentinel: true }
     const apply = () => setHeroVisible(pinQuery.matches ? state.sentinel : state.root)
@@ -247,6 +259,37 @@ export default function App() {
     return () => {
       observer.disconnect()
       pinQuery.removeEventListener('change', apply)
+    }
+  }, [mountContent])
+
+  // Writes --hero-pin-top, the negative sticky offset hero-about-stack.css's
+  // pin needs on phone. There .hero is deliberately taller than one viewport
+  // (height:auto — hero/shell.css) so its content isn't compressed; a plain
+  // `top:0` sticky would lock it at the first scroll pixel and make
+  // everything below the fold unreachable. The offset is the hero's overflow
+  // past one viewport (~0 on desktop/tablet, where .hero already fits), so
+  // the hero scrolls normally through all its content and only locks once
+  // its bottom (the CTA) reaches the viewport bottom. Same
+  // ResizeObserver-on-layout-change pattern as ScrollProgressFrame.jsx's
+  // useViewportSize — never per-frame, never a scroll listener.
+  useEffect(() => {
+    if (!mountContent || !('ResizeObserver' in window)) return undefined
+    const hero = document.getElementById('top')
+    const stack = document.getElementById('hero-about-stack')
+    if (!hero || !stack) return undefined
+
+    const measure = () => {
+      const offset = Math.min(0, document.documentElement.clientHeight - hero.offsetHeight)
+      stack.style.setProperty('--hero-pin-top', `${offset}px`)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(hero)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
     }
   }, [mountContent])
 
@@ -330,15 +373,17 @@ export default function App() {
 
           <div>
             {/* hero-about-stack: CSS-only sticky-pin transition (see
-                hero-about-stack.css) — the Hero pins under AboutMe on desktop.
-                #hero-sentinel sits at the Hero/AboutMe boundary in normal
-                (non-sticky) flow — NOT before the Hero — so it scrolls out of
-                the viewport at exactly the scroll position where AboutMe's
-                sticky-relative card has fully covered the pinned hero, giving
-                the visibility observer below the right moment to pause
-                StarField/Spline instead of #top (which stays geometrically
-                in the viewport for as long as the hero is pinned). */}
-            <div className="hero-about-stack">
+                hero-about-stack.css) — the Hero pins under AboutMe at every
+                tier (motion-gated, not width-gated). id is read by the
+                --hero-pin-top measurement effect above. #hero-sentinel sits
+                at the Hero/AboutMe boundary in normal (non-sticky) flow —
+                NOT before the Hero — so it scrolls out of the viewport at
+                exactly the scroll position where AboutMe's sticky-relative
+                card has fully covered the pinned hero, giving the visibility
+                observer below the right moment to pause StarField/Spline
+                instead of #top (which stays geometrically in the viewport
+                for as long as the hero is pinned). */}
+            <div className="hero-about-stack" id="hero-about-stack">
               <Hero onOpenAI={openAI} started={heroStarted} visible={heroVisible} />
               {/* 1px, not 0px — a zero-area target is unreliable across
                   IntersectionObserver implementations. */}
@@ -363,7 +408,9 @@ export default function App() {
 
           {sectionsMounted && (
             <>
-              <AIOrb onClick={openAI} hidden={heroVisible || whatIdoVisible || journeyVisible} />
+              {!isPhoneTier && (
+                <AIOrb onClick={openAI} hidden={heroVisible || whatIdoVisible || journeyVisible} />
+              )}
               <ReturnToTop hidden={!returnVisible} />
               <ScrollProgressFrame />
             </>

@@ -10,11 +10,15 @@ Hero entrance cascade, Spline robot, and StarField. Loaded on demand via the rou
 
 ## Hero Root Position (Sticky-Stack)
 
-The `.hero` root is `position: relative` unconditionally (`hero/shell.css`). On desktop
-(`min-width: 981px`) with motion allowed, `src/styles/hero-about-stack.css` layers
-`position: sticky; top: 0; z-index: 1` on top of that — the hero pins to the viewport top while
-`AboutMe` slides up and covers it. See "Hero → AboutMe Sticky-Stack Transition" in
-`docs/architecture.md` for the full mechanism, including why `heroVisible` (the prop gating
+The `.hero` root is `position: relative` unconditionally (`hero/shell.css`). At every tier, with
+motion allowed, `src/styles/hero-about-stack.css` layers `position: sticky; top:
+var(--hero-pin-top, 0px); z-index: 1` on top of that — the hero pins to the viewport top while
+`AboutMe` slides up and covers it. `--hero-pin-top` is `~0px` on desktop/tablet (`.hero` is exactly
+`100svh` there) and a JS-measured negative offset on phone, where `.hero` is deliberately taller
+than one viewport (see "Phone (≤767) — vertical column-stack" below) — the offset lets the hero
+scroll normally through all its content before locking, instead of a plain `top: 0` cutting off
+everything below the fold at the first scroll pixel. See "Hero → AboutMe Sticky-Stack Transition"
+in `docs/architecture.md` for the full mechanism, including why `heroVisible` (the prop gating
 StarField/Spline's WebGL render loop) is driven by a sentinel at the Hero/AboutMe boundary rather
 than an observer on `#top` itself.
 
