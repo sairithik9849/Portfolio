@@ -1,7 +1,11 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { HERO_SEQUENCE } from '../animations/variants'
 
-export default function Footer({ onOpenAI }) {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when App.jsx
+// state changes (like scroll progress tracking).
+// Impact: Minor CPU savings at the bottom of the page tree.
+export default memo(function Footer({ onOpenAI }) {
   return (
     <motion.footer
       className="footer shell"
@@ -36,4 +40,4 @@ export default function Footer({ onOpenAI }) {
       </div>
     </motion.footer>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, memo } from 'react'
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import SectionHead from './SectionHead'
 import {
@@ -73,7 +73,10 @@ const tokenize = (text, highlights) => {
   return tokens
 }
 
-export default function AboutMe() {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when App.jsx
+// state changes (like scroll progress tracking).
+// Impact: Prevents recalculation of Framer Motion layout trees on unrelated scroll events.
+export default memo(function AboutMe() {
   const sectionRef = useRef(null)
   const techRef = useRef(null)
   const prefersReducedMotion = useReducedMotion()
@@ -133,7 +136,7 @@ export default function AboutMe() {
       </div>
     </section>
   )
-}
+})
 
 // Slides up and fades in from the icon row below it, tied to the same scroll
 // progress that drives the icons — reads as the kicker rising out of them.

@@ -1,0 +1,3 @@
+## 2026-08-01 - Heavy Layout Re-renders
+**Learning:** `App.jsx` uses `IntersectionObserver` to track the visibility of several major sections (`heroVisible`, `whatIdoVisible`, `journeyVisible`, etc.), triggering state updates as the user scrolls. Because these heavy sections (like `Hero`, `WhatIDo`, `MyJourney`) were not memoized, they were re-rendering needlessly every time `App` state changed, triggering expensive Framer Motion layout recalculations and GSAP/WebGL reconciliations.
+**Action:** When top-level layout components manage scroll-based visibility state, wrap large, static, or heavy child sections in `React.memo()` to isolate rendering costs.

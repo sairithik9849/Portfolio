@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, memo } from 'react'
 import { useScroll, useReducedMotion } from 'framer-motion'
 import { JOURNEY } from '../../data/journey'
 import { useJourneyEngine } from '../../hooks/useJourneyEngine'
@@ -9,7 +9,10 @@ import JourneyMobile from './JourneyMobile'
 // Static representative progress for reduced-motion mode (midpoint of the sequence).
 const STATIC_PROGRESS = 0.5
 
-export default function MyJourney() {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when App.jsx
+// state changes (like scroll progress tracking).
+// Impact: Keeps the Journey canvas rendering loop performant and isolated.
+export default memo(function MyJourney() {
   // sectionRef is observed by the AIOrb IntersectionObserver in App.jsx and
   // is the shared target for all three scroll subscriptions below.
   const sectionRef = useRef(null)
@@ -82,4 +85,4 @@ export default function MyJourney() {
       </div>
     </section>
   )
-}
+})
