@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, memo } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, useReducedMotion } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -40,7 +40,10 @@ const highlightText = (text, words = []) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
 
-export default function WhatIDo() {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when App.jsx
+// state changes (like scroll progress tracking).
+// Impact: Preserves GSAP ScrollTrigger stability and prevents expensive re-renders of the visual field.
+export default memo(function WhatIDo() {
   const sectionRef       = useRef(null)
   const stageRef         = useRef(null)
   const leftRef          = useRef(null)      // .wid-left — word column
@@ -621,4 +624,4 @@ export default function WhatIDo() {
 
     </section>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, memo } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   HERO_PARENT,
@@ -67,7 +67,11 @@ function SocialIcon({ name }) {
   return SOCIAL_ICONS[name] ?? null
 }
 
-export default function Hero({ onOpenAI, started = false, visible = true }) {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when App.jsx
+// state changes (like scroll progress tracking).
+// Impact: Eliminates expensive recalculations of the Hero component and its
+// heavy WebGL (Spline/Starfield) children during routine interactions.
+export default memo(function Hero({ onOpenAI, started = false, visible = true }) {
   const splineRef = useRef(null)
   const robotHotspotRef = useRef(null)
   const [copied, setCopied] = useState(false)
@@ -449,4 +453,4 @@ export default function Hero({ onOpenAI, started = false, visible = true }) {
       </motion.button>
     </motion.section>
   )
-}
+})

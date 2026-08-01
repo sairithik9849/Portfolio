@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { REVEAL } from '../animations/variants'
 import { PROJECTS } from '../data/projects'
@@ -20,7 +20,10 @@ import ProjectVisual from './ProjectVisual'
 
 const SPRING = { layout: { type: 'spring', stiffness: 280, damping: 32 } }
 
-export default function Projects() {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when App.jsx
+// state changes (like scroll progress tracking).
+// Impact: Prevents unnecessary Framer Motion layout recalculations.
+export default memo(function Projects() {
   const [active, setActive] = useState(0)
 
   return (
@@ -105,4 +108,4 @@ export default function Projects() {
       </motion.div>
     </section>
   )
-}
+})
