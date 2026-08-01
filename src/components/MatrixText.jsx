@@ -28,92 +28,111 @@ export default function MatrixText({
     // state updates on an element nobody could see.
     if (reduceMotion || !visible) return
 
-    const timers = []
     let phraseIdx = 0
-    let currentLength = phrases[0].length
+    let rafId = null
+    let timerId = null
 
-    function clearTimers() {
-      timers.forEach(clearTimeout)
-      timers.length = 0
+    function clearAll() {
+      if (rafId) cancelAnimationFrame(rafId)
+      if (timerId) clearTimeout(timerId)
     }
 
     function wipeIn() {
-      clearTimers()
+      clearAll()
       const target = phrases[phraseIdx]
-      currentLength = target.length
+      const len = target.length
 
-      setChars(makeHidden(target))
+      let lastStateStr = ''
+      const start = performance.now()
 
-      target.split('').forEach((ch, i) => {
-        const t = (scrambleDuration / target.length) * i
+      function tick(now) {
+        const elapsed = now - start
 
-        const greenId = setTimeout(() => {
-          setChars((prev) => {
-            const next = [...prev]
-            if (next[i]) next[i] = { value: ch, state: ch === ' ' ? 'settled' : 'green' }
-            return next
-          })
+        let allDone = true
+        const nextChars = target.split('').map((ch, i) => {
+          const t = (scrambleDuration / len) * i
+          let state = 'hidden'
 
-          if (ch !== ' ') {
-            const settleId = setTimeout(() => {
-              setChars((prev) => {
-                const next = [...prev]
-                if (next[i]) next[i] = { ...next[i], state: 'settled' }
-                return next
-              })
-            }, GREEN_HOLD_MS)
-            timers.push(settleId)
+          if (elapsed >= t) {
+            if (ch === ' ') {
+              state = 'settled'
+            } else if (elapsed < t + GREEN_HOLD_MS) {
+              state = 'green'
+              allDone = false
+            } else {
+              state = 'settled'
+            }
+          } else {
+            allDone = false
           }
-        }, t)
-        timers.push(greenId)
-      })
+          return { value: ch, state }
+        })
 
-      const holdId = setTimeout(() => {
-        const nextId = setTimeout(wipeOut, holdDuration)
-        timers.push(nextId)
-      }, scrambleDuration + 80)
-      timers.push(holdId)
+        const nextStateStr = nextChars.map(c => c.state).join(',')
+        if (nextStateStr !== lastStateStr) {
+          setChars(nextChars)
+          lastStateStr = nextStateStr
+        }
+
+        if (!allDone && elapsed < scrambleDuration + GREEN_HOLD_MS) {
+           rafId = requestAnimationFrame(tick)
+        } else {
+           timerId = setTimeout(wipeOut, holdDuration)
+        }
+      }
+      rafId = requestAnimationFrame(tick)
     }
 
     function wipeOut() {
-      clearTimers()
+      clearAll()
+      const target = phrases[phraseIdx]
+      const len = target.length
       const outDuration = scrambleDuration / 2
-      const len = currentLength
 
-      for (let i = 0; i < len; i++) {
-        const t = (outDuration / len) * i
+      let lastStateStr = ''
+      const start = performance.now()
 
-        const greenId = setTimeout((idx) => {
-          setChars((prev) => {
-            const next = [...prev]
-            if (next[idx]) next[idx] = { ...next[idx], state: 'green' }
-            return next
-          })
+      function tick(now) {
+        const elapsed = now - start
 
-          const hideId = setTimeout((hidIdx) => {
-            setChars((prev) => {
-              const next = [...prev]
-              if (next[hidIdx]) next[hidIdx] = { ...next[hidIdx], state: 'hidden' }
-              return next
-            })
-          }, GREEN_HOLD_MS, idx)
-          timers.push(hideId)
-        }, t, i)
-        timers.push(greenId)
+        let allDone = true
+        const nextChars = target.split('').map((ch, i) => {
+          const t = (outDuration / len) * i
+          let state = 'settled'
+
+          if (elapsed >= t) {
+            if (elapsed < t + GREEN_HOLD_MS) {
+              state = 'green'
+              allDone = false
+            } else {
+              state = 'hidden'
+            }
+          } else {
+             allDone = false
+          }
+          return { value: ch, state }
+        })
+
+        const nextStateStr = nextChars.map(c => c.state).join(',')
+        if (nextStateStr !== lastStateStr) {
+          setChars(nextChars)
+          lastStateStr = nextStateStr
+        }
+
+        if (!allDone && elapsed < outDuration + GREEN_HOLD_MS) {
+           rafId = requestAnimationFrame(tick)
+        } else {
+           phraseIdx = (phraseIdx + 1) % phrases.length
+           wipeIn()
+        }
       }
-
-      const switchId = setTimeout(() => {
-        phraseIdx = (phraseIdx + 1) % phrases.length
-        wipeIn()
-      }, outDuration + GREEN_HOLD_MS)
-      timers.push(switchId)
+      rafId = requestAnimationFrame(tick)
     }
 
-    const startId = setTimeout(wipeIn, delay)
-    timers.push(startId)
+    timerId = setTimeout(wipeIn, delay)
 
     return () => {
-      clearTimers()
+      clearAll()
     }
   }, [visible, reduceMotion]) // eslint-disable-line react-hooks/exhaustive-deps
 
