@@ -140,39 +140,32 @@ export default function App() {
   useEffect(() => {
     if (!mountContent || !('IntersectionObserver' in window)) return undefined
     // heroVisible drives the WebGL pause (StarField/Spline app.stop()) AND gates
-    // the MatrixText scramble loop. Which element reports it depends on whether
-    // the hero is sticky-pinned:
-    //   • Pinned (motion allowed, any tier): the pinned hero stays geometrically in
-    //     the viewport under AboutMe, so #top would never report false. The
-    //     #hero-sentinel at the Hero/AboutMe boundary leaves the viewport exactly
-    //     when AboutMe has covered the hero — the correct flip point.
-    //   • Not pinned (reduced-motion only — see hero-about-stack.css): the hero is
-    //     a tall normal-flow block far taller than the viewport, so its bottom
-    //     sentinel sits below the fold at scroll 0 and would wrongly report the
-    //     hero hidden while its top (meta-row / MatrixText) is on screen. #top is
-    //     correct here.
-    const heroRoot = document.getElementById('top')
+    // the MatrixText scramble loop.
+    //
+    // The hero is covered exactly when the Hero/AboutMe boundary passes above the
+    // viewport top — so this tests the sentinel's POSITION, not its intersection.
+    // `isIntersecting` was wrong on phone: .hero there is deliberately taller than
+    // the viewport (height:auto — hero/shell.css), so the sentinel STARTS below
+    // the fold and reported the hero hidden at scroll 0, freezing StarField and
+    // MatrixText from first paint. boundingClientRect.top distinguishes the two
+    // ways a target can be non-intersecting (below the fold vs scrolled past),
+    // which the old isIntersecting read could not — same idiom as the
+    // returnVisible observer below.
+    //
+    // Position works at every tier and under both motion preferences, so the
+    // previous #top-vs-sentinel switch on prefers-reduced-motion is gone: when
+    // the hero is pinned the sentinel still scrolls normally past the viewport
+    // top, and when it isn't pinned the same boundary means the same thing.
     const sentinel = document.getElementById('hero-sentinel')
-    const pinQuery = window.matchMedia('(prefers-reduced-motion: no-preference)')
+    if (!sentinel) return undefined
 
-    const state = { root: true, sentinel: true }
-    const apply = () => setHeroVisible(pinQuery.matches ? state.sentinel : state.root)
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.boundingClientRect.top > 0),
+      { threshold: 0 },
+    )
 
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === sentinel) state.sentinel = entry.isIntersecting
-        else state.root = entry.isIntersecting
-      }
-      apply()
-    }, { threshold: 0 })
-
-    if (heroRoot) observer.observe(heroRoot)
-    if (sentinel) observer.observe(sentinel)
-    pinQuery.addEventListener('change', apply)
-    return () => {
-      observer.disconnect()
-      pinQuery.removeEventListener('change', apply)
-    }
+    observer.observe(sentinel)
+    return () => observer.disconnect()
   }, [mountContent])
 
   // Writes --hero-pin-top, the negative sticky offset hero-about-stack.css's

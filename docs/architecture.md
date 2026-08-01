@@ -115,11 +115,11 @@ preloader window), so it never interacts with the reveal gate above. Independent
 what lets the preloader curtain lift before Spline has actually finished loading; the robot simply
 fades in whenever it's ready.
 
-`heroVisible` is driven by a single `IntersectionObserver` watching **both** `#hero-sentinel` and
-`#top` (the Hero root); which one it reports from is **conditional on the sticky-pin**
-(`matchMedia('(prefers-reduced-motion: no-preference)')`). When the pin is active it reports the
-**sentinel**; when inactive it reports **`#top`**. See "Hero → AboutMe Sticky-Stack Transition"
-below for why.
+`heroVisible` is driven by a single `IntersectionObserver` watching `#hero-sentinel`, reading
+`entry.boundingClientRect.top > 0` rather than `entry.isIntersecting`. The hero is covered exactly
+when the Hero/AboutMe boundary passes above the viewport top — true at every tier and under both
+motion preferences, so there is no pin-conditional switch. See "Hero → AboutMe Sticky-Stack
+Transition" below for why `isIntersecting` alone was wrong on phone.
 
 ## Hero → AboutMe Sticky-Stack Transition
 
@@ -152,20 +152,27 @@ AboutMe begins sliding over it exactly as on desktop.
 
 **`#hero-sentinel`** is a 1px `aria-hidden` div placed **between** `<Hero>` and `<AboutMe>` in the
 JSX — deliberately not before Hero. Because it sits in normal (non-sticky) flow at the Hero/AboutMe
-boundary, it scrolls out of the viewport at exactly the scroll position where AboutMe's card has
-fully covered the pinned hero (`scrollY ≈` hero height), which is the moment `heroVisible` should
-flip to `false` to pause the two WebGL contexts (StarField, Spline). A sentinel on `#top` (the Hero
-root) would never report `false` while sticky, since the pinned hero stays geometrically in the
-viewport indefinitely.
+boundary, its `boundingClientRect.top` crosses 0 at exactly the scroll position where AboutMe's card
+has fully covered the pinned hero (`scrollY ≈` hero height), which is the moment `heroVisible` should
+flip to `false` to pause the two WebGL contexts (StarField, Spline) and the MatrixText scramble. A
+sentinel on `#top` (the Hero root) would never report `false` while sticky, since the pinned hero
+stays geometrically in the viewport indefinitely — that ruled out `#top` outright, it was never a
+candidate for either tier.
 
-**When the pin is inactive (reduced-motion only), the sentinel is the *wrong* signal.** There the
-hero is a tall normal-flow block far taller than the viewport, so its bottom sentinel sits below the
-fold at scroll 0 — reporting the hero "hidden" while its top (meta-row / MatrixText) is fully on
-screen, which froze the MatrixText scramble and paused StarField/Spline at the top of the page. So
-the observer watches `#top` **and** the sentinel and switches between them on the pin `matchMedia`
-(`(prefers-reduced-motion: no-preference)`, re-evaluated on its `change` event): `#top` when
-unpinned, sentinel when pinned. `#top` is correct when unpinned because the hero then scrolls
-normally and its root leaves the viewport exactly when it's gone.
+**Real-device defect (found via user report on a real iPhone, 2026-08-01): reading
+`entry.isIntersecting` on the sentinel froze StarField and MatrixText from first paint on phone.**
+`.hero` there is deliberately taller than one viewport (`height: auto` — see "Hero → AboutMe
+Sticky-Stack Transition"), so the sentinel's own **starting** position sits below the fold at
+scroll 0. `isIntersecting` was `false` from the first frame — `heroVisible` never went true, so
+`StarField`'s drift `rAF` never advanced and `MatrixText`'s scramble effect never ran; only the
+Spline robot kept responding, since it re-renders off its own pointer events rather than
+`heroVisible`. Desktop never showed this because `.hero` there is exactly `100svh`, so the sentinel
+starts at the fold edge and *is* intersecting at scroll 0.
+
+Fixed by reading `boundingClientRect.top > 0` instead of `isIntersecting` — "has the boundary not
+yet scrolled above the viewport top" is the same test at every tier and under both motion
+preferences (mirrors the `returnVisible` observer's `top < 0` idiom, `App.jsx`), so the previous
+pin-conditional `#top`/sentinel switch is gone entirely.
 
 ## Scroll Progress Frame
 
@@ -376,7 +383,8 @@ All copy lives in `src/data/` — never hardcode inside components.
 - Do not re-gate the preloader's `revealed` flag on Spline readiness — see "Three-Flag Preloader Handoff."
 - Do not remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen.
 - Do not call `requestIdleCallback`/`cancelIdleCallback` directly anywhere in the app — route through `src/utils/scheduleIdle.js`. iOS Safari has no `requestIdleCallback`; a bare `setTimeout(cb, 0)` fallback runs on the very next macrotask instead of deferring, which is what caused the first-load mobile freeze `scheduleIdle` fixes (see "Staged Hero Mount" above).
-- Do not make the `heroVisible` observer report from `#top` **while the hero is sticky-pinned** (any tier, motion allowed) — the pinned hero never leaves the viewport, so `#top` would never report `false` and the WebGL pause would never fire. It reports from `#top` only when the pin is inactive (reduced-motion only), where the sentinel would instead wrongly report the tall hero hidden at scroll 0; keep the pin-conditional switch.
+- Do not make the `heroVisible` observer read `entry.isIntersecting` on `#hero-sentinel` — a tall phone `.hero` (`height: auto`) puts the sentinel below the fold at scroll 0, so `isIntersecting` is `false` from first paint and freezes StarField/MatrixText before the user ever scrolls. Read `entry.boundingClientRect.top > 0` instead — see "Spline Visibility Gating" and the real-device defect note above it.
+- Do not make the `heroVisible` observer report from `#top` (the Hero root) at all — the pinned hero never leaves the viewport, so `#top` would never report the hero hidden. Only `#hero-sentinel` gives the right signal, at every tier.
 - Do not give phone's `.hero` a plain `top: 0` sticky offset — it is deliberately taller than one viewport, and `top: 0` would lock it at the first scroll pixel, making everything below the fold unreachable. Keep `top: var(--hero-pin-top, 0px)` and the `App.jsx` measurement effect that writes it.
 - Do not remove the `.hero-about-stack .hero { z-index: 1; }` override in `hero-about-stack.css` — `.hero` inherits `z-index: 3` from the shared `.shell` class, which would otherwise paint the pinned hero above the incoming AboutMe card.
 - Do not unmount `AIDrawer` on close (e.g. reverting to `{aiOpen && <AIDrawer/>}`) — it would drop chat history on every reopen; keep the `hasOpenedAI`-gated mount-once pattern.

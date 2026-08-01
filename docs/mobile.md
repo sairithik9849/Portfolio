@@ -496,6 +496,11 @@ lines) since its geometry was already viewport-relative, not desktop-specific. `
 query, so StarField/Spline still pause correctly once the phone hero is pinned and scrolled
 past.
 
+**Correction (see §5.2.2 below):** that last sentence was verified only for the *pause* transition.
+The same `#top`/sentinel + pin-`matchMedia` switch left `heroVisible` `false` from first paint on
+phone — StarField and MatrixText were frozen, not paused-then-working, from the moment the preloader
+lifted. `App.jsx` no longer has a `pinQuery` for `heroVisible` at all; §5.2.2 has the fix.
+
 Files: `src/styles/layout.css`, `src/styles/about-me.css`, `src/styles/hero-about-stack.css`,
 `src/App.jsx`, `src/components/ScrollProgressFrame.jsx`, `src/styles/scroll-progress-frame.css`.
 
@@ -533,6 +538,43 @@ not a CSS file.
 **Still needs re-verification on the real iPhone** — this fix has only been reasoned through and
 lint/build-checked, not yet re-tested against a real collapsing address bar (§7.2 is authoritative
 for this exact failure mode).
+
+### 5.2.2 Real-device defect found — StarField and MatrixText frozen from first paint on phone (2026-08-01)
+
+The real-device gate (§7.2) surfaced this too: on a real iPhone (Safari and Chrome iOS both — same
+WebKit render engine), the star field never drifted and the bracketed role string in the meta-row
+(`MatrixText`) never scrambled, from the moment the preloader lifted. Only the Spline robot
+responded to touch, since it re-renders off its own pointer events rather than `heroVisible`.
+
+**Cause:** `App.jsx`'s `heroVisible` observer read `entry.isIntersecting` on `#hero-sentinel`. On
+phone `.hero` is deliberately taller than the viewport (`height: auto` — §5.2's sticky-stack
+section), so the sentinel's *starting* position at scroll 0 already sits below the fold —
+`isIntersecting` was `false` before the user ever scrolled, and `heroVisible` never went true.
+`§5.2`'s claim that "`heroVisible` observer (`#top` vs `#hero-sentinel`) ... still pause[s]
+correctly once the phone hero is pinned and scrolled past" (line ~496 above) was verified only for
+the pause transition, never for the initial state — that gap is this bug. Desktop never showed it
+because `.hero` there is exactly `100svh`, so the sentinel starts at the fold edge and already
+intersects at scroll 0.
+
+**Fix:** read `entry.boundingClientRect.top > 0` instead of `entry.isIntersecting` — "has the
+Hero/AboutMe boundary not yet scrolled above the viewport top" holds at every tier and under both
+motion preferences, so the previous `#top`-vs-sentinel switch on the reduced-motion `matchMedia`
+is gone entirely (same `top` idiom the `returnVisible` observer already used). See "Spline
+Visibility Gating" in `docs/architecture.md` for the full before/after.
+
+**Paired change:** `StarField.jsx` gained a phone-tier (`<768px`) geometry override —
+`STAR_SPREAD` 2400→520, `LAYERS` counts scaled by the same ratio (240/450/110→52/98/24) so
+on-screen density is unchanged; only off-screen stars are dropped. `.starfield__layer` gained
+`will-change: transform` so the per-frame drift composites on Safari instead of risking a CPU
+repaint of ~350–1600 box-shadow points. Neither is required by the freeze fix above — bundled in
+because unfreezing the drift is what makes the phone raster cost pay rent for the first time.
+
+**Deliberately not touched:** `.terminal`'s phone `backdrop-filter` (`hero/terminal.css`) sits over
+the now-drifting stars and may re-blur per frame on iOS — Terminal is the hero's one documented
+surviving glass surface (`docs/hero.md`), so this needs real-device evidence before changing, not
+a preemptive edit.
+
+**Still needs re-verification on the real iPhone** — reasoned through and lint/build-checked only.
 
 ### 5.3 Phase 3 design record (2026-07-31) — WhatIDo
 

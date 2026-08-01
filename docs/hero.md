@@ -96,6 +96,10 @@ Three depth layers (small/many/fast → large/sparse/slow) drift upward via `use
 
 `StarField` accepts a `visible` prop (default `true`), forwarded from `Hero`'s own `visible` prop, which `App.jsx` sets from its existing `heroVisible` IntersectionObserver (the same state that already gates `AIOrb`). Both the drift rAF and the parallax `pointermove` listener early-return when `!visible`, so the ~1,600-box-shadow drift loop stops advancing (and therefore repainting) once the hero scrolls out of view, instead of running for the entire page lifetime. StarField is intentionally **not unmounted** off-screen — unmounting would regenerate random star positions and flash on return; pausing preserves the existing layout.
 
+**Real-device defect (2026-08-01): `heroVisible` was `false` from first paint on phone**, freezing this drift rAF (and separately, `MatrixText`'s scramble) before the user ever scrolled — see "Real-device defect" under "Spline Visibility Gating" in `docs/architecture.md` for the root cause and fix (`entry.boundingClientRect.top > 0` on the sentinel, not `entry.isIntersecting`).
+
+**Phone-tier geometry (`<768px`, read once at mount via `matchMedia`):** `STAR_SPREAD` drops from 2400px to 520px (widest phone + parallax buffer, vs. a desktop-sized spread most of which was off-screen on a phone anyway) and each layer's `count` scales by the same ratio (240/450/110 → 52/98/24) so on-screen density is unchanged — only stars that were never visible on a phone are dropped. `LAYER_HEIGHT` (2000px) is untouched at every tier — it must stay ≥ the phone hero's height (~1327px) or the two-copy seamless loop tears. `.starfield__layer` also carries `will-change: transform` (`starfield.css`) so Framer's per-frame `translateY()` drift composites instead of risking a CPU repaint of the layer's box-shadow dots on Safari.
+
 **Legibility stack (inside `.starfield`):**
 1. `.starfield__vignette` — opaque `--bg`/`--bg-2` radial base; covers the page background within the hero viewport (intentional).
 2. `.starfield__layers` — the drifting star dots (box-shadow on centered 1/2/3 px divs).
@@ -125,4 +129,6 @@ CSS partial: `src/styles/hero/starfield.css` (registered in `global.css` at the 
 - Never remove the `visible` prop chain into `SplineScene` — without it Spline's WebGL loop never pauses off-screen (see "Visibility-Gated WebGL Pause").
 - Never re-wire `SplineScene`'s load fade back into the preloader's reveal gate — the whole point of decoupling them was to stop the curtain waiting on Spline.
 - Never remove the `visible` gate in `MatrixText`'s effect — without it the per-character scramble loop runs forever regardless of hero visibility.
+- Never shrink `STAR_SPREAD` on phone without scaling `LAYERS`' `count`s by the same ratio — spread alone controls on-screen density; scaling both together is what keeps the phone sky visually identical to desktop.
+- Never shrink `LAYER_HEIGHT` for a phone-tier optimization — it must stay ≥ the phone hero's rendered height or the two-copy seamless vertical loop tears.
 - Never revert `.terminal` (or `.mf-metric`, `.meta-row > span`, `.meta-social-btn`, `.manifesto-cta-btn`) glass treatment casually — `.terminal` is the intentional sole survivor of `backdrop-filter` in the hero; the rest were converted to solid plates because they sit over the drifting StarField. See "Glass" in `docs/design-system.md` before adding a new blurred surface here.

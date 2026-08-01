@@ -37,6 +37,15 @@
   inset: 0;
 }
 
+/* Framer emits a plain translateY() for the drift `y` motion value, which
+   doesn't reliably force GPU compositing in Safari on its own. Without
+   promotion, every drift frame risks repainting the layer's box-shadow dots
+   on the CPU instead of compositing a moved layer — promoted here only
+   (not .starfield__layers, which moves solely on pointermove, not per-frame). */
+.starfield__layer {
+  will-change: transform;
+}
+
 /* Individual star dot — rendered entirely via box-shadow; the element itself
    is invisible. Centered horizontally so the ±STAR_SPREAD/2 x-offsets in
    JS distribute stars symmetrically across the full 100vw container. */

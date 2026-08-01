@@ -28,14 +28,34 @@ const LAYERS = [
   { count: 110, size: 3, speed: 0.08 },
 ]
 
+// ---- phone tier ----
+// A 2400 px spread is a desktop measurement: on a 390 px phone ~84% of those
+// stars land off-screen and are paid for anyway (box-shadow string parse at
+// mount, plus every raster of the layer). The phone spread only has to cover
+// the widest phone (430 px) plus a parallax buffer.
+//
+// Counts scale by the SAME ratio (520/2400 ≈ 0.217) so on-screen density is
+// IDENTICAL — this drops only stars that were never visible on a phone, not
+// visible ones. Net: 1600 → 348 box-shadow points across the six dot elements.
+//
+// LAYER_HEIGHT is deliberately NOT reduced: it must stay ≥ the phone hero
+// height (~1327 px, docs/mobile.md) or the two-copy seamless loop tears.
+const PHONE_QUERY  = '(max-width: 767px)'
+const PHONE_SPREAD = 520
+const PHONE_LAYERS = [
+  { count:  52, size: 1, speed: 0.30 },
+  { count:  98, size: 2, speed: 0.15 },
+  { count:  24, size: 3, speed: 0.08 },
+]
+
 // Returns a CSS box-shadow string placing `count` star points at random positions.
-// x is spread horizontally around the center dot (±STAR_SPREAD/2).
+// x is spread horizontally around the center dot (±spread/2).
 // y is distributed across [0, LAYER_HEIGHT) so the two-copy seamless loop tiles cleanly.
-function generateStars(count) {
+function generateStars(count, spread) {
   const shadows = []
-  const halfSpread = STAR_SPREAD / 2
+  const halfSpread = spread / 2
   for (let i = 0; i < count; i++) {
-    const x = Math.floor(Math.random() * STAR_SPREAD) - halfSpread
+    const x = Math.floor(Math.random() * spread) - halfSpread
     const y = Math.floor(Math.random() * LAYER_HEIGHT)
     shadows.push(`${x}px ${y}px ${STAR_COLOR}`)
   }
@@ -44,8 +64,8 @@ function generateStars(count) {
 
 // Receives its offsetY motion value from the parent so a single rAF callback
 // can advance all three layers — no per-layer useAnimationFrame overhead.
-function StarLayer({ layer, offsetY }) {
-  const [boxShadow] = useState(() => generateStars(layer.count))
+function StarLayer({ layer, offsetY, spread }) {
+  const [boxShadow] = useState(() => generateStars(layer.count, spread))
 
   const dotStyle = {
     width:     `${layer.size}px`,
@@ -69,6 +89,15 @@ function StarLayer({ layer, offsetY }) {
 export default function StarField({ visible = true }) {
   const reduced = useReducedMotion()
 
+  // Read once at mount — matches the matchMedia-state pattern already used for
+  // isPhoneTier in App.jsx. Star geometry doesn't need to react live to resize;
+  // a tier crossing (e.g. rotating a foldable) simply keeps the mount-time layout.
+  const [isPhone] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(PHONE_QUERY).matches,
+  )
+  const layers = isPhone ? PHONE_LAYERS : LAYERS
+  const spread = isPhone ? PHONE_SPREAD : STAR_SPREAD
+
   // One motion value per layer — declared individually (not in a loop) to
   // satisfy React's Rules of Hooks. Advanced by the single rAF below.
   const offset0 = useMotionValue(0)
@@ -84,7 +113,7 @@ export default function StarField({ visible = true }) {
     if (reduced || !visible) return
     const pairs = [[offset0, 0], [offset1, 1], [offset2, 2]]
     for (const [offset, i] of pairs) {
-      const next = offset.get() - LAYERS[i].speed
+      const next = offset.get() - layers[i].speed
       offset.set(next <= -LAYER_HEIGHT ? 0 : next)
     }
   })
@@ -120,9 +149,9 @@ export default function StarField({ visible = true }) {
         className="starfield__layers"
         style={{ x: springX, y: springY }}
       >
-        <StarLayer layer={LAYERS[0]} offsetY={offset0} />
-        <StarLayer layer={LAYERS[1]} offsetY={offset1} />
-        <StarLayer layer={LAYERS[2]} offsetY={offset2} />
+        <StarLayer layer={layers[0]} offsetY={offset0} spread={spread} />
+        <StarLayer layer={layers[1]} offsetY={offset1} spread={spread} />
+        <StarLayer layer={layers[2]} offsetY={offset2} spread={spread} />
       </motion.div>
 
       {/* 3. Legibility scrim — dims stars behind the text column. Sits above
