@@ -101,9 +101,14 @@ const _bgNodes = (() => {
 // Connect nearby node pairs (< 35 vb units)
 const _bgEdges = []
 for (let i = 0; i < _bgNodes.length; i++) {
+  const ni = _bgNodes[i]
   for (let j = i + 1; j < _bgNodes.length; j++) {
-    if (Math.hypot(_bgNodes[i].x - _bgNodes[j].x, _bgNodes[i].y - _bgNodes[j].y) < 35)
+    const nj = _bgNodes[j]
+    const dx = ni.x - nj.x
+    const dy = ni.y - nj.y
+    if (dx * dx + dy * dy < 1225) { // 35^2 = 1225
       _bgEdges.push([i, j])
+    }
   }
 }
 
