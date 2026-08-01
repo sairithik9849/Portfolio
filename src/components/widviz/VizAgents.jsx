@@ -188,8 +188,10 @@ export default function VizAgents({ progress, agentsProgress, index, isActive, r
   useEffect(() => {
     const el = fieldRef.current
     if (!el) return
-    const r = el.getBoundingClientRect()
-    if (r.width > 0) fieldSizeRef.current = { w: r.width, h: r.height }
+    // offsetWidth/offsetHeight (layout box) — immune to the phone-scoped
+    // transform: scale() on .wagnt-field; getBoundingClientRect would double-
+    // apply the scale on top of the ResizeObserver's unscaled contentRect.
+    if (el.offsetWidth > 0) fieldSizeRef.current = { w: el.offsetWidth, h: el.offsetHeight }
     if (isFinal) return
     const ro = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect

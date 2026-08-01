@@ -543,21 +543,36 @@
 }
 
 /* ── Frozen / mobile fallback ────────────────────────────────────────────────── */
-/* isFinal renders a static settled frame in-flow (not absolute) */
+/* isFinal renders a static settled frame in-flow (not absolute), scoped to the
+   frozen reduced-motion/fallback list only. This used to be a blanket
+   `@media (max-width: 980px)` rule that also matched the live phone rig's
+   pinned panel (docs/mobile.md §5.3.7 Stage D) — written before that rig
+   existed, when ≤980px only ever meant this static fallback. On the live
+   panel it forced a 300px fixed height, leaving the field short of the
+   panel's real ~330×420px flex slot with dead space around it. */
 .widviz-panel--frozen .wagnt-field {
   position: relative;
   height: 300px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
 }
 
-@media (max-width: 980px) {
-  .wagnt-field {
-    position: relative;
-    height: 300px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-  }
+.widviz-panel--frozen .widviz-agents {
+  position: relative;
+}
 
-  .widviz-agents {
-    position: relative;
+/* ── Phone: live pinned field ────────────────────────────────────────────────── */
+/* The base .wagnt-field rule (top/left/right/bottom inset) already fills the
+   live panel responsively once the 980px override above stops clobbering it
+   with position:relative/height:300px. What's left: the fixed 100×150
+   viewBox (preserveAspectRatio: none, VizAgents.jsx) stretches to whatever
+   aspect the field ends up with — the phone panel is squarer than the
+   portrait viewBox, which over-stretches the ellipse horizontally and pushes
+   edge labels (DISCOVERY, SHIP) past the field's sides. A modest safety
+   scale pulls the whole rendered field back inside the panel. */
+@media (max-width: 767px) {
+  .widviz-panel:not(.widviz-panel--frozen) .widviz-agents .wagnt-field {
+    transform: scale(0.85);
+    transform-origin: center;
   }
 }

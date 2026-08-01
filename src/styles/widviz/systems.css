@@ -391,3 +391,18 @@
     --wsys-dashboard-scale: 0.86;
   }
 }
+
+/* -- Phone: compact viz field, not a full scroll track ---------------------------
+   Desktop's `4vh 0 20vh` padding + justify-content:center assumes a tall scroll
+   track to center within. The phone rig's field is a short flex slot instead
+   (docs/mobile.md §5.3.7 Stage D) — that padding + centering pushed the
+   dashboard content off both the top and bottom of the field, where the
+   panel's overflow:hidden (WhatIDo.css) silently clipped it. Anchor to the
+   top and shrink via the existing scale lever instead. */
+@media (max-width: 767px) {
+  .widviz-panel:not(.widviz-panel--frozen) .widviz-systems {
+    justify-content: flex-start;
+    padding: 8px 0 0;
+    --wsys-dashboard-scale: 0.7;
+  }
+}

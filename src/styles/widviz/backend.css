@@ -374,3 +374,21 @@
   color: var(--accent-2);
   opacity: 0.7;
 }
+
+/* -- Phone-viewport adjustment (docs/mobile.md §5.3.7 Stage D) -------------------
+   Node positions are %-of-field (shared with desktop, data-driven — see
+   VizBackend.jsx's NODE_POS / §5.3.5's standing note against editing them),
+   but each node's label group extends from its anchor by a *fixed* px
+   offset (14px gap + nowrap text). On the desktop panel (577-657px wide,
+   Stage A) that's a small fraction of the field and stays inside it; on the
+   phone panel (~330-335px) the same px extension is a much bigger fraction —
+   CACHE's leftward label and DB's rightward label (widViz.js: x:30/x:70)
+   both bleed past the field's own edge. Scaling the whole field down and
+   centering it inside the (unscaled) panel opens real margin on both sides
+   for that overflow to land in, instead of running off the panel. */
+@media (max-width: 767px) {
+  .widviz-panel:not(.widviz-panel--frozen) .wbk-field {
+    transform: scale(0.72);
+    transform-origin: center;
+  }
+}

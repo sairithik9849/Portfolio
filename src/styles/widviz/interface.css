@@ -683,3 +683,16 @@
     transform: scale(0.8);
   }
 }
+
+/* -- Phone-viewport adjustment (docs/mobile.md §5.3.7 Stage D) ------------------- */
+/* Same overflow as the tablet finding above, narrower panel: the live phone
+   rig's viz panel runs ~330-335px wide (WhatIDo.css's `.widviz-panel:not(
+   --frozen)`, margin: 0 20px on a ~390px viewport). 0.75 gives a 255x195px
+   card, comfortably inside that with more margin than the tablet's 0.8 —
+   phone panel width has more per-device variance (real-device gate still
+   authoritative, §7.2). */
+@media (max-width: 767px) {
+  .widviz-panel:not(.widviz-panel--frozen) .wifc-stage {
+    transform: scale(0.75);
+  }
+}

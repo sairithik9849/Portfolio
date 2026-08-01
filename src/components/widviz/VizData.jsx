@@ -109,9 +109,13 @@ export default function VizData({ progress, index, isActive, reduced, frozen }) 
       // Re-query field bounds periodically — handles pin reflow and resize.
       // Must use the field (not the panel) so px offset math matches the
       // left/top % positions which are relative to the field, not the panel.
+      // offsetWidth/offsetHeight (layout box), not getBoundingClientRect
+      // (visual box) — a phone-scoped transform: scale() on an ancestor would
+      // otherwise shrink this rect a second time on top of the CSS transform.
       rectAge += dt
       if (!panelRect || rectAge > 4000) {
-        panelRect = fieldRef.current?.getBoundingClientRect() ?? null
+        const el = fieldRef.current
+        panelRect = el ? { width: el.offsetWidth, height: el.offsetHeight } : null
         rectAge = 0
       }
       const pw = panelRect?.width  ?? 400

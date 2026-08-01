@@ -186,3 +186,29 @@
 .wdat-stage[data-stage='signal'] {
   color: var(--accent);
 }
+
+/* -- Phone: compact viz field, not a full scroll track ---------------------------
+   Same root cause as Systems (docs/mobile.md §5.3.7 Stage D): `.wdat-field`'s
+   height is `vh`-derived (clamp(300px, 50vh, 520px)), sized for the desktop
+   scroll track, not the phone rig's short flex slot. Combined with
+   justify-content:center on .widviz-data, the over-tall field got centered
+   and clipped at both ends by the panel's overflow:hidden — pushing
+   .wdat-meta (the ROWS/stage readouts) out of the box entirely. Bound the
+   field to the panel's real flex space instead of a viewport fraction. */
+@media (max-width: 767px) {
+  .widviz-panel:not(.widviz-panel--frozen) .widviz-data {
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .widviz-panel:not(.widviz-panel--frozen) .wdat-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .widviz-panel:not(.widviz-panel--frozen) .wdat-field {
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}

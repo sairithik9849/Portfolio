@@ -10,9 +10,11 @@ in-progress **desktop → mobile translation effort**.
 If the two conflict on a breakpoint value, this doc wins.
 
 **Status:** **Phase 3 in progress** (2026-08-01) — WhatIDo design locked via interview;
-Stages A, B, and C landed (the phone rig pins/scrubs/snaps at every tier; tablet's viz
-panel no longer clips Interface). Stages D–F remain: remaining per-viz fit, reduced-motion
-restyle, docs correction. See §5.3 for the full decision record and stage plan. Phase 2
+Stages A, B, C, and D landed (the phone rig pins/scrubs/snaps at every tier; tablet's viz
+panel no longer clips Interface; all five vizzes fit the phone panel per real-device
+screenshots — Chromium-verified, real-device re-check still outstanding, §5.3.13). Stages
+E–F remain: reduced-motion restyle, docs correction. See §5.3 for the full decision record
+and stage plan. Phase 2
 complete (2026-07-31): AboutMe
 section-head scale fixed and the Hero → AboutMe sticky-stack extended to every tier
 (phone included), §5.2. Decisions in §3 are locked (interview, 2026-07-23; Hero interview
@@ -740,7 +742,7 @@ rendering is untouched per §7.4; it can be widened to desktop later once verifi
 | **A** | ✅ done, §5.3.8 — Standalone fixes: frozen-panel positioning (5.3.1 #2), scope `clip-path`/`overflow` to `≥768` (#3), `data-far` + `content-visibility` gating, `.wdat-dot` `will-change` |
 | **B** | ✅ done, §5.3.10 — The phone rig: `MOTION_QUERY`, viewport-derived runway, 3-row window, caption clamp + expand overlay, `scrollend` snap. CSS fallback gate narrowed here (moved up from E, see §5.3.10 correction 2) |
 | **C** | ✅ done, §5.3.12 — Tablet retune `768–980`: audited, container geometry needed no changes; found and fixed a real Interface overflow at tablet width |
-| **D** | Per-viz: Backend labels, Systems portrait pass, Interface **phone** `scale()` fix (§5.3.8 correction 1 — tablet done early in Stage C, see §5.3.12), Agents field-fit re-check (§5.3.10 finding) |
+| **D** | ✅ done, §5.3.13 — Per-viz fit: Systems, Backend, Interface **phone**, Agents, **Data (scope addition — see §5.3.13)** |
 | **E** | Reduced-motion **restyle only** — the gate narrowing this bullet originally described happened in Stage B instead |
 | **F** | Docs: correct `docs/what-i-do.md` (5.3.1 #1), add the phone rig, write the §5.3 result subsection |
 
@@ -1047,6 +1049,105 @@ synchronous refresh.
 Files changed: `src/styles/widviz/interface.css` (tablet scale rule),
 `src/components/WhatIDo.jsx` (`attemptSettle` hoisting fix only — no behavior change to
 the settle-snap logic itself).
+
+#### 5.3.13 Stage D result (2026-08-01) — per-viz phone fit
+
+Driven by real-device evidence, not the design record: Sai supplied five iPhone 14
+Pro screenshots (Systems, Backend, Data, Interface, Agents), all taken through
+`npm run dev -- --host` on the same phone as the Stage B/C real-device passes. Every
+one showed desktop-sized content clipped by the panel's `overflow: hidden`
+(`WhatIDo.css:402`, added in Stage B as a holding measure naming Stage D as the
+fix's owner) — not the aspect-distortion §5.3.5 predicted.
+
+**Scope addition: Data.** §5.3.5/§5.3.7 assumed Data needed no phone work (aspect-
+tolerant SVG). The screenshot showed otherwise — `.wdat-meta` (the ROWS/stage
+readouts) was missing entirely, pushed out of the panel. Root cause: `data.css`'s
+`.wdat-field { height: clamp(300px, 50vh, 520px) }` is sized off the *viewport*,
+not the panel — same class of bug as §5.2.1 and §5.3.11 (a viewport unit standing
+in for a measured box). Data joins Stage D as a fifth fix.
+
+**Two root causes, not one.** Every viz's box was already the panel's own width
+(`inset: 0` / `width: 100%`) — none had a native fixed size to scale down like
+Interface's `.wifc-stage` (340×260, `scale(1.35)` base). Fixing each meant first
+correcting what made the box wrong, then reaching for the scale lever already
+proven in Systems (`--wsys-dashboard-scale`) and Interface (tablet `scale(0.8)`,
+Stage C):
+
+- **Systems** (`systems.css`) — `.widviz-systems`'s `padding: 4vh 0 20vh` +
+  `justify-content: center` is sized for desktop's tall scroll track; on the phone
+  rig's short flex slot it centered the (taller) dashboard and clipped both ends.
+  Fixed: `justify-content: flex-start`, minimal top padding, phone
+  `--wsys-dashboard-scale: 0.7`.
+- **Data** (`data.css`) — identical root cause via `vh` instead of centering
+  padding. Fixed: `.wdat-field`/`.wdat-layout` become `flex: 1 1 auto; min-height:
+  0` on phone, so the field's height is the panel's real remaining space, not a
+  viewport fraction — a mathematically exact fit (bottom edge always equals the
+  panel's), not a tuned scale value.
+- **Agents** (`agents.css`) — `@media (max-width: 980px) { .wagnt-field { height:
+  300px } }` predates the phone rig; written when ≤980px only ever meant the
+  static frozen fallback, it also matched the live pinned panel and forced a
+  squat fixed-height box regardless of the panel's real ~330×420px slot. Merged
+  into the frozen-only rule (`.widviz-panel--frozen .wagnt-field`, which already
+  existed for this exact case); the live field now uses its original responsive
+  inset rule. Added a phone `scale(0.85)` safety margin, since the fixed 100×150
+  portrait viewBox (`preserveAspectRatio="none"`) still stretches to whatever
+  aspect the recovered field ends up with.
+- **Interface** (`interface.css`) — third `.wifc-stage` scale arm, `scale(0.75)`,
+  mirroring the tablet `scale(0.8)` fix with extra margin for phone's tighter and
+  more variable panel width.
+- **Backend** (`backend.css`) — the one case where the box already fit
+  (`.wbk-field` measured 330×419 inside a 335×425 panel in Chromium) but looked
+  "jam-packed" anyway: node positions are `%`-of-field (shared with desktop data,
+  not edited — §5.3.5's standing note), but each node's label group extends by a
+  *fixed* px offset. On desktop's 577–657px panel that's a small fraction and
+  stays inside the field; on the ~330px phone panel the same offset is large
+  enough that CACHE's leftward label and DB's rightward label (`widViz.js` x:30/
+  x:70) bleed past the field's own edge. `transform: scale(0.72)` on `.wbk-field`,
+  centered in the (unscaled) panel, opens real margin on both sides for that
+  overflow to land in rather than run off the panel.
+
+**A regression found and fixed during verification, not anticipated in the design
+record:** the first pass scoped every phone rule to the viz's own class (e.g.
+`.widviz-systems`, `.wbk-field`), which is shared between the live pinned panel
+and the frozen static-fallback panel (`.widviz-panel--frozen`) used by
+`.wid-mobile-blurbs`. That leaked every scale/layout change into the frozen list
+too — confirmed via computed-style (`.widviz-panel--frozen .wagnt-field` showed
+`scale(0.85)` it should never have had). Fixed by prefixing every phone rule with
+`.widviz-panel:not(.widviz-panel--frozen)`, the same scoping `WhatIDo.css` already
+uses for its own phone-only panel overrides. Re-verified frozen panels are
+byte-identical to pre-Stage-D (§7.4's reduced-motion row below).
+
+**A measurement hazard fixed pre-emptively, not found as a live bug:**
+`VizData.jsx`, `VizBackend.jsx`, and `VizAgents.jsx` each convert a measured field
+size (%-based coordinates → px) using `getBoundingClientRect`, which returns the
+*visual* (post-transform) rect. Under the new phone-scoped `transform: scale()`
+on their fields, that would silently double-apply the scale — once via the CSS
+transform, once via the now-shrunk measurement feeding position math. Switched to
+`offsetWidth`/`offsetHeight` (layout box, immune to transforms) — the same value
+their `ResizeObserver` `contentRect` already reports, so this only changes the
+*first-paint* measurement before the observer's first callback fires.
+
+**Verification table** (390×844, live panel unless noted):
+
+| row | result | proof |
+|---|---|---|
+| sm 390 | ✓ all 5 vizzes' outermost content rect contained inside `.widviz-panel` (335×425 at this viewport): Systems dashboard `303×521` vs panel `355×668` edges; Backend field `306×606`; Interface stage `311×551`; Agents field `316×623`; Data field+meta bottom `665` vs panel bottom `668` (flex-exact, not scale-tuned); `docOverflow: 0` | computed-style |
+| sm 320 (narrow-phone regression) | ✓ same containment holds at the narrowest supported width — panel `285×583`, all 5 vizzes' rects inside it; `docOverflow: 0` | computed-style |
+| md 768 / 900 / 980 (regression) | ✓ **unaffected** — `.wifc-stage` still resolves the Stage C tablet `scale(0.8)`; `.wbk-field`/`.wagnt-field` transforms `none`; Systems/Data `justify-content` still `center` (unscoped from the new phone rules) | computed-style |
+| lg 1280 (regression) | ✓ **byte-identical** — panel `x:688 w:577 h:900` matches §5.3.8's baseline exactly; `.wifc-stage` still resolves the laptop-height `scale(1.15)`; Backend/Agents transforms `none` | computed-style |
+| coarse pointer (1024×768, CDP) | ✓ §4.3 still closed: `position:fixed` once pinned, `.wid-stack--base` transform live-advances between scroll positions with a real touch-emulated scroll | computed-style (CDP touch emulation) |
+| reduced motion (390×844) | ✓ frozen panels byte-identical to pre-Stage-D: `.widviz-systems` `justify-content:center`, `--wsys-dashboard-scale:1`; `.wbk-field`/`.wagnt-field` transform `none`; `.wifc-stage` still base `scale(1.35)`; `.wdat-field` still `422px` (`50vh` at 844); `.wid-mobile-blurbs display:flex`; `docOverflow:0` | computed-style |
+| mid-pin resize (900→980→1024, CDP touch) | ✓ 0 console errors — the `attemptSettle` TDZ class of bug (§5.3.12) did not recur | console |
+| real iPhone / real Android | **not run against this fix** — §7.2, required before Stage D is called done. The five screenshots that drove this stage are the "before" state; Chromium's measured containment has generous margin (Systems 147px vertical slack, Backend/Interface/Agents 15–20% scale headroom) precisely because Chromium already under-predicted the severity seen on the real device once (§5.3 itself), so these values are a starting point, not a guarantee | — |
+
+`npm run lint` → 0. `npm run build` → passes (pre-existing chunk-size warnings only,
+unrelated — Spline/physics chunks, untouched).
+
+Files changed: `src/styles/widviz/systems.css`, `backend.css`, `interface.css`,
+`agents.css`, `data.css` (phone-scoped rules); `src/components/VizData.jsx`,
+`VizBackend.jsx`, `VizAgents.jsx` (`getBoundingClientRect` → `offsetWidth`/
+`offsetHeight`, one line each). No changes to `src/data/`, `widSlice.js`,
+`WidVisual.jsx`, or `WhatIDo.jsx`.
 
 ---
 
