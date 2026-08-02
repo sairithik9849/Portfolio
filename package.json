@@ -8,6 +8,7 @@
     "dev:clean": "lsof -t -a -i :5173,5174 -c node | xargs kill -9; vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:md": "npx -y markdownlint-cli2 \"**/*.md\"",
     "preview": "vite preview"
   },
   "dependencies": {

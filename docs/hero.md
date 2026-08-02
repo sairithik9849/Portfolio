@@ -101,6 +101,7 @@ Three depth layers (small/many/fast → large/sparse/slow) drift upward via `use
 **Phone-tier geometry (`<768px`, read once at mount via `matchMedia`):** `STAR_SPREAD` drops from 2400px to 520px (widest phone + parallax buffer, vs. a desktop-sized spread most of which was off-screen on a phone anyway) and each layer's `count` scales by the same ratio (240/450/110 → 52/98/24) so on-screen density is unchanged — only stars that were never visible on a phone are dropped. `LAYER_HEIGHT` (2000px) is untouched at every tier — it must stay ≥ the phone hero's height (~1327px) or the two-copy seamless loop tears. `.starfield__layer` also carries `will-change: transform` (`starfield.css`) so Framer's per-frame `translateY()` drift composites instead of risking a CPU repaint of the layer's box-shadow dots on Safari.
 
 **Legibility stack (inside `.starfield`):**
+
 1. `.starfield__vignette` — opaque `--bg`/`--bg-2` radial base; covers the page background within the hero viewport (intentional).
 2. `.starfield__layers` — the drifting star dots (box-shadow on centered 1/2/3 px divs).
 3. `.starfield__scrim` — soft `color-mix()` radial overlay darkening the text column by ~55% at center, fading to transparent at the edges. Ensures cream text stays fully legible over cream star points.

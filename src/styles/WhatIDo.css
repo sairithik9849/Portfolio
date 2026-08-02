@@ -288,10 +288,6 @@
     0 0 28px rgba(232, 196, 122, 0.22);
 }
 
-.wid-readout-idx {
-  /* .kicker provides font-family, size, and --muted color; no overrides needed */
-}
-
 .wid-readout-blurb {
   font-size: clamp(16px, 1.3vw, 20px);
   color: var(--fg-2);
@@ -500,7 +496,13 @@
    match: reduced-motion is the only condition under which the rig doesn't
    run. This also closes bug §4.3 (WhatIDo collapsing on iPad landscape /
    coarse-pointer desktop) structurally — those devices now get the real pin
-   instead of relying on a fallback arm that could disagree with the JS gate. */
+   instead of relying on a fallback arm that could disagree with the JS gate.
+
+   Stage E (§5.3.14) restyled the item list below to rhyme with the live rig's
+   language (lime hairline + gold index, mirroring the band/`.wid-caption-num`
+   this mode hides) instead of the original placeholder `border-top: var(--line)`
+   pass — this is now an accessibility-specific view, not "the mobile layout",
+   so it gets its own visual identity rather than looking like leftover scaffolding. */
 @media (prefers-reduced-motion: reduce) {
   .what-i-do {
     min-height: auto;
@@ -547,7 +549,7 @@
   .wid-mobile-blurbs {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 32px;
     margin-top: 28px;
     width: 100%;
   }
@@ -555,8 +557,35 @@
   .wid-mobile-blurb-item {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    border-top: 1px solid var(--line);
-    padding-top: 16px;
+    gap: 16px;
+  }
+
+  /* Index row doubles as the item's divider — a lime hairline underneath
+     instead of the old `border-top: var(--line)`, echoing the band this mode
+     hides. Low-alpha lime, same family as the caption shimmer (:262 above),
+     not full-strength `--accent` — a hairline, not another band. */
+  .wid-readout-idx {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    border-bottom: 1px solid rgba(201, 245, 88, 0.35);
+    padding-bottom: 10px;
+  }
+
+  .wid-readout-idx-num {
+    color: var(--accent-2);
+    text-shadow: 0 0 12px rgba(232, 196, 122, 0.4);
+  }
+
+  .wid-readout-idx-word {
+    color: var(--fg);
+  }
+
+  /* Global .wid-readout-blurb caps at 32ch for the desktop caption's narrow
+     column beside a 577–657px viz panel; that leaves ~130px dead on the
+     right of a 390px stacked item, so the fallback list gets the full
+     item width instead. */
+  .wid-mobile-blurb-item .wid-readout-blurb {
+    max-width: none;
   }
 }

@@ -34,7 +34,7 @@ When asked to do git work, suggest branch names and advise when something should
 - **Plain ASCII only — no em dashes or non-ASCII characters.** Non-ASCII characters can break heredoc-quoted commit messages in some shells; use plain hyphens.
 - End every commit message with the co-author line for the current model. Use the model name shown in the session (e.g. `Claude Opus 4.8`, `Claude Sonnet 4.6`) — do not hardcode a stale model name:
 
-  ```
+  ```text
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
   ```
 

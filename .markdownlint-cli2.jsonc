@@ -1,0 +1,20 @@
+{
+  // Repo convention: docs use long, unwrapped prose lines by design. Not a defect.
+  "config": {
+    "MD013": false,
+    // Repo convention: tables use padded "| Foo |" pipes; renders identically either way.
+    "MD060": false,
+    // learning/test_review/*.md transcripts repeat "## User" / "## Claude" per turn by design.
+    "MD024": false,
+    // False positives on "<name>" / "<file>" placeholder syntax in prose, not real HTML.
+    "MD033": false
+  },
+  "ignores": [
+    "node_modules/**",
+    "dist/**",
+    ".vercel/**",
+    ".agents/**",
+    "learning/**",
+    "brag-output/**"
+  ]
+}

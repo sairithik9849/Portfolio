@@ -40,11 +40,13 @@ Read **only** what the task requires. Do not read docs for subsystems you are no
 1. Add a project entry to `src/data/projects.js` (title, description, `kind`, tags, links).
 2. Create `src/components/visuals/Viz<Name>.jsx`. **CSS and inline SVG only — no canvas, no third-party deps.** All animation via CSS `@keyframes` in the component's style block or a `src/styles/visuals/<name>.css` partial.
 3. Add a `VIZ` map entry in `src/components/ProjectVisual.jsx`:
+
    ```js
    import Viz<Name> from './visuals/Viz<Name>.jsx';
    // inside VIZ object:
    <name>: Viz<Name>,
    ```
+
 4. The `kind` field in `projects.js` must match the map key.
 
 ## Recipe C — New hero cascade phase
@@ -58,11 +60,13 @@ Read **only** what the task requires. Do not read docs for subsystems you are no
 
 - **Single element:** `<motion.div variants={REVEAL} initial="hidden" whileInView="show" viewport={{ once: true }}>` — import `REVEAL` from `src/animations/variants.js`.
 - **Staggered group:**
+
   ```jsx
   <motion.div variants={STAGGER_PARENT} initial="hidden" whileInView="show" viewport={{ once: true }}>
     {items.map(item => <motion.div key={item.id} variants={STAGGER_CHILD}>…</motion.div>)}
   </motion.div>
   ```
+
 - Never define variants inline — always add to `variants.js` and import.
 - Do not convert the `AboutMe` scroll word-reveal to `whileInView` — it is a `useScroll`/`useTransform` rig and must stay that way.
 

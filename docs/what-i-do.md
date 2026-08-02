@@ -2,7 +2,7 @@
 
 Word-stack scroll rig and live-system viz panel subsystem. Loaded on demand via the routing table in `CLAUDE.md`.
 
-**Scope:** Word-stack scroll clock, Lenis snapping, knockout band, viz switch (`WidVisual`), per-viz scroll slices, frozen mobile fallback, and `widViz.js` data. Shared WID animation variants → `docs/animation.md`.
+**Scope:** Word-stack scroll clock, Lenis snapping, knockout band, viz switch (`WidVisual`), per-viz scroll slices, the phone rig, the reduced-motion frozen fallback, and `widViz.js` data. Shared WID animation variants → `docs/animation.md`.
 
 ## Overview
 
@@ -10,11 +10,33 @@ The `#what-i-do` section is a two-part rig: a pinned word-stack scrubber on the 
 
 ## Single Scroll Clock → `progress` MotionValue
 
-`WhatIDo.jsx` owns one `gsap.matchMedia` + `ScrollTrigger` (desktop only — `DESKTOP_QUERY` = `min-width:981px` + `pointer:fine` + `no-preference`) that pins the section and scrubs 1:1 (`scrub: true` — Lenis is the smoothing layer; a scrub-lerp would add a second interpolation track that fights it).
+`WhatIDo.jsx` owns one `gsap.matchMedia` + `ScrollTrigger` that pins the section and scrubs
+1:1 (`scrub: true` — Lenis is the smoothing layer; a scrub-lerp would add a second
+interpolation track that fights it). One arm, `MOTION_QUERY = '(prefers-reduced-motion:
+no-preference)'` — the rig runs at **every** width/pointer tier now; the fallback (below)
+is reduced-motion-only, not a width fallback. Full stage-by-stage history and rationale:
+`docs/mobile.md` §5.3.
 
-Pin length is budgeted per word: `end = max(SCROLL_PER_WORD × (N-1), travel + 800)` with `SCROLL_PER_WORD = 780` (`N = WHAT_I_DO.length = 5`).
+`setup()` branches on `isPhone = !matchMedia('(min-width:768px)').matches` and measures
+`viewportH = document.documentElement.clientHeight` (never `vh` — phone address-bar
+collapse makes `vh` lie; `docs/mobile.md` §5.2.1). ≥768px math is byte-identical to before.
 
-Its `onUpdate` **does not re-render on scroll**: sets both word stacks' `y` via `gsap.set`, pushes `self.progress` into a `useMotionValue` (`progress.set` — no React render), only calls `setActive(i)` when the rounded snap index actually changes (guarded by `activeRef`), and arms the settle snap.
+Pin length is budgeted per word: `end = max(perWord × (N-1), travel + dwellPx)`, where
+`perWord`/`dwellPx` are `SCROLL_PER_WORD = 1100`/`AGENTS_DWELL_PX = 800` on desktop/tablet,
+or both replaced by the measured `viewportH` on phone (~1 screen of runway per word — a
+fixed 1100px carried over from desktop would run ~7 screens instead of ~5).
+
+**There are two progress tracks, not one.** `progress` (the `useMotionValue` above) drives
+the word scrub and the per-viz `widSlice` cross-dissolve. A second value, `agentsProgress`,
+tracks dwell into the trailing Agents-only runway (`dwellPx`) and derives `captionFade` /
+`exitFade` — the caption's fade-out over the last 10% of that dwell so the blurb clears
+before the section un-pins. Any port of this rig (a new breakpoint, a rewrite) must
+reproduce both tracks; reading only `progress` silently loses the Agents exit fade.
+
+Its `onUpdate` **does not re-render on scroll**: sets both word stacks' `y` via `gsap.set`,
+pushes `self.progress` into `progress` (`progress.set` — no React render), only calls
+`setActive(i)` when the rounded snap index actually changes (guarded by `activeRef`), and
+arms the settle snap.
 
 **Never add a second ScrollTrigger or read scroll position elsewhere in this section** — the viz must stay on this one clock.
 
@@ -22,7 +44,15 @@ Its `onUpdate` **does not re-render on scroll**: sets both word stacks' `y` via 
 
 GSAP `snap` was removed — it fights Lenis's own interpolation and feels rubbery; **do not reintroduce it**.
 
-Instead a settle snap fires after `SETTLE_MS` (140 ms) of inactivity, re-checks `window.__lenis.velocity` and defers until momentum decays below `SETTLE_VELOCITY_MAX`, then `lenis.scrollTo`s the nearest `i/(N-1)` snap target (skipped within `SNAP_EPSILON_PX`). An `isSnapping` flag suppresses re-arming while a programmatic scroll (settle or click) is in flight.
+A settle snap fires after `SETTLE_MS` (140 ms) of inactivity, re-checks `window.__lenis.velocity` and defers until momentum decays below `SETTLE_VELOCITY_MAX`, then `lenis.scrollTo`s the nearest `i/(N-1)` snap target (skipped within `SNAP_EPSILON_PX`). An `isSnapping` flag suppresses re-arming while a programmatic scroll (settle or click) is in flight.
+
+**On coarse pointers, the trigger is different, not the guards.** Lenis's touch path
+reports raw per-event pixel deltas as `velocity` (not the wheel path's smoothed lerp), so
+`SETTLE_VELOCITY_MAX` — tuned against the smoothed value — is meaningless there
+(`docs/mobile.md` §5.3.1 #4). When `matchMedia('(pointer: coarse)').matches && 'onscrollend'
+in window`, the timer-based re-arm in `onUpdate` is skipped and a native `scrollend`
+listener calls `attemptSettle()` directly on genuine stop instead. All three guards below
+still gate `attemptSettle` itself, regardless of which trigger fired it.
 
 **The settle snap must never fire outside the pin range** — it is triple-guarded:
 
@@ -34,7 +64,7 @@ A stale settle-timer chain surviving past the boundary ghost-scrolls the user ba
 
 ## Word Click / Keyboard Navigation
 
-Each base-stack `.wid-word` is `role="button"` + `tabIndex=0`; clicking (or Enter/Space) calls `scrollToIndex` — a Lenis scroll to that word's exact snap position, populated into `scrollToIndexRef` inside setup and cleared on teardown. On mobile/reduced-motion (no ScrollTrigger) the click falls back to `scrollIntoView` on the matching `.wid-mobile-blurb-item`.
+Each base-stack `.wid-word` is `role="button"` + `tabIndex=0`; clicking (or Enter/Space) calls `scrollToIndex` — a Lenis scroll to that word's exact snap position, populated into `scrollToIndexRef` inside setup and cleared on teardown. `scrollToIndexRef` is populated at every tier now (the pin runs everywhere); the `scrollIntoView` fallback on the matching `.wid-mobile-blurb-item` only fires under **reduced motion**, where there's no ScrollTrigger to scroll within.
 
 **Keep the ko-stack geometry identical to the base stack** (no padding/margin/font overrides) — glyph registration depends on it.
 
@@ -88,9 +118,42 @@ This gate is independent of the pin/scrub `ScrollTrigger` above it — pin geome
 
 `useTransform` clamps, so edge vizzes (i=0, i=n-1) need no manual clamping. **Use this helper for any new viz** rather than hand-rolling ranges.
 
-## Frozen Mode — Mobile / Reduced-Motion Fallback
+## Phone Rig — Vertical Re-choreography (`<768px`)
 
-On mobile and `prefers-reduced-motion`, `.wid-mobile-blurbs` lists all five blurbs, each with `<WidVisual frozen index={i} />`. A frozen panel renders one viz seeded at its snap point (`frozenProgress = index/(N-1)`) with `reduced`+`frozen` true so it resolves to its final static frame. Keep both the pinned desktop path and the frozen mobile path working — they are not interchangeable.
+Same pin/scrub/settle mechanic as desktop — decided by running it on real hardware first,
+not by theory (`docs/mobile.md` §5.3.2) — re-choreographed onto one column: word window on
+top, viz field in the middle, caption at the bottom. No DOM reorder; `.what-i-do`'s
+children are already in this order, `WhatIDo.css`'s phone block just un-absolutes them
+into the existing flex column.
+
+- **Word window**: 3 rows, hard-clipped above (`overflow: hidden`), soft `mask-image` fade
+  below. Height/`marginTop` are set by `setup()`'s phone branch, not CSS.
+- **Caption**: clamped to 5 lines (`-webkit-line-clamp`); a real `<button
+  aria-expanded>` (`captionClamped`/`captionExpanded` state, `measureCaption` ref callback
+  comparing `scrollHeight` vs. `clientHeight`) overlays the expanded text on the viz field
+  (which keeps animating, dimmed) rather than growing the caption and pushing the viz
+  around. A one-shot scroll listener auto-collapses it.
+- **Far-layer gate**: `.widviz-layer[data-far] { content-visibility: hidden }` (`@supports`,
+  with a `display:none` fallback for pre-Safari-18) stops the 24 ungated CSS keyframe animations
+  in off-active viz layers from ticking — the real mobile perf cost, not the rAF loops
+  (those already early-return idle). Scoped to `≤980px`/coarse pointer; `active ± 1` is
+  always sufficient since the cross-dissolve trapezoid spans at most two layers above zero
+  opacity.
+- **Per-viz phone fit**: each of the five vizzes needed its own fix once real geometry was
+  measurable — Systems/Data centering-padding/`vh` sizing replaced with flex-relative
+  sizing, Backend/Agents/Interface a phone-scoped `scale()` (`0.72`/`0.85`/`0.75`). Every
+  phone-scoped viz rule is prefixed `.widviz-panel:not(.widviz-panel--frozen)` — the same
+  class powers the frozen fallback below, and a first pass leaked scale rules into it before
+  this scoping was added. Full per-viz rationale: `docs/mobile.md` §5.3.13.
+
+Full stage-by-stage design record, measurements, and verification tables: `docs/mobile.md`
+§5.3.
+
+## Frozen Mode — Reduced-Motion Fallback (any tier)
+
+Under `prefers-reduced-motion: reduce` **only** — not "mobile"; the phone rig above runs
+the live pin at every tier, reduced motion is the one condition that disables it anywhere —
+`.wid-mobile-blurbs` lists all five blurbs, each with `<WidVisual frozen index={i} />`. A frozen panel renders one viz seeded at its snap point (`frozenProgress = index/(N-1)`) with `reduced`+`frozen` true so it resolves to its final static frame. Keep both the live pinned path and the frozen path working — they are not interchangeable, and per-viz phone-fit rules above must never leak into this one (see the scoping note above).
 
 ## Data — `src/data/widViz.js`
 
@@ -113,4 +176,7 @@ On mobile and `prefers-reduced-motion`, `.wid-mobile-blurbs` lists all five blur
 - Never move font measurement before `document.fonts.ready` — pin geometry depends on loaded web font metrics.
 - Never apply padding, margin, or font overrides to the `.wid-stack--ko` stack that differ from `.wid-stack--base` — glyph registration depends on pixel-identical geometry.
 - Never add a scrub lerp to the ScrollTrigger — `scrub: true` (no value) keeps the one-to-one Lenis mapping; a numeric lerp adds a second interpolation track that fights Lenis.
-- Never drive `.wifc-particle` (the Interface viz's data-flow dot, `VizInterface.jsx`) via `top`/`left` — it moves through Framer `x`/`y` motion values (`transform`, compositor-only) against a `translate: -50% -50%` CSS centering offset kept as a *standalone* `translate` property so it composes with Framer's inline `transform` instead of being overwritten by it. The stage it travels through (`.wifc-stage`) is a fixed 340×260px box, so the motion-value ranges are hardcoded px fractions of that box, not live-measured — if the stage's fixed size ever changes, update those constants alongside it.
+- Never drive `.wifc-particle` (the Interface viz's data-flow dot, `VizInterface.jsx`) via `top`/`left` — it moves through Framer `x`/`y` motion values (`transform`, compositor-only) against a `translate: -50% -50%` CSS centering offset kept as a *standalone* `translate` property so it composes with Framer's inline `transform` instead of being overwritten by it. The stage it travels through (`.wifc-stage`) is a fixed 340×260px box, so the motion-value ranges are hardcoded px fractions of that box, not live-measured — if the stage's fixed size ever changes, update those constants alongside it. `.wifc-stage` now has **three** scale arms — base `1.35`, a laptop-height `1.15` (`max-height:900px` + `min-width:981px`), and phone/tablet fits (`0.75`/`0.8`) — check which one resolves before assuming the base value.
+- Never assume `global.css`'s import order is harmless: it imports `WhatIDo.css` **before** `widviz/shell.css`. Any same-specificity selector in `WhatIDo.css` targeting `.widviz-panel` loses to shell.css's unconditional rule regardless of media query unless it out-specifies it (e.g. the phone block's `.what-i-do .widviz-panel:not(.widviz-panel--frozen)`). Check import order before assuming a same-file-looking override will win (`docs/mobile.md` §5.3.10).
+- Never declare a function `setup()` references in `onUpdate`/`ScrollTrigger.create()`'s synchronous refresh as a `const` arrow function *after* that call — `ScrollTrigger.create()` fires `onUpdate` immediately, and if the user is already mid-pin (e.g. a resize-driven rebuild during a device rotation), that's a temporal-dead-zone `ReferenceError`. Use a hoisted `function` declaration for anything reachable from the synchronous refresh (`docs/mobile.md` §5.3.12).
+- Never read `getBoundingClientRect` to measure a field that carries a CSS `transform: scale()` (the phone-fit rules above) — it returns the post-transform visual rect, double-applying the scale into position math. Use `offsetWidth`/`offsetHeight` (layout box, transform-immune) instead, as `VizData.jsx`/`VizBackend.jsx`/`VizAgents.jsx` do.

@@ -13,6 +13,7 @@ Backend is Vercel Serverless Functions in `/api`. No Express, no server framewor
 Single serverless function that proxies to Google Gemini (`gemini-1.5-flash-latest`).
 
 Key design decisions:
+
 - **No conversation history** — every request sends the full system prompt + user message in one `contents` turn.
 - **Persona/facts live entirely in `SYSTEM_PROMPT`** at the top of the file. Edit that constant to change the AI's persona.
 - **`maxOutputTokens: 200` is intentional** — keeps responses under ~90 words for the orb UI. Do not raise it without considering the drawer layout.
@@ -22,6 +23,7 @@ Key design decisions:
 `GEMINI_API_KEY` is set in Vercel project settings; `vercel dev` injects it locally — no `.env` file needed.
 
 Rules:
+
 - Read env vars **only inside `/api`** via `process.env`.
 - **Never import from `/src`** inside `/api` functions and never import `/api` inside `/src`.
 - Do not commit `.env` files — the gitignore does not explicitly exclude them but there is no `.env` file in this repo.

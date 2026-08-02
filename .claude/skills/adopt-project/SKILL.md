@@ -23,6 +23,7 @@ The tone rule that governs everything: **this is an inventory, not an exam.** Ar
 ## Phase 0 — Find where you are
 
 Read `learning/` before anything else:
+
 - All four files exist → this project is already adopted; point to `/next-lesson`.
 - `project.md` exists but `file-map.md`/`knowledge-graph.md` don't → resume at Phase 2.
 - Those exist but `plan.md` doesn't → resume at Phase 3.
@@ -37,6 +38,7 @@ However you enter, **orient before you dig**: show the learner the shape of the 
 Look around and narrate what you find in plain language: the file listing, `package.json` or equivalent, the README if any, and `git status` — note especially whether git exists at all (many adopted repos have none). Establish whether the app currently runs.
 
 Then interview, one question at a time (skip any already answered):
+
 1. What is this app, in your own words — and who's it for?
 2. How did it get built? Which AI tool or tutorial, and how much did you type yourself? (Ask warmly — the answer calibrates everything and carries zero shame.)
 3. What works today, and what's broken or half-finished?
@@ -44,6 +46,7 @@ Then interview, one question at a time (skip any already answered):
 5. What do you want this project to become — and what are you hoping to learn on the way?
 
 Now triage, reasoning shown, three outcomes with a strong bias to the first:
+
 - **Adopt** — the default. Map it, plan forward, reclaim as you go.
 - **Trim, then adopt** — when half-built features outnumber working ones, run the MVP exercise in reverse: "of everything built here, which features are actually your MVP?" Everything else is **frozen, not deleted**: it stays in the repo, moves to the parking lot, and its files get parked in the map. Frozen features are debt with a name, not failures.
 - **Rebuild with a reference** — the bar is high: only when the app can't run and can't be revived within a session, or the stack is so unusual that learning on it means learning the wrong things. Frame it as a promotion, not a funeral: "you already did the hardest part — you know exactly what you're building." The old repo becomes the spec; route them to `/start-project` with it open.
@@ -67,6 +70,7 @@ Offer a pause.
 **Decisions your code already made.** The stack was chosen — by an AI, a tutorial, or past-you — whether or not anyone understood why. Walk the major ones (language, framework, database, hosting) one at a time: what each is in plain language, whether it's the popular boring choice or an unusual one — say so honestly — and check they can say in their own words what it does for their app before moving on. Same pedagogy as greenfield planning, inverted tense. Record each in `plan.md` as inherited: understood, or honestly still fuzzy with the section where it gets revisited.
 
 **Then the sections — 5 to 9, each ending in something they can see working:**
+
 - **Section 1 is fixed: make the ground solid.** The app runs on their machine; git exists with a baseline commit; `learning/` is committed. A beginner must not keep editing an un-versioned codebase they don't understand. Deliverable: "your project can never be lost again."
 - **Sections 2+: the remaining MVP features** (post-trim), sequenced by value like a real backlog — their app visibly improves every section. Each section carries **exactly one reclaim task**, aimed at whatever that section's feature touches: pick a `parked` file or a fuzzy inherited decision the feature depends on; the task is to explain it, break it on purpose, predict the failure, and fix it. Reclaimed territory flips to `known` with graph evidence, like any lesson.
 - **When the MVP is already fully built** (a shipped, working product), there is no unbuilt backlog to sequence — and it is not yours to invent. Ask what they want to build next; *that answer*, not archaeology, drives the sections. Unmerged branches, open PRs, and old plans you found are **candidates to offer** ("you have a half-finished X sitting on a branch — still want it?"), each verified current before it's offered, never silently drafted into the plan.

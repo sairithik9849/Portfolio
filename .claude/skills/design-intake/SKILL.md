@@ -41,6 +41,7 @@ For every extracted idea, assign one verdict and state the reasoning:
 ## Step 3 — Reconcile against the repo
 
 For every Keep/Adapt idea, check:
+
 - Does a token with this role already exist in `tokens.css`? If so, do the values conflict?
 - Does the interaction pattern already exist in `docs/design-system.md`? Is it documented correctly?
 - Does the idea contradict a "Do Not" rule?
@@ -83,7 +84,7 @@ in the repo. The distilled output in `tokens.css` and `docs/` is the permanent r
 
 ## Output format
 
-```
+```markdown
 ## Intake: <source name / date>
 
 | Idea | Verdict | Destination | Reasoning |

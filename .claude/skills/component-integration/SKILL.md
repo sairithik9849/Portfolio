@@ -38,6 +38,7 @@ Common external deps to evaluate: `clsx`, `tailwind-merge`, `class-variance-auth
 `@radix-ui/*`, `react-spring`, `@headlessui/*`, CSS-in-JS runtime packages.
 
 Default decisions:
+
 - `clsx` / `tailwind-merge` / `cva` → **Drop** (no Tailwind in this repo; not needed).
 - `react-spring` → **Replace** with Framer Motion (`framer-motion` already installed).
 - Radix primitives → **Evaluate** — keep if the component genuinely needs accessible headless
@@ -65,6 +66,7 @@ Flag every architecture the external component assumes that differs from this re
 ### 3a. Tailwind → CSS partial
 
 Create `src/styles/<component-name>.css`. For each Tailwind utility:
+
 - Look up the CSS declaration it maps to.
 - Replace the literal value with the closest `tokens.css` token (see Step 3d).
 - Group declarations semantically (base → interactive states → responsive overrides at bottom).
@@ -82,6 +84,7 @@ Convert `function Foo(props: Props)` → `function Foo(props)`.
 ### 3c. Motion translation
 
 Re-express animations in Framer Motion via `src/animations/variants.js`:
+
 - CSS transitions on enter/exit → Framer `AnimatePresence` + `motion.*` with `variants`.
 - CSS `@keyframes` → define a Framer variant; add to `variants.js` and import.
 - `react-spring` useSpring/useTransition → Framer Motion equivalents.
@@ -129,7 +132,7 @@ through the translation.
 
 Before writing any implementation, produce a structured plan:
 
-```
+```markdown
 ## Component Integration Plan: <ComponentName>
 
 ### Source

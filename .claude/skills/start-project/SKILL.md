@@ -38,6 +38,7 @@ Offer **2–3 project ideas** drawn from their answers. For each: one sentence o
 Sizing target: **challenging but not overwhelming.** A good first project has a visible result early, touches a real end-to-end stack, and can reach "usable" in weeks, not months.
 
 Scope traps to steer away from (explain why if they ask for one):
+
 - Two-sided marketplaces, anything with payments, e-commerce builders
 - Real-time/multiplayer anything
 - "An app like [billion-dollar company] but for X"
@@ -50,6 +51,7 @@ Let them pick, merge, or push back. The learner chooses; you size.
 Explain MVP in one line: *the minimal version that is actually usable, live on the internet — not a demo on your laptop.*
 
 Together, split every imagined feature into two lists:
+
 - **In the MVP** — the smallest set that makes it genuinely useful end to end
 - **Parking lot (v2)** — everything else, written down so it stops nagging
 
@@ -60,6 +62,7 @@ Push back on MVP creep. It is better to ship something small that works end to e
 Now lay out the **fundamental core components** this project needs to go from nothing to deployed. This is the trunk of their knowledge tree — the structure every future concept will attach to.
 
 For each component: its name, a plain-language explanation of what it is, and why this project needs it. High level only — no implementation detail, no code. Always include:
+
 - Source control (git) — "the save-and-undo system professionals use", it's in from day one
 - Wherever their code will run (local vs. deployed, in their project's terms)
 - How the pieces talk to each other
@@ -70,6 +73,7 @@ Keep the trunk to roughly 5–9 components. Check understanding: ask them to exp
 ## Phase 5 — Write it down
 
 Create `learning/project.md`:
+
 ```markdown
 # Project: <name>
 

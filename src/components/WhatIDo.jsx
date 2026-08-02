@@ -533,12 +533,15 @@ export default memo(function WhatIDo() {
 
         </div>
 
-        {/* Mobile-only (and reduced-motion): all five blurbs listed inline.
+        {/* Reduced-motion fallback (any tier): all five blurbs listed inline.
             Each item gets a frozen single-viz final frame above the blurb. */}
         <div className="wid-mobile-blurbs">
           {WHAT_I_DO.map((c, i) => (
             <div key={c.id} className="wid-mobile-blurb-item">
-              <div className="kicker wid-readout-idx">// 0{i + 1}</div>
+              <div className="kicker wid-readout-idx">
+                <span className="wid-readout-idx-num">// 0{i + 1}</span>
+                <span className="wid-readout-idx-word">{c.word}</span>
+              </div>
               <div className="wid-mobile-viz">
                 <WidVisual frozen index={i} />
               </div>

@@ -139,7 +139,7 @@ comments. Use the scale tokens (`--text-*`), never literal `px` sizes.
 Full detail, rationale, and the mobile translation plan live in **`docs/mobile.md`** —
 that doc wins on any breakpoint conflict with this one. Summary:
 
-```
+```text
    0 ──────── 767 │ 768 ──────── 980 │ 981 ──────────►
    [   PHONE      ]│[   TABLET       ]│[   DESKTOP    ]
     vertical        desktop mechanics,  full

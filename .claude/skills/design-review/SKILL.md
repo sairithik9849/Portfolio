@@ -64,6 +64,7 @@ Work through each category. Report only violations — confirmed compliance need
 ## Out of scope (defer to animation-review)
 
 Do **not** flag or comment on:
+
 - Whether `transform`/`opacity` vs layout properties are animated
 - Framer Motion vs CSS keyframes
 - Easing functions, durations, or stagger values
@@ -74,7 +75,7 @@ defer to animation-review" with the file:line. Do not expand on it.
 
 ## Report format
 
-```
+```markdown
 ## Design Review: <branch or file list>
 
 ### Token usage

@@ -6,7 +6,7 @@ App-shell wiring, render order, preloader handoff, scrolling, observers, and cro
 
 ## Subsystem Map
 
-```
+```text
 App.jsx (orchestration root)
 ├── Preloader               src/components/Preloader.jsx
 ├── Lenis + GSAP clock      App.jsx useEffect
@@ -183,6 +183,7 @@ card during the Hero → AboutMe sticky-stack transition (see above) and grows i
 around the viewport as the rest of the page scrolls.
 
 **Behavior, in scroll order:**
+
 1. **Birth.** As `.about-me` rises over the pinned Hero, a line is born at the horizontal center
    of the card's top edge and fills outward toward both top corners, hugging the card's 32px
    radius. It is visually glued to the card's top border, so it rides up with the card and lands
@@ -269,12 +270,14 @@ with no deferred-load benefit under the current architecture.
 ## Lenis Momentum Scroll
 
 `App.jsx` owns a site-wide Lenis smooth-scroll instance (`duration: 1.6`, exponential ease, `smoothWheel: true`), driven by `gsap.ticker` (single shared clock):
+
 - `gsap.ticker.add(tickerFn)` calls `lenis.raf(time * 1000)`
 - `lenis.on('scroll', ScrollTrigger.update)` keeps ScrollTrigger in sync
 - `gsap.ticker.lagSmoothing(0)` prevents frame-skip after tab blur
 - Exposed as `window.__lenis` for cross-component access
 
 Key behaviours:
+
 1. **Entirely disabled** under `prefers-reduced-motion` (early return, no instance created).
 2. **Paused** (`.stop()`) while the AI drawer is open, resumed (`.start()`) on close — prevents wheel events leaking behind the drawer.
 

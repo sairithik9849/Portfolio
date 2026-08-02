@@ -142,7 +142,7 @@ Then reload and capture at 1440 (minimum). Confirm the page still renders withou
 
 For every viewport captured, state the result explicitly:
 
-```
+```text
 sm  (390)  — ✓ / ✗ <what you saw>
 md  (768)  — ✓ / ✗ <what you saw>
 lg  (1280) — ✓ / ✗ <what you saw>

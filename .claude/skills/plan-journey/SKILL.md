@@ -37,6 +37,7 @@ Structure the MVP as **5–9 sections**, each ending in a concrete, runnable del
 1. A basic page rendering locally → 2. styling and interactivity → 3. a simple local server → 4. talking to the server (APIs) → 5. remembering things (database) → 6. the project's core feature(s) → 7. tests and safety rails → 8. going live (deployment) → 9. finishing the MVP loop.
 
 For each section write:
+
 - **Deliverable** — one sentence, phrased as something they can demo ("a page that shows X when I click Y")
 - **Concepts introduced** — the leaves that will attach to the tree in this section (names only, 3–7 per section)
 

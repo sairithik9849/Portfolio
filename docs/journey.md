@@ -25,7 +25,7 @@ chips — see "Scenes" below) stays constant across chapters, while each scene's
 composition is unique to that chapter's transformation. The hero quote is always the single
 largest element on screen; every other band supports it.
 
-```
+```text
 scroll position ──► useScroll (Framer, target: #journey, offset ['start start','end end'])
        │                                    │
        │                                    └─► scrollYProgress (0→1) ──┬─► ImageSequenceRenderer.setProgress (avatar)
@@ -164,7 +164,7 @@ The **only** place where the engine meets React:
 
 Desktop (`≥ 768px`):
 
-```
+```text
 <section id="journey">                  ← position: relative; useScroll target for all three sources below
   <div class="journey-desktop">
     <div class="journey-timeline">      ← content-height wrapper, NOT shell-constrained (full-bleed)
@@ -282,8 +282,8 @@ scale/opacity from `bands.visual.opacity` via a second `useTransform`, so the vi
 locked to the same window as the rest of that scene's reveal without a second scroll subscription.
 
 **Adding a 6th chapter/scene:** add the data entry to `JOURNEY` (`src/data/journey.js`) with a new
-`scene` key, write `SceneWhatever.jsx` (mirror an existing scene's structure: root ref + `useScroll`
-+ `useSceneReveal` + `QuoteBlock`/`MetaList`/`SkillChips` + bespoke visual), and register it in
+`scene` key, write `SceneWhatever.jsx` (mirror an existing scene's structure: root ref, `useScroll`,
+`useSceneReveal`, `QuoteBlock`/`MetaList`/`SkillChips`, and a bespoke visual), and register it in
 `scenes/index.js`'s `SCENES` map.
 
 ---

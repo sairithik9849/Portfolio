@@ -19,7 +19,6 @@ This site is designed to showcase systems engineering work with a premium fronte
 - Vercel Serverless Functions (`/api/chat.js`)
 - ESLint 10 (flat config)
 
-
 ## Performance Notes
 
 - Heavy 3D components are lazy-loaded to reduce initial bundle cost.

@@ -12,6 +12,7 @@ You are auditing the portfolio's governance docs against the real code. The goal
 ## Scope
 
 Audit can be:
+
 - **Targeted:** a single doc passed as an argument (e.g. `/doc-audit docs/animation.md`).
 - **Full:** all docs — run `CLAUDE.md` router first, then each `docs/*.md` in turn.
 
@@ -24,6 +25,7 @@ For each doc, verify these four categories:
 ### 1. File and path references
 
 Every file path named in the doc must exist in the repo. Check:
+
 - Component paths (e.g. `src/components/Preloader.jsx`)
 - Utility paths (e.g. `src/utils/scrollTo.js`, `src/utils/cursor.js`)
 - Data files (e.g. `src/data/projects.js`, `src/data/nav.js`)
@@ -35,6 +37,7 @@ Report: `✓ exists` or `✗ NOT FOUND` with the claimed path.
 ### 2. Named exports and component/prop contracts
 
 Every named export, component prop, or function the doc relies on must actually exist at that file with that name. Spot-check:
+
 - `src/animations/variants.js` exports: `REVEAL`, `STAGGER_PARENT`, `STAGGER_CHILD`, `HERO_PARENT`, `HERO_SEQUENCE`, `HERO_SEQUENCE_INSTANT`, `fadeUp`, `WID_PANEL_REVEAL`, `WID_DRAW`, `WID_AMBIENT_REST`
 - `src/utils/cursor.js` exports: `CURSOR_X`, `CURSOR_Y`
 - `src/utils/scrollTo.js` exports: `scrollToId`
@@ -65,6 +68,7 @@ Report per rule: `✓ invariant holds` or `✗ violation at <file>:<line> — <q
 > Any new major component, third-party integration, or architectural rule must: (1) add or update the relevant `docs/*.md`, (2) add a routing-table row in CLAUDE.md.
 
 Check:
+
 - All components in `src/components/` are either covered by an existing doc or are small enough not to warrant a dedicated doc.
 - All `src/components/visuals/Viz*.jsx` and `src/components/widviz/Viz*.jsx` are covered by `docs/architecture.md` or `docs/what-i-do.md` respectively.
 - The CLAUDE.md routing table rows account for all current `docs/*.md` files.
@@ -80,7 +84,7 @@ When auditing `CLAUDE.md`, confirm it stays a **router** — no subsystem implem
 
 For each doc, report:
 
-```
+```markdown
 ## docs/animation.md
 
 ### File references

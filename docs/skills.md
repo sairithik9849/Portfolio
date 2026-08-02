@@ -13,6 +13,7 @@ rather than function as isolated tools. Read it before writing or invoking any r
 > provide clear long-term value and are intentionally approved.
 
 This principle is the through-line behind every skill in this repo:
+
 - `design-intake` reconciles ideas against existing tokens/docs rather than importing them.
 - `component-integration` translates external components to repo conventions rather than porting
   external architecture.
@@ -26,7 +27,7 @@ This principle is the through-line behind every skill in this repo:
 
 Most new interactive features follow this lifecycle. `component-integration` is the entry point.
 
-```
+```text
 External component (21st.dev, Magic UI, Aceternity UI, React Bits, shadcn/ui)
       ↓
 component-integration     (analyze → translate → plan → await approval → implement)
@@ -38,13 +39,13 @@ visual-verify             (browser proof across 4 breakpoints + reduced-motion)
 doc-audit                 (run only if architecture or docs changed)
       ↓
 Commit via git-workflow   (only if user wants to commit)
-```   
+```
 
 ### Parallel: design-intake workflow
 
 Inspiration from any source feeds docs and tokens, then follows the same review tail.
 
-```
+```text
 Inspiration (Stitch / Figma / Mobbin / Stripe / Vercel / Linear / screenshot / clip)
       ↓
 design-intake             (classify → route → distill → discard raw source)
@@ -89,19 +90,22 @@ Each skill has a defined responsibility boundary. Skills call each other only as
 
 Every skill has a deterministic definition of "done." Partial completion is not done.
 
-### design-intake — Done when:
+### design-intake — Done when
+
 - Every discrete idea extracted from the inspiration is classified: **Keep / Adapt / Reject / Defer**
 - Every kept/adapted idea has a destination: **token**, **documentation**, **interaction pattern**
 - Repository conflicts (token name clash, value mismatch) are explicitly identified
 - The raw inspiration artifact can be discarded (nothing useful remains unrouted)
 
-### design-review — Done when:
+### design-review — Done when
+
 - Every design-system violation in the changed files is reported
 - Each violation includes a *why* explanation (which rule, which doc section)
 - A suggested fix accompanies each violation
 - **No** autonomous design changes were performed during review
 
-### component-integration — Done when:
+### component-integration — Done when
+
 - All external dependencies are analyzed (keep / replace / drop decided for each)
 - All framework-specific styling (Tailwind utilities, CSS-in-JS) is translated to a
   `src/styles/<name>.css` partial registered in `global.css`
@@ -109,12 +113,14 @@ Every skill has a deterministic definition of "done." Partial completion is not 
 - Behavior (interactions, accessibility semantics) is preserved; deliberate changes are noted
 - An implementation plan was produced and **approved before** any code change began
 
-### visual-verify — Done when:
+### visual-verify — Done when
+
 - All four breakpoints (1280/1440/1920/2560) are confirmed with screenshots
 - Reduced-motion path confirmed if the change touched any animation
 - No ✗ rows remain in the result table
 
-### doc-audit — Done when:
+### doc-audit — Done when
+
 - All file references, named exports, and "Do Not" rules are verified with `file:line` evidence
 - Every ✗ item has a proposed resolution
 - No autonomous doc rewrites occurred without confirming intent
