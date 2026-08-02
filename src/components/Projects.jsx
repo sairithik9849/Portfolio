@@ -44,8 +44,17 @@ export default memo(function Projects() {
                   key={p.num}
                   layout
                   className="acc-card"
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isActive}
                   style={{ flex: isActive ? '1 1 auto' : '0 0 64px' }}
                   onClick={() => setActive(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setActive(i)
+                    }
+                  }}
                   transition={SPRING}
                   whileHover={!isActive ? { backgroundColor: 'rgba(201,245,88,0.025)' } : undefined}
                 >
