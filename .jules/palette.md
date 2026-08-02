@@ -1,0 +1,3 @@
+## 2023-10-27 - Keyboard Navigation for framer-motion FLIP elements
+**Learning:** Elements relying on layout animations (like `motion.article` in a Flexbox or Grid) often use `onClick` for interaction but lack native keyboard support. Converting them into accessible buttons requires manual handling (`role="button"`, `tabIndex={0}`, `aria-expanded`, and mapping Enter/Space keys via `onKeyDown`), plus explicit `:focus-visible` styling using the project's custom CSS pattern (no Tailwind available here).
+**Action:** Always verify keyboard focus and activation for custom interactive components. When styling focus in this project, use the established pattern: `.class:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }`.
