@@ -198,12 +198,32 @@ around the viewport as the rest of the page scrolls.
 **Rendering approach — one fixed SVG, two mirrored half-paths.** The three phases are not a single
 directional draw (top = center→corners, rails = top→down, bottom = corners→center), so each half
 path is ordered top-center → corner → rail → corner → bottom-center. A single monotonic
-`strokeDashoffset` sweep (`pathLength={1}`, offset `1 → 0`) then draws exactly that sequence. The
-right half is the left half's mirror (opposite arc sweep-flags) and shares the same dash-offset
-value, so the two halves stay perfectly symmetric off one motion value. A single `<linearGradient>`
-(`--accent` → `--accent-2`, vertical) is shared by both paths — this avoids the seams that 4
-separate DOM edges (`scaleX`/`scaleY`) would introduce at the corners, and lets a single stroke
-express the 32px corner radius that a multi-element approach can't.
+`strokeDashoffset` sweep (offset `L → 0`, in the path's own real length units — see below) then
+draws exactly that sequence. The right half is the left half's mirror (opposite arc sweep-flags)
+and shares the same `drawn` fraction (each half scales it by its own measured length), so the two
+halves stay symmetric off one motion value. A single `<linearGradient>` (`--accent` → `--accent-2`,
+vertical) is shared by both paths — this avoids the seams that 4 separate DOM edges
+(`scaleX`/`scaleY`) would introduce at the corners, and lets a single stroke express the 32px
+corner radius that a multi-element approach can't.
+
+**Dash units are real path length, not `pathLength={1}`.** Each `<path>`'s `d` mixes straight
+segments with elliptical-arc (`A`) commands for the 32px corners. A ref per half reads
+`path.getTotalLength()` in a `useLayoutEffect` keyed on the two `d` strings (so a resize can never
+leave the dash math on a stale length — the same rule `useViewportSize`/`usePinScrollFraction`
+already follow), storing each half's real length in its own `useMotionValue` (default `1`).
+`strokeDasharray` is `"L L"` via `useMotionTemplate`; `strokeDashoffset` is `(1 − drawn) · L` via
+`useTransform`. Verified 2026-08-12: in desktop Chromium (via Playwright), decoding real
+`page.screenshot()` pixels (not a re-serialized SVG) at a scroll position where both the JS dash
+offset and `getPointAtLength(f · getTotalLength())` agreed the top edge reached both corners
+(`x ≈ 1.75 → 1278.25` at a 1280px viewport), the actually-painted accent pixels only spanned
+`x ≈ 295 → 984` — roughly half the expected length, gaps at both ends. Cause: Chromium's
+`pathLength`-based dash scaling uses a length approximation that disagrees with `getTotalLength()`
+on paths containing arc commands — a rendering-engine quirk, not a scroll-math bug. Two things not
+to undo here: Framer's own `pathLength` style prop is the *same* broken mechanism (`motion-dom`'s
+`buildSVGPath` implements it by setting `pathLength=1`), so it isn't an escape hatch; and
+`strokeDasharray` has to stay a motion value rather than plain React state, since Framer serializes
+motion-value styles into the DOM in its own render pass — a React-attribute dasharray could commit
+a frame ahead of its motion-value offset and briefly pair a full-length dasharray with a stale one.
 
 **Birth → frame handoff.** There is only one SVG frame element, not two overlapping renders. During
 birth, the whole `<g>` is translated down in **pixels** (`translateY = (1 − birthProgress) ·
@@ -219,15 +239,26 @@ desktop's static chrome, visibly detached on a real phone mid-scroll.
 
 **Phase mapping.** Segment lengths (`topHalf`, `cornerArc`, `rail`, `bottomHalf`) are computed from
 the live viewport size on mount/resize, giving two boundary fractions: `fTop` (birth/top phase ends)
-and `fBottomStart` (rails end, bottom close begins). Two `useScroll` sources drive the draw: a
-card-scoped one (`target: aboutRef, offset: ['start end','start start']`) for birth, and the
-document-level one for rails + bottom close, gated to start at `sPin` — the document scroll
-fraction at which `#about`'s top reaches the viewport top, derived from `aboutRef.current.offsetTop`
-and `document.documentElement.scrollHeight`. The two sources are combined with a plain conditional
-(`birthProgress.get() < 1 ? birthDraw.get() : railDraw.get()`), which is continuous at the handoff
-because both sources agree on `fTop` there — deliberately not `Math.max`, which would snap the top
-segment to full during birth. The combined value is spring-smoothed (`stiffness: 250, damping: 40`,
-matching the AboutMe/reference component convention) before being converted to `strokeDashoffset`.
+and `fBottomStart` (rails end, bottom close begins). Birth and rails both derive from the *same*
+whole-document `pageProgress` (`useScroll()`, no target), transformed against two self-measured
+scroll fractions from `usePinScrollFraction`: `sBirthStart` (`#about`'s top enters at the viewport
+bottom) and `sPin` (`#about`'s top reaches the viewport top — the instant the Hero pin resolves).
+Both fractions come from `aboutRef.current.offsetTop` vs. `document.documentElement.scrollHeight`,
+re-measured on mount, on `resize`, and on a `ResizeObserver` watching `document.body` — not resize
+alone, since async above-the-fold content (Spline robot, StarField canvas) can settle into its final
+size after the first measurement without ever firing a `resize` event, otherwise silently freezing
+the fractions on stale layout. `birthProgress` is a direct `useTransform(pageProgress, [sBirthStart,
+sPin], [0, 1])` — deliberately not a separate Framer target-tracked `useScroll(target: aboutRef)`;
+an earlier version used one, and on slower/loaded machines (real-device report, ROG G14, 2026-08-11)
+its internal boundary could be computed before above-the-fold async content finished settling,
+permanently capping birth below 1 and leaving the top edge stalled short of the card's corners with
+no self-correction. Sharing one `pageProgress` source for both phases also guarantees birth and
+rails agree on `fTop` at the handoff by construction, rather than as two independent measurements of
+the same event. The two sources are combined with a plain conditional (`birthProgress.get() < 1 ?
+birthDraw.get() : railDraw.get()`) — deliberately not `Math.max`, which would snap the top segment
+to full during birth. The combined value is spring-smoothed (`stiffness: 250, damping: 40`, matching
+the AboutMe/reference component convention) before being converted to a per-path `strokeDashoffset`
+in that path's own measured length (see "Dash units are real path length" above).
 
 **Fallback (reduced-motion).** `ScrollProgressFrame` self-locates `#about` via
 `document.getElementById` (no prop, no edit to `AboutMe.jsx`). It renders the SVG frame at every
@@ -240,12 +271,13 @@ gated purely on Framer's `useReducedMotion()`. When that's true it renders a pla
 `docs/journey.md`, "Frame relay"). `ScrollProgressFrame` self-locates `#journey` the same way it
 does `#about`, and subscribes to two more target-scoped `useScroll` sources — `journeyEnter`
 (`['start end','start start']`) and `journeyExit` (`['end end','end start']`) — combined into a
-`leftRailOpacity` that is `1 − journeyEnter` while entering and `journeyExit` while exiting (spring
--smoothed with the same `PROGRESS_SPRING`). Only the **left** path's `opacity` reads this value;
-the right path is untouched, so the frame's right rail keeps drawing normally through the section.
-`MyJourney.jsx` computes the identical `sectionEnter`/`sectionExit` pair against the same `#journey`
-target so the timeline's spine translates in/out in lockstep with this fade — the two are designed
-to never both be fully opaque at the same screen position.
+`railOpacity` that is `1 − journeyEnter` while entering and `journeyExit` while exiting
+(spring-smoothed with the same `PROGRESS_SPRING`). **Both** paths' `opacity` read this value — the
+right rail has no spine of its own to hand off to, but fades in lockstep with the left so the frame
+never sits half-open around the sticky avatar. `MyJourney.jsx` computes the identical
+`sectionEnter`/`sectionExit` pair against the same `#journey` target so the timeline's spine
+translates in/out in lockstep with this fade — the two are designed to never both be fully opaque
+at the same screen position.
 
 **z-index:** 32 — below ReturnToTop (40) / AIOrb (50).
 

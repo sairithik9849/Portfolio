@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   motion,
   useMotionTemplate,
+  useMotionValue,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -108,13 +109,25 @@ function buildFrameGeometry(width, height) {
   }
 }
 
-// Document scroll fraction (matching Framer's own scrollY / (scrollHeight -
-// clientHeight) normalization) at which #about's top edge reaches the
-// viewport top — i.e. the instant the Hero pin visually resolves and birth
-// hands off to the rails. Derived from layout on mount/resize, never
-// per-frame, so it never causes scroll-driven layout thrash.
+// Document scroll fractions (matching Framer's own scrollY / (scrollHeight -
+// clientHeight) normalization) bounding the birth phase: sBirthStart is where
+// #about's top edge enters at the viewport bottom, sPin is where it reaches
+// the viewport top — the instant the Hero pin visually resolves and birth
+// hands off to the rails. Both drive `pageProgress`-based transforms directly
+// (see birthProgress/railDraw below) instead of a separate Framer
+// target-tracked useScroll, so birth and rails share one measurement and can
+// never disagree about where the handoff happens.
+//
+// Re-measured on mount, on window resize, AND on a ResizeObserver watching
+// `document.body` — not resize alone. Async above-the-fold content (the Spline
+// robot, StarField canvas) can finish loading and settle into its final size
+// after this first measures, silently shifting #about's offsetTop without
+// firing a `resize` event; on a slower machine that window is wide enough to
+// be visible, and without this observer the fractions freeze on the stale
+// pre-settle layout permanently — the birth fill stalls short of the card's
+// corners and never recovers, since nothing ever re-measures again.
 function usePinScrollFraction(aboutRef) {
-  const [sPin, setSPin] = useState(0)
+  const [fractions, setFractions] = useState({ sBirthStart: 0, sPin: 0.0001 })
 
   useEffect(() => {
     const measure = () => {
@@ -122,14 +135,27 @@ function usePinScrollFraction(aboutRef) {
       if (!el) return
       const scrollable = document.documentElement.scrollHeight - window.innerHeight
       if (scrollable <= 0) return
-      setSPin(el.offsetTop / scrollable)
+      const rawPin = el.offsetTop / scrollable
+      const sBirthStart = Math.min(
+        Math.max((el.offsetTop - window.innerHeight) / scrollable, 0),
+        rawPin,
+      )
+      // Guaranteed distinct from sBirthStart so the [sBirthStart, sPin] input
+      // range useTransform interpolates over below is never degenerate.
+      const sPin = Math.max(rawPin, sBirthStart + 0.0001)
+      setFractions({ sBirthStart, sPin })
     }
     measure()
     window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    const bodyObserver = new ResizeObserver(measure)
+    bodyObserver.observe(document.body)
+    return () => {
+      window.removeEventListener('resize', measure)
+      bodyObserver.disconnect()
+    }
   }, [aboutRef])
 
-  return sPin
+  return fractions
 }
 
 // ScrollProgressFrame — a scroll-driven rounded-rectangle border that is
@@ -147,31 +173,66 @@ export default function ScrollProgressFrame() {
   // Self-locates the AboutMe card and the My Evolution section — both
   // already exist in the committed DOM by the time this sibling's own
   // layout effect runs (ScrollProgressFrame mounts after both in App.jsx).
-  // Declared before the useScroll calls below so this assignment's layout
-  // effect fires first, guaranteeing useScroll's internal target-measurement
-  // effect sees populated refs.
+  // Declared before usePinScrollFraction and the journeyRef useScroll calls
+  // below so this assignment's layout effect fires first, guaranteeing their
+  // own effects see populated refs.
   useLayoutEffect(() => {
     aboutRef.current = document.getElementById('about')
     journeyRef.current = document.getElementById('journey')
   }, [])
 
   const { width, height } = useViewportSize()
-  const sPin = usePinScrollFraction(aboutRef)
+  const { sBirthStart, sPin } = usePinScrollFraction(aboutRef)
   const { fTop, fBottomStart, leftHalf, rightHalf } = buildFrameGeometry(
     width || 1,
     height || 1,
   )
 
-  // Birth: 0 when the card's top edge enters from the viewport bottom
-  // ('start end'), 1 the instant it reaches the viewport top ('start start')
-  // — the same target-scoped useScroll pattern AboutMe.jsx already uses for
-  // its own per-word reveal.
-  const { scrollYProgress: birthProgress } = useScroll({
-    target: aboutRef,
-    offset: ['start end', 'start start'],
-  })
-  // Whole-document progress drives the rails + bottom close once pinned.
+  // Dash units are the path's REAL length, measured from the DOM — not
+  // `pathLength={1}` normalization. Chromium's internal length approximation
+  // for pathLength-based dash scaling disagrees with getTotalLength() on paths
+  // containing elliptical-arc (`A`) commands, which these have for the 32px
+  // corners: verified 2026-08-12 in desktop Chromium against real screenshot
+  // pixels — the stroke painted only ~half its expected span while both the JS
+  // dash offset and getPointAtLength() agreed it reached both corners. Real
+  // (un-normalized) dasharray/dashoffset are stroked against exactly the length
+  // getTotalLength() reports, so they agree by construction. Do not "simplify"
+  // this back to Framer's own `pathLength` style prop — motion-dom's
+  // buildSVGPath implements it by setting pathLength=1, i.e. the broken case.
+  //
+  // Motion values, not useState: strokeDasharray and strokeDashoffset must
+  // reach the DOM in the same Framer render pass. Framer serializes motion
+  // values into SVG props once (useSVGProps memoizes on the constant
+  // visualState) and pushes later changes imperatively on its own frame, so a
+  // React-attribute dasharray would commit a frame ahead of its motion-value
+  // offset — pairing a full-length dasharray with a stale offset for one frame.
+  const leftPathRef = useRef(null)
+  const rightPathRef = useRef(null)
+  const leftLength = useMotionValue(1)
+  const rightLength = useMotionValue(1)
+
+  // Keyed on the two `d` strings (not just width/height) so a resize can never
+  // leave the dash math on a stale length — same "don't trust a one-time
+  // measurement" rule as useViewportSize / usePinScrollFraction above. Each
+  // half is measured on its own: they're geometric mirrors, but nothing
+  // guarantees Chromium flattens both arc sets to bit-identical lengths.
+  // prefersReducedMotion is a dep because the paths unmount in that branch —
+  // re-measure if it flips back. useLayoutEffect so this runs after React
+  // commits the new `d` but before paint, never a visible stale-length frame.
+  useLayoutEffect(() => {
+    leftLength.set(leftPathRef.current?.getTotalLength() ?? 1)
+    rightLength.set(rightPathRef.current?.getTotalLength() ?? 1)
+  }, [leftHalf, rightHalf, prefersReducedMotion, leftLength, rightLength])
+
+  // Whole-document progress drives birth, rails, and the bottom close.
   const { scrollYProgress: pageProgress } = useScroll()
+
+  // Birth: 0 when the card's top edge enters from the viewport bottom
+  // (sBirthStart), 1 the instant it reaches the viewport top (sPin) — a
+  // transform of the same pageProgress source as railDraw below, bounded by
+  // the self-measured fractions from usePinScrollFraction. See that hook's
+  // comment for why this replaced a separate Framer target-tracked useScroll.
+  const birthProgress = useTransform(pageProgress, [sBirthStart, sPin], [0, 1])
 
   // Relay handoff with My Evolution's timeline spine (see JourneyTimeline.jsx
   // and --journey-gutter-x in journey.css): as #journey arrives, both rails
@@ -210,15 +271,18 @@ export default function ScrollProgressFrame() {
   const railDrawSpring = useSpring(railDraw, PROGRESS_SPRING)
 
   // Continuous handoff — while the card is still rising (birthProgress < 1)
-  // draw from the card-scoped source (raw, unsprung — see above); once
-  // pinned, switch to the page-scoped spring. Explicit array form (not the
-  // zero-arg auto-tracking form) so both sources stay subscribed regardless
-  // of which branch is currently active.
+  // draw from the raw, unsprung birth value (see above); once pinned, switch
+  // to the page-scoped spring. Explicit array form (not the zero-arg
+  // auto-tracking form) so both sources stay subscribed regardless of which
+  // branch is currently active.
   const drawn = useTransform(
     [birthProgress, birthDraw, railDrawSpring],
     ([bp, bd, rds]) => (bp < 1 ? bd : rds),
   )
-  const dashOffset = useTransform(drawn, (d) => 1 - d)
+  const leftDashArray = useMotionTemplate`${leftLength} ${leftLength}`
+  const rightDashArray = useMotionTemplate`${rightLength} ${rightLength}`
+  const leftDashOffset = useTransform([drawn, leftLength], ([d, len]) => (1 - d) * len)
+  const rightDashOffset = useTransform([drawn, rightLength], ([d, len]) => (1 - d) * len)
 
   // Rides the card's top border up to the viewport top as it rises, then
   // stays put — a transform, so this stays on the compositor.
@@ -266,18 +330,24 @@ export default function ScrollProgressFrame() {
       </defs>
       <motion.g style={{ transform: groupTransform }}>
         <motion.path
+          ref={leftPathRef}
           className="scroll-progress-frame__path"
           d={leftHalf}
-          pathLength={1}
-          strokeDasharray="1 1"
-          style={{ strokeDashoffset: dashOffset, opacity: railOpacitySpring }}
+          style={{
+            strokeDasharray: leftDashArray,
+            strokeDashoffset: leftDashOffset,
+            opacity: railOpacitySpring,
+          }}
         />
         <motion.path
+          ref={rightPathRef}
           className="scroll-progress-frame__path"
           d={rightHalf}
-          pathLength={1}
-          strokeDasharray="1 1"
-          style={{ strokeDashoffset: dashOffset, opacity: railOpacitySpring }}
+          style={{
+            strokeDasharray: rightDashArray,
+            strokeDashoffset: rightDashOffset,
+            opacity: railOpacitySpring,
+          }}
         />
       </motion.g>
     </svg>
