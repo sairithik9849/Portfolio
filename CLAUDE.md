@@ -67,6 +67,11 @@ These apply everywhere, regardless of the area being touched.
   verification gets fixed in the same session, not stepped around. The
   lint gate stays green — generated output (e.g. `dist/`,
   `brag-output/`) is excluded from linting, never left to error.
+- **Inventory existing interactions before integrating new
+  components.** Before adding any component into an area that already
+  has hover effects, animations, or pointer behavior, list every
+  existing interaction and state explicitly how each will be preserved
+  or intentionally changed.
 
 ## Routing Table
 
