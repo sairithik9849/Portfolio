@@ -22,7 +22,7 @@ export default function MetaList({ items, band, reduced }) {
               className="journey-meta__link"
               href={item.href}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               {item.text}
               <span className="journey-meta__link-arrow" aria-hidden="true">↗</span>

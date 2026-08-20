@@ -23,10 +23,10 @@ export default memo(function Footer({ onOpenAI }) {
         <a href="mailto:skomurav@stevens.edu">
           <span style={{ color: 'var(--accent)' }}>↗</span> skomurav@stevens.edu
         </a>
-        <a href="https://github.com/sairithik9849" target="_blank" rel="noreferrer">
+        <a href="https://github.com/sairithik9849" target="_blank" rel="noopener noreferrer">
           <span style={{ color: 'var(--accent)' }}>↗</span> github / sairithik9849
         </a>
-        <a href="https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/" target="_blank" rel="noreferrer">
+        <a href="https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/" target="_blank" rel="noopener noreferrer">
           <span style={{ color: 'var(--accent)' }}>↗</span> linkedin / komuravelly
         </a>
         <a href="#" onClick={(e) => { e.preventDefault(); onOpenAI() }}>

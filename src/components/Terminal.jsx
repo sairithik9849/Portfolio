@@ -215,7 +215,7 @@ function renderLine(line, i, instant) {
               href={href}
               className="term-link"
               target={isEmail ? undefined : '_blank'}
-              rel={isEmail ? undefined : 'noreferrer'}
+              rel={isEmail ? undefined : 'noopener noreferrer'}
               variants={LINK_ITEM}
             >
               <span className="term-link-label">{label}</span>
