@@ -6,7 +6,7 @@
 // docs/journey.md for the full contract and `src/components/journey/scenes/`
 // for the scene components this `scene` key selects between.
 //
-// No emoji anywhere — `metadata[].icon` is a key into the monoline SVG set
+// No emoji anywhere — icons are defined as strings matching the monoline SVG set
 // in `src/components/journey/MetaIcon.jsx`.
 //
 // `deck` may wrap one short phrase in `**double-asterisks**` to mark it for
