@@ -315,7 +315,7 @@ export default memo(function Hero({ onOpenAI, started = false, visible = true })
               className="meta-social-btn"
               href={s.href}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
                 style={{ pointerEvents: 'auto' }}
               aria-label={s.label}
             >
