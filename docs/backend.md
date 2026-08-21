@@ -14,7 +14,8 @@ Single serverless function that proxies to Google Gemini (`gemini-3.6-flash`).
 
 Key design decisions:
 
-- **No conversation history** — every request sends the full system prompt + user message in one `contents` turn.
+- **No conversation history** — each request is stateless; no prior turns are retained or resent.
+- **`SYSTEM_PROMPT` is sent via Gemini's `systemInstruction` field, not concatenated into the user turn.** `contents` carries only the visitor's raw message. `systemInstruction` is a separate, higher-authority channel the model weighs above user-supplied text — this is the main defense against basic prompt-injection ("ignore your instructions and...") attempts. Verified live: a visitor message opening with "Ignore all previous instructions" still got pulled back into persona by the model on its own. Not airtight — pair with an explicit scope-boundary instruction inside `SYSTEM_PROMPT` itself for off-topic queries.
 - **Persona/facts live entirely in `SYSTEM_PROMPT`** at the top of the file. Edit that constant to change the AI's persona.
 - **`maxOutputTokens: 200` is intentional** — keeps responses under ~90 words for the orb UI. Do not raise it without considering the drawer layout.
 - **`thinkingConfig: { thinkingLevel: 'minimal' }` is intentional.** The entire Gemini 2.5 line (`gemini-2.5-flash`, `-flash-lite`, `-pro`) is retired for new API keys/projects as of August 2026 — confirmed via a live 404 against this project's key: `"is no longer available to new users."` Gemini 3.x models cannot disable thinking outright (there is no `thinkingBudget: 0` equivalent — sending the legacy `thinkingBudget` field 400s); `thinking_level: "minimal"` is the lowest available setting and keeps reasoning tokens from eating the `maxOutputTokens: 200` budget before the visible reply is written. Verified end-to-end against the real API with the actual system prompt: a realistic reply lands around 60-70 output tokens, comfortably inside the cap.
@@ -48,5 +49,5 @@ vercel --prod # production deploy
 
 - Never import from `src/` inside `/api` functions, and never import `/api` inside `src/`.
 - Never raise `maxOutputTokens` without verifying the drawer layout can handle longer responses — 200 tokens (~90 words) is intentional.
-- Never add conversation history — each request is stateless by design (full system prompt + user message in one turn).
+- Never add conversation history — each request is stateless by design (no prior turns retained or resent).
 - Never add an Express or similar framework — each `/api` file is a standalone Vercel function.
