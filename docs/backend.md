@@ -10,13 +10,15 @@ Backend is Vercel Serverless Functions in `/api`. No Express, no server framewor
 
 ## AI Chat — `api/chat.js`
 
-Single serverless function that proxies to Google Gemini (`gemini-1.5-flash-latest`).
+Single serverless function that proxies to Google Gemini (`gemini-3.6-flash`).
 
 Key design decisions:
 
 - **No conversation history** — every request sends the full system prompt + user message in one `contents` turn.
 - **Persona/facts live entirely in `SYSTEM_PROMPT`** at the top of the file. Edit that constant to change the AI's persona.
 - **`maxOutputTokens: 200` is intentional** — keeps responses under ~90 words for the orb UI. Do not raise it without considering the drawer layout.
+- **`thinkingConfig: { thinkingLevel: 'minimal' }` is intentional.** The entire Gemini 2.5 line (`gemini-2.5-flash`, `-flash-lite`, `-pro`) is retired for new API keys/projects as of August 2026 — confirmed via a live 404 against this project's key: `"is no longer available to new users."` Gemini 3.x models cannot disable thinking outright (there is no `thinkingBudget: 0` equivalent — sending the legacy `thinkingBudget` field 400s); `thinking_level: "minimal"` is the lowest available setting and keeps reasoning tokens from eating the `maxOutputTokens: 200` budget before the visible reply is written. Verified end-to-end against the real API with the actual system prompt: a realistic reply lands around 60-70 output tokens, comfortably inside the cap.
+- **Model name is pinned, not a `-latest` alias.** `gemini-1.5-flash-latest` was retired by Google with no warning and silently 404'd in production — that's why this function went down (twice, during this same fix: the first replacement model chosen, `gemini-2.5-flash`, turned out to already be retired for this key). A pinned name fails via Google's deprecation notices instead of a silent prod outage, at the cost of needing a manual bump when it's eventually retired too. Before ever changing this model string again, verify eligibility with a live `curl` against the real key — Google's `ListModels` catalog lists models this key can *see*, not necessarily ones it's still eligible to *call*.
 
 ## Environment Variables
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useHotkey } from '../hooks/useHotkey'
-import { SUGGESTIONS, SEED_MESSAGES, pickCanned } from '../data/agent'
+import { AGENT_MODEL, SUGGESTIONS, SEED_MESSAGES, pickCanned } from '../data/agent'
 import Bubble from './Bubble'
 
 const DRAWER_SPRING = { type: 'spring', stiffness: 380, damping: 38 }
@@ -50,7 +50,7 @@ export default function AIDrawer({ open, onClose }) {
     } catch {
       setMessages((m) => [...m, {
         role: 'ai',
-        text: 'Agent unreachable — wire up GEMINI_API_KEY in .env.local to activate.',
+        text: 'Agent unreachable — try again in a moment.',
       }])
     } finally {
       setLoading(false)
@@ -90,7 +90,7 @@ export default function AIDrawer({ open, onClose }) {
 
             {/* Meta strip */}
             <div className="dr-meta">
-              <div>MODEL<b>gemini-1.5-flash</b></div>
+              <div>MODEL<b>{AGENT_MODEL}</b></div>
               <div>CONTEXT<b>cv · 6 readmes</b></div>
               <div>LATENCY<b>~840ms</b></div>
             </div>
