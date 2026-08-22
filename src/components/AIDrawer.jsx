@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useHotkey } from '../hooks/useHotkey'
 import { AGENT_MODEL, SUGGESTIONS, SEED_MESSAGES, pickCanned } from '../data/agent'
+import { PROMPT } from '../data/terminal'
 import { MESSAGE_ENTER } from '../animations/variants'
 import Bubble from './Bubble'
 
@@ -171,8 +172,10 @@ export default function AIDrawer({ open, onClose }) {
             {/* Header */}
             <div className="dr-head">
               <div className="left">
-                <span className="core-sm" />
-                <span>SAIRITHIK · AGENT v0.4</span>
+                <div className="lights">
+                  <span /><span /><span />
+                </div>
+                <span>{PROMPT} · {loading ? 'thinking' : 'agent'}</span>
               </div>
               <button className="x" onClick={onClose} aria-label="Close agent">×</button>
             </div>
