@@ -52,6 +52,20 @@ export const fadeUp = (delay, duration = 0.9) => ({
   },
 })
 
+// AI Drawer Variants
+
+// Per-message entrance in the chat transcript — smaller travel/duration than
+// fadeUp(), which is tuned for infrequent hero-scale reveals, not a bubble
+// that appears on every send.
+export const MESSAGE_ENTER = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+  },
+}
+
 export const HERO_PARENT = {
   initial: 'hidden',
   animate: 'show',
