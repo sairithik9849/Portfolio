@@ -1,3 +1,5 @@
+export const AGENT_MODEL = 'gemini-3.6-flash'
+
 export const SUGGESTIONS = [
   "What's your strongest stack?",
   'Tell me about MF Compiler',
